@@ -1,0 +1,93 @@
+<!DOCTYPE html>
+<html lang="ar" dir="rtl">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>تسجيل الدخول</title>
+
+<style>
+body {
+  font-family: Arial;
+  background:#eef2f7;
+  display:flex;
+  justify-content:center;
+  align-items:center;
+  height:100vh;
+}
+
+.box {
+  background:#fff;
+  padding:30px;
+  border-radius:15px;
+  width:320px;
+  text-align:center;
+  box-shadow:0 5px 15px rgba(0,0,0,0.1);
+}
+
+input {
+  width:100%;
+  padding:12px;
+  margin-bottom:12px;
+  border-radius:10px;
+  border:1px solid #ccc;
+  font-size:16px;
+}
+
+button {
+  width:100%;
+  padding:12px;
+  border:none;
+  border-radius:10px;
+  background:#27ae60;
+  color:#fff;
+  font-size:16px;
+  cursor:pointer;
+  transition:0.3s;
+}
+
+button:hover {
+  background:#219150;
+}
+
+h2 {
+  margin-bottom:20px;
+}
+</style>
+</head>
+
+<body>
+
+<div class="box">
+  <h2>🔐 تسجيل الدخول</h2>
+
+  <input type="text" id="username" placeholder="اسم المستخدم">
+  <input type="password" id="password" placeholder="كلمة السر">
+
+  <button onclick="login()">دخول</button>
+</div>
+
+<script>
+const users = [
+  {username:"ahmed", password:"1234"},
+  {username:"hesham", password:"1234"},
+  {username:"omar", password:"1234"},
+  {username:"sabry", password:"1234"}
+];
+
+function login(){
+  const u = username.value;
+  const p = password.value;
+
+  const user = users.find(x=>x.username===u && x.password===p);
+
+  if(user){
+    localStorage.setItem("user", u);
+    window.location.href = "index.html";
+  }else{
+    alert("بيانات غلط ❌");
+  }
+}
+</script>
+
+</body>
+</html>

@@ -3,17 +3,41 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>SAFAtrans PRICES 2026</title>
+<title>تطبيق الأسعار</title>
 
 <style>
 body { font-family: Arial; padding: 15px; background:#eef2f7; margin:0; }
 .container { max-width:900px; margin:auto; }
-.header { text-align:center; margin-bottom:20px; }
-input { padding:12px; width:100%; border-radius:10px; border:1px solid #ccc; margin-bottom:15px; font-size:16px; }
 
-table { width:100%; border-collapse: collapse; background:#fff; border-radius:10px; overflow:hidden; }
-th, td { border:1px solid #ddd; padding:10px; text-align:center; }
-th { background:#2c3e50; color:#fff; }
+.header { text-align:center; margin-bottom:20px; }
+
+input {
+  padding:12px;
+  width:100%;
+  border-radius:10px;
+  border:1px solid #ccc;
+  margin-bottom:15px;
+  font-size:16px;
+}
+
+table {
+  width:100%;
+  border-collapse: collapse;
+  background:#fff;
+  border-radius:10px;
+  overflow:hidden;
+}
+
+th, td {
+  border:1px solid #ddd;
+  padding:10px;
+  text-align:center;
+}
+
+th {
+  background:#2c3e50;
+  color:#fff;
+}
 
 .edit-btn {
   padding:10px;
@@ -43,16 +67,11 @@ th { background:#2c3e50; color:#fff; }
 <body>
 
 <div class="container">
-  <div class="header">
-    <img src="logo.png" style="max-width:150px;">
-    <h2>📦 أسعار مكتب الصفا 2026 (تجريبي)</h2>
-  </div>
 
-  <!-- تسجيل دخول -->
-  <div id="loginDiv">
-    <input type="text" id="username" placeholder="اسم المستخدم">
-    <input type="password" id="password" placeholder="كلمة السر">
-    <button onclick="login()">تسجيل الدخول</button>
+  <div class="header">
+    <img src="logo.png" style="max-width:250px;">
+    <h2>📦 أسعار الحاويات</h2>
+    <h3 style="color:#555;">أسعار نقلات مكتب الصفا - 2026</h3>
   </div>
 
   <input type="text" id="search" placeholder="بحث..." onkeyup="searchData()">
@@ -60,21 +79,21 @@ th { background:#2c3e50; color:#fff; }
   <table>
     <thead>
       <tr>
-        <th>التاريخ</th>
+        <th>العميل</th>
         <th>المكان</th>
-        <th>20(سوق)</th>
-        <th>40(سوق)</th>
-        <th>2×20(سوق)</th>
+        <th>20</th>
+        <th>40</th>
+        <th>2×20</th>
         <th>قومسيون</th>
-        <th>20(عميل)</th>
-        <th>40(عميل)</th>
-        <th>2×20(عميل)</th>
+        <th>20</th>
+        <th>40</th>
+        <th>2×20</th>
       </tr>
     </thead>
     <tbody id="tableBody"></tbody>
   </table>
 
-  <button class="edit-btn" onclick="saveData()" id="saveBtn" disabled>💾 حفظ التعديلات</button>
+  <button class="edit-btn" onclick="saveData()">💾 حفظ التعديلات</button>
   <button id="addRowButton">➕ إضافة بيانات جديدة</button>
 
 </div>
@@ -83,6 +102,13 @@ th { background:#2c3e50; color:#fff; }
 <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-database-compat.js"></script>
 
 <script>
+
+// 🔒 حماية الصفحة
+const user = localStorage.getItem("user");
+if(!user){
+  window.location.href = "login.html";
+}
+
 // Firebase
 const firebaseConfig = {
   apiKey: "AIzaSy...",
@@ -97,42 +123,20 @@ const firebaseConfig = {
 firebase.initializeApp(firebaseConfig);
 const database = firebase.database();
 
-// بيانات
-const users = [
-  {username:"ahmed", password:"1234"},
-  {username:"hesham", password:"1234"},
-  {username:"omar", password:"1234"},
-  {username:"sabry", password:"1234"}
-];
-
 let data = [];
+let isSearching = false;
 const commission = 500;
 
-// تسجيل دخول
-function login(){
-  const u = username.value;
-  const p = password.value;
-
-  const user = users.find(x=>x.username===u && x.password===p);
-
-  if(user){
-    loginDiv.style.display="none";
-    saveBtn.disabled = false;
-    loadData();
-  }else{
-    alert("بيانات غلط");
-  }
-}
-
-// تحميل البيانات
+// تحميل
 function loadData(){
   database.ref('prices').on('value', snapshot=>{
     data = snapshot.val() || [];
     renderTable(data);
   });
 }
+loadData();
 
-// عرض الجدول
+// عرض
 function renderTable(arr){
   tableBody.innerHTML = "";
 
@@ -156,9 +160,17 @@ function renderTable(arr){
   });
 }
 
-// البحث
+// بحث
 function searchData(){
   const q = search.value.toLowerCase();
+
+  if(q === ""){
+    isSearching = false;
+    renderTable(data);
+    return;
+  }
+
+  isSearching = true;
 
   const filtered = data.filter(row =>
     (row.place||"").toLowerCase().includes(q) ||
@@ -168,7 +180,7 @@ function searchData(){
   renderTable(filtered);
 }
 
-// حفظ بدون مسح البيانات
+// حفظ
 function saveData(){
   const rows = document.querySelectorAll("#tableBody tr");
 
@@ -196,11 +208,17 @@ function saveData(){
     }
   });
 
-  alert("تم الحفظ ✅");
+  alert("تم الحفظ بدون مشاكل ✅");
 }
 
-// إضافة سطر جديد
+// إضافة
 addRowButton.onclick = ()=>{
+
+  if(isSearching){
+    alert("❌ امسح البحث الأول قبل الإضافة");
+    return;
+  }
+
   const tr = document.createElement("tr");
 
   tr.innerHTML = `
@@ -217,9 +235,9 @@ addRowButton.onclick = ()=>{
 
   tableBody.appendChild(tr);
 
-  // مهم: نضيفه في الداتا كعنصر جديد
   const newIndex = data.length;
   tr.setAttribute("data-index", newIndex);
+
   data.push({});
 };
 </script>
