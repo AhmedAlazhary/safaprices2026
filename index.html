@@ -1,0 +1,155 @@
+<!DOCTYPE html>
+<html lang="ar" dir="rtl">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>تطبيق الأسعار - ديناميكي</title>
+<style>
+body { font-family: Arial; padding: 15px; background:#eef2f7; margin:0; }
+.container { max-width:900px; margin:auto; }
+.header { text-align:center; margin-bottom:20px; }
+.header h2 { margin:10px 0; }
+input, select { padding:12px; width:100%; border-radius:10px; border:1px solid #ccc; margin-bottom:15px; font-size:16px; }
+table { width:100%; border-collapse: collapse; background:#fff; border-radius:10px; overflow:hidden; }
+th, td { border:1px solid #ddd; padding:10px; text-align:center; font-size:14px; }
+th { background:#2c3e50; color:#fff; }
+tr:nth-child(even){background:#f9f9f9;}
+.edit-btn { padding:5px 10px; border:none; border-radius:5px; background:#27ae60; color:#fff; cursor:pointer; }
+.edit-btn:disabled { background:#95a5a6; cursor:not-allowed; }
+</style>
+</head>
+<body>
+<div class="container">
+  <div class="header">
+    <img id="logo" src="logo.png" alt="logo" style="max-width:150px; margin-bottom:10px;">
+    <h2>📦 أسعار الحاويات</h2>
+  </div>
+
+  <!-- تسجيل دخول -->
+  <div id="loginDiv">
+    <input type="text" id="username" placeholder="اسم المستخدم">
+    <input type="password" id="password" placeholder="كلمة السر">
+    <button onclick="login()">تسجيل الدخول</button>
+  </div>
+
+  <input type="text" id="search" placeholder="اكتب المكان أو العميل..." onkeyup="searchData()">
+
+  <table>
+    <thead>
+      <tr>
+        <th>العميل</th>
+        <th>المكان</th>
+        <th>20 (سعر السوق)</th>
+        <th>40 (سعر السوق)</th>
+        <th>2×20 (سعر السوق)</th>
+        <th>قومسيون</th>
+        <th>20 (سعر العميل)</th>
+        <th>40 (سعر العميل)</th>
+        <th>2×20 (سعر العميل)</th>
+      </tr>
+    </thead>
+    <tbody id="tableBody"></tbody>
+  </table>
+
+  <button id="saveBtn" class="edit-btn" onclick="saveData()" disabled>حفظ التعديلات</button>
+</div>
+
+<script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-app-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-database-compat.js"></script>
+
+<script>
+const firebaseConfig = {
+  apiKey: "AIzaSyARqSgfh78TqFQ2hhZaAtUaVQFqlPuRM3w",
+  authDomain: "trialsafaprices2026.firebaseapp.com",
+  databaseURL: "https://trialsafaprices2026-default-rtdb.firebaseio.com",
+  projectId: "trialsafaprices2026",
+  storageBucket: "trialsafaprices2026.appspot.com",
+  messagingSenderId: "177091434445",
+  appId: "1:177091434445:web:568b6ae3ba270a21d4d684"
+};
+firebase.initializeApp(firebaseConfig);
+const database = firebase.database();
+
+const users = [
+  {username:"ahmed", password:"1234"},
+  {username:"mona", password:"abcd"},
+  {username:"sara", password:"5678"},
+  {username:"ali", password:"xyz"}
+];
+
+let currentUser = null;
+let data = [];
+
+function login() {
+  const u = document.getElementById('username').value;
+  const p = document.getElementById('password').value;
+  const user = users.find(x => x.username===u && x.password===p);
+  if(user){
+    currentUser = user;
+    document.getElementById('loginDiv').style.display = 'none';
+    document.getElementById('saveBtn').disabled = false;
+    loadData();
+  } else alert('خطأ في اسم المستخدم أو كلمة السر');
+}
+
+function loadData() {
+  database.ref('prices').on('value', snapshot => {
+    data = snapshot.val() || [];
+    renderTable(data);
+  });
+}
+
+function renderTable(data){
+  const tbody = document.getElementById('tableBody');
+  tbody.innerHTML = '';
+  data.forEach(row => {
+    const tr = document.createElement('tr');
+    tr.innerHTML = `
+      <td contenteditable="true">${row.clientName || ""}</td>
+      <td contenteditable="true">${row.place || ""}</td>
+      <td contenteditable="true">${row.market?.c20 || 0}</td>
+      <td contenteditable="true">${row.market?.c40 || 0}</td>
+      <td contenteditable="true">${row.market?.c2x20 || 0}</td>
+      <td contenteditable="true">${row.commission || 0}</td>
+      <td contenteditable="true">${row.client?.c20 || 0}</td>
+      <td contenteditable="true">${row.client?.c40 || 0}</td>
+      <td contenteditable="true">${row.client?.c2x20 || 0}</td>
+    `;
+    tbody.appendChild(tr);
+  });
+}
+
+function searchData() {
+  const q = document.getElementById('search').value.toLowerCase();
+  const filtered = data.filter(row =>
+    (row.place || "").toLowerCase().includes(q) ||
+    (row.clientName || "").toLowerCase().includes(q)
+  );
+  renderTable(filtered);
+}
+
+function saveData() {
+  const tbody = document.getElementById('tableBody');
+  const rows = Array.from(tbody.children);
+  const newData = rows.map(tr => ({
+    clientName: tr.children[0].innerText,
+    place: tr.children[1].innerText,
+    market: {
+      c20: +tr.children[2].innerText || 0,
+      c40: +tr.children[3].innerText || 0,
+      c2x20: +tr.children[4].innerText || 0
+    },
+    commission: +tr.children[5].innerText || 0,
+    client: {
+      c20: +tr.children[6].innerText || 0,
+      c40: +tr.children[7].innerText || 0,
+      c2x20: +tr.children[8].innerText || 0
+    }
+  }));
+  database.ref('prices').set(newData)
+    .then(() => alert('تم حفظ البيانات بنجاح ✅'))
+    .catch(err => console.error(err));
+}
+</script>
+</body>
+</html>

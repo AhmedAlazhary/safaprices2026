@@ -1,0 +1,50 @@
+<!DOCTYPE html>
+<html lang="ar" dir="rtl">
+<head>
+  <meta charset="UTF-8">
+  <title>رفع البيانات إلى Firebase</title>
+</head>
+<body>
+<script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-app-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-database-compat.js"></script>
+
+<script>
+  // 1️⃣ إعداد Firebase
+  const firebaseConfig = {
+    apiKey: "AIzaSyARqSgfh78TqFQ2hhZaAtUaVQFqlPuRM3w",
+    authDomain: "trialsafaprices2026.firebaseapp.com",
+    databaseURL: "https://trialsafaprices2026-default-rtdb.firebaseio.com",
+    projectId: "trialsafaprices2026",
+    storageBucket: "trialsafaprices2026.appspot.com",
+    messagingSenderId: "177091434445",
+    appId: "1:177091434445:web:568b6ae3ba270a21d4d684"
+  };
+  firebase.initializeApp(firebaseConfig);
+  const database = firebase.database();
+
+  const commission = 500;
+
+  // 2️⃣ البيانات القديمة
+  const oldData = [
+    {place:"حلوان - عرب مساعد", market:{c20:0,c40:0,c2x20:0}, client:{c20:15950,c40:0,c2x20:23100}, commission},
+    {place:"مدينة نصر", market:{c20:11500,c40:0,c2x20:0}, client:{c20:14000,c40:0,c2x20:0}, commission},
+    {place:"العاشر", market:{c20:11500,c40:0,c2x20:0}, client:{c20:15000,c40:0,c2x20:0}, commission},
+    {place:"انشاص", market:{c20:11500,c40:0,c2x20:0}, client:{c20:17500,c40:0,c2x20:23100}, commission},
+    {place:"15 مايو", market:{c20:11500,c40:0,c2x20:0}, client:{c20:10000,c40:0,c2x20:0}, commission},
+    {place:"العبور", market:{c20:11500,c40:0,c2x20:0}, client:{c20:0,c40:0,c2x20:0}, commission},
+    {place:"التجمع الخامس", market:{c20:11500,c40:0,c2x20:0}, client:{c20:0,c40:0,c2x20:0}, commission},
+    {place:"بلبيس", market:{c20:11500,c40:0,c2x20:0}, client:{c20:0,c40:0,c2x20:0}, commission},
+    {place:"الشرقية", market:{c20:11500,c40:0,c2x20:0}, client:{c20:0,c40:0,c2x20:0}, commission},
+    {place:"اكتوبر", market:{c20:10000,c40:0,c2x20:0}, client:{c20:0,c40:0,c2x20:0}, commission},
+    {place:"كفر الشيخ", market:{c20:10000,c40:0,c2x20:0}, client:{c20:16150,c40:0,c2x20:0}, commission},
+    {place:"السادات", market:{c20:10000,c40:0,c2x20:0}, client:{c20:26950,c40:0,c2x20:0}, commission},
+    // ضيف باقي الأماكن بنفس الطريقة
+  ];
+
+  // 3️⃣ رفع البيانات على Firebase
+  database.ref('prices').set(oldData)
+    .then(() => alert('تم رفع البيانات القديمة على Firebase بنجاح!'))
+    .catch(err => console.error(err));
+</script>
+</body>
+</html>
