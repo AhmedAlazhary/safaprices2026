@@ -52,6 +52,7 @@ tr:nth-child(even){background:#f9f9f9;}
   </table>
 
   <button id="saveBtn" class="edit-btn" onclick="saveData()" disabled>حفظ التعديلات</button>
+	<button id="addRowButton">إضافة بيانات جديدة</button>
 </div>
 
 <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-app-compat.js"></script>
@@ -150,6 +151,45 @@ function saveData() {
     .then(() => alert('تم حفظ البيانات بنجاح ✅'))
     .catch(err => console.error(err));
 }
+const addRowButton = document.getElementById("addRowButton");
+
+addRowButton.addEventListener("click", () => {
+    const tbody = document.getElementById("tableBody");
+
+    const newRow = document.createElement("tr");
+
+    newRow.innerHTML = `
+      <td contenteditable="true">اسم المكان</td>
+      <td contenteditable="true">0</td>
+      <td contenteditable="true">0</td>
+      <td contenteditable="true">0</td>
+      <td>${commission}</td>
+      <td contenteditable="true">0</td>
+      <td contenteditable="true">0</td>
+      <td contenteditable="true">0</td>
+      <td><button class="saveRowButton">💾 حفظ البيانات</button></td>
+    `;
+
+    tbody.appendChild(newRow);
+
+    const saveButton = newRow.querySelector(".saveRowButton");
+    saveButton.addEventListener("click", () => {
+        const cells = newRow.querySelectorAll("td");
+
+        const newEntry = {
+            place: cells[0].innerText,
+            market: { c20: Number(cells[1].innerText), c40: Number(cells[2].innerText), c2x20: Number(cells[3].innerText) },
+            client: { c20: Number(cells[5].innerText), c40: Number(cells[6].innerText), c2x20: Number(cells[7].innerText) }
+        };
+
+        data.push(newEntry);
+
+        // حفظ البيانات على Firebase
+        firebase.database().ref('prices/' + newEntry.place).set(newEntry);
+
+        cells[8].innerHTML = "تم الحفظ ✅";
+    });
+});
 </script>
 </body>
 </html>
