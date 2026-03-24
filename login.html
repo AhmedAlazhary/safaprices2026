@@ -24,6 +24,16 @@ body {
   box-shadow:0 5px 15px rgba(0,0,0,0.1);
 }
 
+/* 🔥 Animation */
+.logo-animate {
+  animation: zoomFade 2s ease-in-out infinite alternate;
+}
+
+@keyframes zoomFade {
+  0% { transform: scale(1); opacity:0.8; }
+  100% { transform: scale(1.1); opacity:1; }
+}
+
 input {
   width:100%;
   padding:12px;
@@ -42,15 +52,10 @@ button {
   color:#fff;
   font-size:16px;
   cursor:pointer;
-  transition:0.3s;
 }
 
 button:hover {
   background:#219150;
-}
-
-h2 {
-  margin-bottom:20px;
 }
 </style>
 </head>
@@ -58,12 +63,16 @@ h2 {
 <body>
 
 <div class="box">
+
+  <img src="logo.png" class="logo-animate" style="max-width:150px; margin-bottom:15px;">
+
   <h2>🔐 تسجيل الدخول</h2>
 
   <input type="text" id="username" placeholder="اسم المستخدم">
   <input type="password" id="password" placeholder="كلمة السر">
 
   <button onclick="login()">دخول</button>
+
 </div>
 
 <script>

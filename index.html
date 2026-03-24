@@ -3,26 +3,78 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>SAFA Trans Prices APP 2026</title>
+<title>SAFA Trans Prices App 2026</title>
 
 <style>
-body { font-family: Arial; padding: 15px; background:#eef2f7; margin:0; }
-.container { max-width:900px; margin:auto; }
+body {
+  font-family: Arial;
+  margin:0;
+}
 
-.header { text-align:center; margin-bottom:20px; }
+/* خلفية Blur */
+body::before {
+  content:"";
+  position:fixed;
+  width:100%;
+  height:100%;
+  background:url("logo.png") center/cover no-repeat;
+  filter:blur(8px);
+  z-index:-1;
+}
+
+body::after {
+  content:"";
+  position:fixed;
+  width:100%;
+  height:100%;
+  background:rgba(255,255,255,0.7);
+  z-index:-1;
+}
+
+.container {
+  max-width:1000px;
+  margin:auto;
+  padding:20px;
+}
+
+.header {
+  text-align:center;
+  position:relative;
+}
+
+.logo-animate {
+  animation: zoomFade 2s ease-in-out infinite alternate;
+}
+
+@keyframes zoomFade {
+  0% { transform: scale(1); }
+  100% { transform: scale(1.1); }
+}
+
+.logout-btn {
+  position:absolute;
+  left:0;
+  top:0;
+  padding:10px;
+  border:none;
+  border-radius:10px;
+  background:#e67e22;
+  color:#fff;
+  cursor:pointer;
+}
 
 input {
   padding:12px;
   width:100%;
   border-radius:10px;
   border:1px solid #ccc;
-  margin-bottom:15px;
-  font-size:16px;
+  margin:15px 0;
 }
 
+/* الجدول */
 table {
   width:100%;
-  border-collapse: collapse;
+  border-collapse:collapse;
   background:#fff;
   border-radius:10px;
   overflow:hidden;
@@ -39,27 +91,40 @@ th {
   color:#fff;
 }
 
-.edit-btn {
-  padding:10px;
-  width:100%;
-  border:none;
-  border-radius:10px;
-  background:#27ae60;
-  color:#fff;
-  font-size:16px;
-  cursor:pointer;
+/* ألوان الأعمدة */
+.market {
+  background:#eaf4ff; /* أزرق فاتح */
 }
 
-#addRowButton {
-  margin-top:10px;
-  padding:10px;
+.client {
+  background:#ffecec; /* أحمر فاتح */
+}
+
+.section-header {
+  background:#34495e;
+  color:#fff;
+  font-weight:bold;
+}
+
+/* أزرار */
+.edit-btn, #addRowButton {
   width:100%;
+  padding:10px;
   border:none;
   border-radius:10px;
-  background:#3498db;
   color:#fff;
-  font-size:16px;
-  cursor:pointer;
+  margin-top:10px;
+}
+
+.edit-btn { background:#27ae60; }
+#addRowButton { background:#3498db; }
+
+.delete-btn {
+  background:#e74c3c;
+  color:#fff;
+  border:none;
+  padding:5px 10px;
+  border-radius:5px;
 }
 </style>
 </head>
@@ -68,33 +133,47 @@ th {
 
 <div class="container">
 
-  <div class="header">
-    <img src="logo.png" style="max-width:250px;">
-    <h2>📦 أسعار الحاويات</h2>
-    <h3 style="color:#555;">أسعار نقلات مكتب الصفا - 2026</h3>
-  </div>
+<div class="header">
+  <button onclick="logout()" class="logout-btn">🚪 خروج</button>
 
-  <input type="text" id="search" placeholder="بحث..." onkeyup="searchData()">
+  <img src="logo.png" class="logo-animate" style="max-width:250px;">
+  <h2>📦 أسعار الحاويات</h2>
+  <h3>أسعار نقلات مكتب الصفا - 2026</h3>
+</div>
 
-  <table>
-    <thead>
-      <tr>
-        <th>التاريخ</th>
-        <th>المكان</th>
-        <th>20(سوق)</th>
-        <th>40(سوق)</th>
-        <th>2×20(سوق)</th>
-        <th>قومسيون</th>
-        <th>20(عميل)</th>
-        <th>40(عميل)</th>
-        <th>2×20(عميل)</th>
-      </tr>
-    </thead>
-    <tbody id="tableBody"></tbody>
-  </table>
+<input type="text" id="search" placeholder="بحث..." onkeyup="searchData()">
 
-  <button class="edit-btn" onclick="saveData()">💾 حفظ التعديلات</button>
-  <button id="addRowButton">➕ إضافة بيانات جديدة</button>
+<table>
+<thead>
+<tr>
+  <th rowspan="2">التاريخ</th>
+  <th rowspan="2">المكان</th>
+
+  <th colspan="3" class="section-header">سعر السوق</th>
+
+  <th rowspan="2">قومسيون</th>
+
+  <th colspan="3" class="section-header">سعر العميل</th>
+
+  <th rowspan="2">حذف</th>
+</tr>
+
+<tr>
+  <th class="market">20</th>
+  <th class="market">40</th>
+  <th class="market">2×20</th>
+
+  <th class="client">20</th>
+  <th class="client">40</th>
+  <th class="client">2×20</th>
+</tr>
+</thead>
+
+<tbody id="tableBody"></tbody>
+</table>
+
+<button class="edit-btn" onclick="saveData()">💾 حفظ</button>
+<button id="addRowButton">➕ إضافة</button>
 
 </div>
 
@@ -103,91 +182,79 @@ th {
 
 <script>
 
-// 🔒 حماية الصفحة
 const user = localStorage.getItem("user");
-if(!user){
-  window.location.href = "login.html";
+if(!user) window.location.href="login.html";
+
+function logout(){
+  localStorage.removeItem("user");
+  window.location.href="login.html";
 }
 
-// Firebase
 const firebaseConfig = {
   apiKey: "AIzaSy...",
   authDomain: "trialsafaprices2026.firebaseapp.com",
   databaseURL: "https://trialsafaprices2026-default-rtdb.firebaseio.com",
-  projectId: "trialsafaprices2026",
-  storageBucket: "trialsafaprices2026.appspot.com",
-  messagingSenderId: "177091434445",
-  appId: "1:177091434445:web:568b6ae3ba270a21d4d684"
+  projectId: "trialsafaprices2026"
 };
 
 firebase.initializeApp(firebaseConfig);
-const database = firebase.database();
+const db = firebase.database();
 
 let data = [];
 let isSearching = false;
 const commission = 500;
 
-// تحميل
-function loadData(){
-  database.ref('prices').on('value', snapshot=>{
-    data = snapshot.val() || [];
-    renderTable(data);
-  });
-}
-loadData();
+db.ref("prices").on("value", snap=>{
+  data = snap.val() || [];
+  render(data);
+});
 
-// عرض
-function renderTable(arr){
-  tableBody.innerHTML = "";
+function render(arr){
+  tableBody.innerHTML="";
 
-  arr.forEach((row,index)=>{
-    const tr = document.createElement("tr");
+  arr.forEach((r,i)=>{
+    tableBody.innerHTML += `
+<tr data-index="${i}">
+<td contenteditable>${r.clientName||""}</td>
+<td contenteditable>${r.place||""}</td>
 
-    tr.innerHTML = `
-      <td contenteditable="true">${row.clientName||""}</td>
-      <td contenteditable="true">${row.place||""}</td>
-      <td contenteditable="true">${row.market?.c20||0}</td>
-      <td contenteditable="true">${row.market?.c40||0}</td>
-      <td contenteditable="true">${row.market?.c2x20||0}</td>
-      <td>${row.commission||commission}</td>
-      <td contenteditable="true">${row.client?.c20||0}</td>
-      <td contenteditable="true">${row.client?.c40||0}</td>
-      <td contenteditable="true">${row.client?.c2x20||0}</td>
-    `;
+<td class="market" contenteditable>${r.market?.c20||0}</td>
+<td class="market" contenteditable>${r.market?.c40||0}</td>
+<td class="market" contenteditable>${r.market?.c2x20||0}</td>
 
-    tr.setAttribute("data-index", index);
-    tableBody.appendChild(tr);
+<td>${commission}</td>
+
+<td class="client" contenteditable>${r.client?.c20||0}</td>
+<td class="client" contenteditable>${r.client?.c40||0}</td>
+<td class="client" contenteditable>${r.client?.c2x20||0}</td>
+
+<td><button class="delete-btn" onclick="del(${i})">🗑️</button></td>
+</tr>`;
   });
 }
 
-// بحث
 function searchData(){
   const q = search.value.toLowerCase();
 
-  if(q === ""){
-    isSearching = false;
-    renderTable(data);
+  if(!q){
+    isSearching=false;
+    render(data);
     return;
   }
 
-  isSearching = true;
+  isSearching=true;
 
-  const filtered = data.filter(row =>
-    (row.place||"").toLowerCase().includes(q) ||
-    (row.clientName||"").toLowerCase().includes(q)
-  );
-
-  renderTable(filtered);
+  render(data.filter(x=>
+    (x.place||"").toLowerCase().includes(q) ||
+    (x.clientName||"").toLowerCase().includes(q)
+  ));
 }
 
-// حفظ
 function saveData(){
-  const rows = document.querySelectorAll("#tableBody tr");
+  document.querySelectorAll("#tableBody tr").forEach(tr=>{
+    const i = tr.dataset.index;
 
-  rows.forEach(tr=>{
-    const index = tr.getAttribute("data-index");
-
-    const updated = {
+    db.ref("prices/"+i).set({
       clientName: tr.children[0].innerText,
       place: tr.children[1].innerText,
       market:{
@@ -195,51 +262,34 @@ function saveData(){
         c40:+tr.children[3].innerText||0,
         c2x20:+tr.children[4].innerText||0
       },
-      commission: commission,
+      commission,
       client:{
         c20:+tr.children[6].innerText||0,
         c40:+tr.children[7].innerText||0,
         c2x20:+tr.children[8].innerText||0
       }
-    };
-
-    if(index !== null){
-      database.ref('prices/'+index).set(updated);
-    }
+    });
   });
 
-  alert("تم الحفظ  ✅");
+  alert("تم الحفظ ✅");
 }
 
-// إضافة
-addRowButton.onclick = ()=>{
+function del(i){
+  if(confirm("حذف؟")){
+    db.ref("prices/"+i).remove();
+  }
+}
 
+addRowButton.onclick=()=>{
   if(isSearching){
-    alert("❌ امسح البحث الأول قبل الإضافة");
+    alert("امسح البحث الأول ❌");
     return;
   }
 
-  const tr = document.createElement("tr");
-
-  tr.innerHTML = `
-    <td contenteditable="true"></td>
-    <td contenteditable="true"></td>
-    <td contenteditable="true">0</td>
-    <td contenteditable="true">0</td>
-    <td contenteditable="true">0</td>
-    <td>${commission}</td>
-    <td contenteditable="true">0</td>
-    <td contenteditable="true">0</td>
-    <td contenteditable="true">0</td>
-  `;
-
-  tableBody.appendChild(tr);
-
-  const newIndex = data.length;
-  tr.setAttribute("data-index", newIndex);
-
   data.push({});
+  render(data);
 };
+
 </script>
 
 </body>
