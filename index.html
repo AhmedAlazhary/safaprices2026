@@ -4,24 +4,47 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>تطبيق الأسعار - ديناميكي</title>
+
 <style>
 body { font-family: Arial; padding: 15px; background:#eef2f7; margin:0; }
 .container { max-width:900px; margin:auto; }
 .header { text-align:center; margin-bottom:20px; }
-.header h2 { margin:10px 0; }
-input, select { padding:12px; width:100%; border-radius:10px; border:1px solid #ccc; margin-bottom:15px; font-size:16px; }
+input { padding:12px; width:100%; border-radius:10px; border:1px solid #ccc; margin-bottom:15px; font-size:16px; }
+
 table { width:100%; border-collapse: collapse; background:#fff; border-radius:10px; overflow:hidden; }
-th, td { border:1px solid #ddd; padding:10px; text-align:center; font-size:14px; }
+th, td { border:1px solid #ddd; padding:10px; text-align:center; }
 th { background:#2c3e50; color:#fff; }
-tr:nth-child(even){background:#f9f9f9;}
-.edit-btn { padding:5px 10px; border:none; border-radius:5px; background:#27ae60; color:#fff; cursor:pointer; }
-.edit-btn:disabled { background:#95a5a6; cursor:not-allowed; }
+
+.edit-btn {
+  padding:10px;
+  width:100%;
+  border:none;
+  border-radius:10px;
+  background:#27ae60;
+  color:#fff;
+  font-size:16px;
+  cursor:pointer;
+}
+
+#addRowButton {
+  margin-top:10px;
+  padding:10px;
+  width:100%;
+  border:none;
+  border-radius:10px;
+  background:#3498db;
+  color:#fff;
+  font-size:16px;
+  cursor:pointer;
+}
 </style>
 </head>
+
 <body>
+
 <div class="container">
   <div class="header">
-    <img id="logo" src="logo.png" alt="logo" style="max-width:150px; margin-bottom:10px;">
+    <img src="logo.png" style="max-width:150px;">
     <h2>📦 أسعار الحاويات</h2>
   </div>
 
@@ -32,35 +55,37 @@ tr:nth-child(even){background:#f9f9f9;}
     <button onclick="login()">تسجيل الدخول</button>
   </div>
 
-  <input type="text" id="search" placeholder="اكتب المكان أو العميل..." onkeyup="searchData()">
+  <input type="text" id="search" placeholder="بحث..." onkeyup="searchData()">
 
   <table>
     <thead>
       <tr>
         <th>العميل</th>
         <th>المكان</th>
-        <th>20 (سعر السوق)</th>
-        <th>40 (سعر السوق)</th>
-        <th>2×20 (سعر السوق)</th>
+        <th>20</th>
+        <th>40</th>
+        <th>2×20</th>
         <th>قومسيون</th>
-        <th>20 (سعر العميل)</th>
-        <th>40 (سعر العميل)</th>
-        <th>2×20 (سعر العميل)</th>
+        <th>20</th>
+        <th>40</th>
+        <th>2×20</th>
       </tr>
     </thead>
     <tbody id="tableBody"></tbody>
   </table>
 
-  <button id="saveBtn" class="edit-btn" onclick="saveData()" disabled>حفظ التعديلات</button>
-	<button id="addRowButton">إضافة بيانات جديدة</button>
+  <button class="edit-btn" onclick="saveData()" id="saveBtn" disabled>💾 حفظ التعديلات</button>
+  <button id="addRowButton">➕ إضافة بيانات جديدة</button>
+
 </div>
 
 <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-app-compat.js"></script>
 <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-database-compat.js"></script>
 
 <script>
+// Firebase
 const firebaseConfig = {
-  apiKey: "AIzaSyARqSgfh78TqFQ2hhZaAtUaVQFqlPuRM3w",
+  apiKey: "AIzaSy...",
   authDomain: "trialsafaprices2026.firebaseapp.com",
   databaseURL: "https://trialsafaprices2026-default-rtdb.firebaseio.com",
   projectId: "trialsafaprices2026",
@@ -68,9 +93,11 @@ const firebaseConfig = {
   messagingSenderId: "177091434445",
   appId: "1:177091434445:web:568b6ae3ba270a21d4d684"
 };
+
 firebase.initializeApp(firebaseConfig);
 const database = firebase.database();
 
+// بيانات
 const users = [
   {username:"ahmed", password:"1234"},
   {username:"hesham", password:"1234"},
@@ -78,118 +105,124 @@ const users = [
   {username:"sabry", password:"1234"}
 ];
 
-let currentUser = null;
 let data = [];
+const commission = 500;
 
-function login() {
-  const u = document.getElementById('username').value;
-  const p = document.getElementById('password').value;
-  const user = users.find(x => x.username===u && x.password===p);
+// تسجيل دخول
+function login(){
+  const u = username.value;
+  const p = password.value;
+
+  const user = users.find(x=>x.username===u && x.password===p);
+
   if(user){
-    currentUser = user;
-    document.getElementById('loginDiv').style.display = 'none';
-    document.getElementById('saveBtn').disabled = false;
+    loginDiv.style.display="none";
+    saveBtn.disabled = false;
     loadData();
-  } else alert('خطأ في اسم المستخدم أو كلمة السر');
+  }else{
+    alert("بيانات غلط");
+  }
 }
 
-function loadData() {
-  database.ref('prices').on('value', snapshot => {
+// تحميل البيانات
+function loadData(){
+  database.ref('prices').on('value', snapshot=>{
     data = snapshot.val() || [];
     renderTable(data);
   });
 }
 
-function renderTable(data){
-  const tbody = document.getElementById('tableBody');
-  tbody.innerHTML = '';
-  data.forEach(row => {
-    const tr = document.createElement('tr');
+// عرض الجدول
+function renderTable(arr){
+  tableBody.innerHTML = "";
+
+  arr.forEach((row,index)=>{
+    const tr = document.createElement("tr");
+
     tr.innerHTML = `
-      <td contenteditable="true">${row.clientName || ""}</td>
-      <td contenteditable="true">${row.place || ""}</td>
-      <td contenteditable="true">${row.market?.c20 || 0}</td>
-      <td contenteditable="true">${row.market?.c40 || 0}</td>
-      <td contenteditable="true">${row.market?.c2x20 || 0}</td>
-      <td contenteditable="true">${row.commission || 0}</td>
-      <td contenteditable="true">${row.client?.c20 || 0}</td>
-      <td contenteditable="true">${row.client?.c40 || 0}</td>
-      <td contenteditable="true">${row.client?.c2x20 || 0}</td>
+      <td contenteditable="true">${row.clientName||""}</td>
+      <td contenteditable="true">${row.place||""}</td>
+      <td contenteditable="true">${row.market?.c20||0}</td>
+      <td contenteditable="true">${row.market?.c40||0}</td>
+      <td contenteditable="true">${row.market?.c2x20||0}</td>
+      <td>${row.commission||commission}</td>
+      <td contenteditable="true">${row.client?.c20||0}</td>
+      <td contenteditable="true">${row.client?.c40||0}</td>
+      <td contenteditable="true">${row.client?.c2x20||0}</td>
     `;
-    tbody.appendChild(tr);
+
+    tr.setAttribute("data-index", index);
+    tableBody.appendChild(tr);
   });
 }
 
-function searchData() {
-  const q = document.getElementById('search').value.toLowerCase();
+// البحث
+function searchData(){
+  const q = search.value.toLowerCase();
+
   const filtered = data.filter(row =>
-    (row.place || "").toLowerCase().includes(q) ||
-    (row.clientName || "").toLowerCase().includes(q)
+    (row.place||"").toLowerCase().includes(q) ||
+    (row.clientName||"").toLowerCase().includes(q)
   );
+
   renderTable(filtered);
 }
 
-function saveData() {
-  const tbody = document.getElementById('tableBody');
-  const rows = Array.from(tbody.children);
-  const newData = rows.map(tr => ({
-    clientName: tr.children[0].innerText,
-    place: tr.children[1].innerText,
-    market: {
-      c20: +tr.children[2].innerText || 0,
-      c40: +tr.children[3].innerText || 0,
-      c2x20: +tr.children[4].innerText || 0
-    },
-    commission: +tr.children[5].innerText || 0,
-    client: {
-      c20: +tr.children[6].innerText || 0,
-      c40: +tr.children[7].innerText || 0,
-      c2x20: +tr.children[8].innerText || 0
+// حفظ بدون مسح البيانات
+function saveData(){
+  const rows = document.querySelectorAll("#tableBody tr");
+
+  rows.forEach(tr=>{
+    const index = tr.getAttribute("data-index");
+
+    const updated = {
+      clientName: tr.children[0].innerText,
+      place: tr.children[1].innerText,
+      market:{
+        c20:+tr.children[2].innerText||0,
+        c40:+tr.children[3].innerText||0,
+        c2x20:+tr.children[4].innerText||0
+      },
+      commission: commission,
+      client:{
+        c20:+tr.children[6].innerText||0,
+        c40:+tr.children[7].innerText||0,
+        c2x20:+tr.children[8].innerText||0
+      }
+    };
+
+    if(index !== null){
+      database.ref('prices/'+index).set(updated);
     }
-  }));
-  database.ref('prices').set(newData)
-    .then(() => alert('تم حفظ البيانات بنجاح ✅'))
-    .catch(err => console.error(err));
+  });
+
+  alert("تم الحفظ بدون مسح البيانات ✅");
 }
-const addRowButton = document.getElementById("addRowButton");
 
-addRowButton.addEventListener("click", () => {
-    const tbody = document.getElementById("tableBody");
+// إضافة سطر جديد
+addRowButton.onclick = ()=>{
+  const tr = document.createElement("tr");
 
-    const newRow = document.createElement("tr");
+  tr.innerHTML = `
+    <td contenteditable="true"></td>
+    <td contenteditable="true"></td>
+    <td contenteditable="true">0</td>
+    <td contenteditable="true">0</td>
+    <td contenteditable="true">0</td>
+    <td>${commission}</td>
+    <td contenteditable="true">0</td>
+    <td contenteditable="true">0</td>
+    <td contenteditable="true">0</td>
+  `;
 
-    newRow.innerHTML = `
-      <td contenteditable="true">اسم المكان</td>
-      <td contenteditable="true">0</td>
-      <td contenteditable="true">0</td>
-      <td contenteditable="true">0</td>
-      <td>${commission}</td>
-      <td contenteditable="true">0</td>
-      <td contenteditable="true">0</td>
-      <td contenteditable="true">0</td>
-      <td><button class="saveRowButton">💾 حفظ البيانات</button></td>
-    `;
+  tableBody.appendChild(tr);
 
-    tbody.appendChild(newRow);
-
-    const saveButton = newRow.querySelector(".saveRowButton");
-    saveButton.addEventListener("click", () => {
-        const cells = newRow.querySelectorAll("td");
-
-        const newEntry = {
-            place: cells[0].innerText,
-            market: { c20: Number(cells[1].innerText), c40: Number(cells[2].innerText), c2x20: Number(cells[3].innerText) },
-            client: { c20: Number(cells[5].innerText), c40: Number(cells[6].innerText), c2x20: Number(cells[7].innerText) }
-        };
-
-        data.push(newEntry);
-
-        // حفظ البيانات على Firebase
-        firebase.database().ref('prices/' + newEntry.place).set(newEntry);
-
-        cells[8].innerHTML = "تم الحفظ ✅";
-    });
-});
+  // مهم: نضيفه في الداتا كعنصر جديد
+  const newIndex = data.length;
+  tr.setAttribute("data-index", newIndex);
+  data.push({});
+};
 </script>
+
 </body>
 </html>
