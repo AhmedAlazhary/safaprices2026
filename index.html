@@ -3,294 +3,63 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>SAFA Trans Prices App 2026</title>
-
+<title>تسجيل الدخول - أسعار مكتب الصفا</title>
 <style>
 body {
-  font-family: Arial;
-  margin:0;
+  font-family: Arial; margin:0; padding:0;
+  background: url('logo.png') no-repeat center center fixed;
+  background-size: cover; filter: blur(8px);
 }
-
-/* خلفية Blur */
-body::before {
-  content:"";
-  position:fixed;
-  width:100%;
-  height:100%;
-  background:url("logo.png") center/cover no-repeat;
-  filter:blur(8px);
-  z-index:-1;
+.overlay {
+  position: fixed; top:0; left:0; width:100%; height:100%;
+  background: rgba(0,0,0,0.5);
+  display:flex; justify-content:center; align-items:center;
 }
-
-body::after {
-  content:"";
-  position:fixed;
-  width:100%;
-  height:100%;
-  background:rgba(255,255,255,0.7);
-  z-index:-1;
+.login-box {
+  background:#fff; padding:30px; border-radius:15px; text-align:center;
+  box-shadow: 0 5px 20px rgba(0,0,0,0.3);
+  animation: fadeIn 1s ease-in-out;
 }
-
-.container {
-  max-width:1000px;
-  margin:auto;
-  padding:20px;
+.login-box img {
+  max-width:150px; margin-bottom:10px; animation: logoMove 2s infinite alternate;
 }
-
-.header {
-  text-align:center;
-  position:relative;
+input { display:block; width:100%; margin:10px 0; padding:12px; border-radius:10px; border:1px solid #ccc; font-size:16px; }
+button {
+  padding:12px; width:100%; background:#27ae60; color:#fff; border:none; border-radius:10px; font-size:16px; cursor:pointer;
 }
-
-.logo-animate {
-  animation: zoomFade 2s ease-in-out infinite alternate;
-}
-
-@keyframes zoomFade {
-  0% { transform: scale(1); }
-  100% { transform: scale(1.1); }
-}
-
-.logout-btn {
-  position:absolute;
-  left:0;
-  top:0;
-  padding:10px;
-  border:none;
-  border-radius:10px;
-  background:#e67e22;
-  color:#fff;
-  cursor:pointer;
-}
-
-input {
-  padding:12px;
-  width:100%;
-  border-radius:10px;
-  border:1px solid #ccc;
-  margin:15px 0;
-}
-
-/* الجدول */
-table {
-  width:100%;
-  border-collapse:collapse;
-  background:#fff;
-  border-radius:10px;
-  overflow:hidden;
-}
-
-th, td {
-  border:1px solid #ddd;
-  padding:10px;
-  text-align:center;
-}
-
-th {
-  background:#2c3e50;
-  color:#fff;
-}
-
-/* ألوان الأعمدة */
-.market {
-  background:#eaf4ff; /* أزرق فاتح */
-}
-
-.client {
-  background:#ffecec; /* أحمر فاتح */
-}
-
-.section-header {
-  background:#34495e;
-  color:#fff;
-  font-weight:bold;
-}
-
-/* أزرار */
-.edit-btn, #addRowButton {
-  width:100%;
-  padding:10px;
-  border:none;
-  border-radius:10px;
-  color:#fff;
-  margin-top:10px;
-}
-
-.edit-btn { background:#27ae60; }
-#addRowButton { background:#3498db; }
-
-.delete-btn {
-  background:#e74c3c;
-  color:#fff;
-  border:none;
-  padding:5px 10px;
-  border-radius:5px;
-}
+button:hover { background:#2ecc71; }
+@keyframes logoMove { 0%{transform: translateY(0);} 100%{transform: translateY(-10px);} }
+@keyframes fadeIn { 0%{opacity:0;} 100%{opacity:1;} }
 </style>
 </head>
-
 <body>
-
-<div class="container">
-
-<div class="header">
-  <button onclick="logout()" class="logout-btn">🚪 خروج</button>
-
-  <img src="logo.png" class="logo-animate" style="max-width:250px;">
-  <h2>📦 أسعار الحاويات</h2>
-  <h3>أسعار نقلات مكتب الصفا - 2026</h3>
+<div class="overlay">
+  <div class="login-box">
+    <img src="logo.png" alt="Logo">
+    <h2>أسعار نقلات مكتب الصفا - 2026</h2>
+    <input type="text" id="username" placeholder="اسم المستخدم">
+    <input type="password" id="password" placeholder="كلمة السر">
+    <button onclick="login()">تسجيل الدخول</button>
+  </div>
 </div>
-
-<input type="text" id="search" placeholder="بحث..." onkeyup="searchData()">
-
-<table>
-<thead>
-<tr>
-  <th rowspan="2">التاريخ</th>
-  <th rowspan="2">المكان</th>
-
-  <th colspan="3" class="section-header">سعر السوق</th>
-
-  <th rowspan="2">قومسيون</th>
-
-  <th colspan="3" class="section-header">سعر العميل</th>
-
-  <th rowspan="2">حذف</th>
-</tr>
-
-<tr>
-  <th class="market">20</th>
-  <th class="market">40</th>
-  <th class="market">2×20</th>
-
-  <th class="client">20</th>
-  <th class="client">40</th>
-  <th class="client">2×20</th>
-</tr>
-</thead>
-
-<tbody id="tableBody"></tbody>
-</table>
-
-<button class="edit-btn" onclick="saveData()">💾 حفظ</button>
-<button id="addRowButton">➕ إضافة</button>
-
-</div>
-
-<script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-app-compat.js"></script>
-<script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-database-compat.js"></script>
 
 <script>
+const users = [
+  {username:"ahmed", password:"1234"},
+  {username:"hesham", password:"1234"},
+  {username:"omar", password:"1234"},
+  {username:"sabry", password:"1234"}
+];
 
-const user = localStorage.getItem("user");
-if(!user) window.location.href="login.html";
-
-function logout(){
-  localStorage.removeItem("user");
-  window.location.href="login.html";
+function login(){
+  const u = document.getElementById('username').value;
+  const p = document.getElementById('password').value;
+  const user = users.find(x=>x.username===u && x.password===p);
+  if(user) {
+    localStorage.setItem('currentUser', u);
+    window.location.href = 'dashboard.html';
+  } else alert('خطأ في اسم المستخدم أو كلمة السر');
 }
-
-const firebaseConfig = {
-  apiKey: "AIzaSy...",
-  authDomain: "trialsafaprices2026.firebaseapp.com",
-  databaseURL: "https://trialsafaprices2026-default-rtdb.firebaseio.com",
-  projectId: "trialsafaprices2026"
-};
-
-firebase.initializeApp(firebaseConfig);
-const db = firebase.database();
-
-let data = [];
-let isSearching = false;
-const commission = 500;
-
-db.ref("prices").on("value", snap=>{
-  data = snap.val() || [];
-  render(data);
-});
-
-function render(arr){
-  tableBody.innerHTML="";
-
-  arr.forEach((r,i)=>{
-    tableBody.innerHTML += `
-<tr data-index="${i}">
-<td contenteditable>${r.clientName||""}</td>
-<td contenteditable>${r.place||""}</td>
-
-<td class="market" contenteditable>${r.market?.c20||0}</td>
-<td class="market" contenteditable>${r.market?.c40||0}</td>
-<td class="market" contenteditable>${r.market?.c2x20||0}</td>
-
-<td>${commission}</td>
-
-<td class="client" contenteditable>${r.client?.c20||0}</td>
-<td class="client" contenteditable>${r.client?.c40||0}</td>
-<td class="client" contenteditable>${r.client?.c2x20||0}</td>
-
-<td><button class="delete-btn" onclick="del(${i})">🗑️</button></td>
-</tr>`;
-  });
-}
-
-function searchData(){
-  const q = search.value.toLowerCase();
-
-  if(!q){
-    isSearching=false;
-    render(data);
-    return;
-  }
-
-  isSearching=true;
-
-  render(data.filter(x=>
-    (x.place||"").toLowerCase().includes(q) ||
-    (x.clientName||"").toLowerCase().includes(q)
-  ));
-}
-
-function saveData(){
-  document.querySelectorAll("#tableBody tr").forEach(tr=>{
-    const i = tr.dataset.index;
-
-    db.ref("prices/"+i).set({
-      clientName: tr.children[0].innerText,
-      place: tr.children[1].innerText,
-      market:{
-        c20:+tr.children[2].innerText||0,
-        c40:+tr.children[3].innerText||0,
-        c2x20:+tr.children[4].innerText||0
-      },
-      commission,
-      client:{
-        c20:+tr.children[6].innerText||0,
-        c40:+tr.children[7].innerText||0,
-        c2x20:+tr.children[8].innerText||0
-      }
-    });
-  });
-
-  alert("تم الحفظ ✅");
-}
-
-function del(i){
-  if(confirm("حذف؟")){
-    db.ref("prices/"+i).remove();
-  }
-}
-
-addRowButton.onclick=()=>{
-  if(isSearching){
-    alert("امسح البحث الأول ❌");
-    return;
-  }
-
-  data.push({});
-  render(data);
-};
-
 </script>
-
 </body>
 </html>

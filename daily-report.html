@@ -1,0 +1,97 @@
+<!DOCTYPE html>
+<html lang="ar" dir="rtl">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>بيان الشغل اليومي</title>
+<style>
+body { font-family: Arial; padding: 15px; background:#eef2f7; margin:0; }
+.container { max-width:1200px; margin:auto; }
+.header { text-align:center; margin-bottom:20px; }
+.header img { max-width:200px; margin-bottom:10px; }
+table { width:100%; border-collapse: collapse; background:#fff; border-radius:10px; overflow:hidden; margin-bottom:20px; }
+th, td { border:1px solid #ddd; padding:10px; text-align:center; font-size:14px; }
+th { background:#2c3e50; color:#fff; }
+tr:nth-child(even){background:#f9f9f9;}
+button { padding:8px 12px; margin:5px; border:none; border-radius:5px; background:#27ae60; color:#fff; cursor:pointer; }
+</style>
+</head>
+<body>
+<div class="container">
+  <div class="header">
+    <img src="logo.png" alt="Logo">
+    <h2>📋 بيان الشغل اليومي</h2>
+  </div>
+
+  <table>
+    <thead>
+      <tr>
+        <th>تاريخ اليوم</th>
+        <th>حجم الحاوية</th>
+        <th>المكان</th>
+        <th>مكان النقلة</th>
+        <th>التوكيلات</th>
+        <th>صادر/وارد</th>
+        <th>العميل</th>
+      </tr>
+    </thead>
+    <tbody id="dailyBody"></tbody>
+  </table>
+  <button onclick="addRow()">إضافة صف جديد</button>
+  <button onclick="saveDaily()">حفظ اليوم</button>
+  <button onclick="window.location.href='dashboard.html'">العودة للوحة التحكم</button>
+</div>
+
+<script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-app-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-database-compat.js"></script>
+
+<script>
+const firebaseConfig = {
+  apiKey: "AIzaSyARqSgfh78TqFQ2hhZaAtUaVQFqlPuRM3w",
+  authDomain: "trialsafaprices2026.firebaseapp.com",
+  databaseURL: "https://trialsafaprices2026-default-rtdb.firebaseio.com",
+  projectId: "trialsafaprices2026",
+  storageBucket: "trialsafaprices2026.appspot.com",
+  messagingSenderId: "177091434445",
+  appId: "1:177091434445:web:568b6ae3ba270a21d4d684"
+};
+firebase.initializeApp(firebaseConfig);
+const db = firebase.database();
+
+let dailyData = [];
+
+function addRow() {
+  const tbody = document.getElementById('dailyBody');
+  const tr = document.createElement('tr');
+  const today = new Date().toISOString().slice(0,10);
+  tr.innerHTML = `
+    <td contenteditable="false">${today}</td>
+    <td contenteditable="true" data-type="size">20</td>
+    <td contenteditable="true" data-type="place">الاسكندرية</td>
+    <td contenteditable="true" data-type="destination">اكتب المكان</td>
+    <td contenteditable="true" data-type="agency">CMA</td>
+    <td contenteditable="true" data-type="type">صادر</td>
+    <td contenteditable="true" data-type="client">النساجون</td>
+  `;
+  tbody.appendChild(tr);
+}
+
+function saveDaily() {
+  const rows = Array.from(document.getElementById('dailyBody').children);
+  dailyData = rows.map(tr => ({
+    date: tr.children[0].innerText,
+    size: tr.children[1].innerText,
+    place: tr.children[2].innerText,
+    destination: tr.children[3].innerText,
+    agency: tr.children[4].innerText,
+    type: tr.children[5].innerText,
+    client: tr.children[6].innerText
+  }));
+  const today = new Date().toISOString().slice(0,10);
+  db.ref('dailyReports/' + today).set(dailyData)
+    .then(()=>alert('تم حفظ بيانات اليوم ✅'))
+    .catch(err=>console.error(err));
+}
+</script>
+</body>
+</html>

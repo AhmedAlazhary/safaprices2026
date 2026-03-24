@@ -1,0 +1,200 @@
+<!DOCTYPE html>
+<html lang="ar" dir="rtl">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>جدول الأسعار - مكتب الصفا</title>
+<style>
+body { font-family: Arial; padding:15px; background:#eef2f7; margin:0; }
+.container { max-width:1200px; margin:auto; }
+.header { text-align:center; margin-bottom:20px; }
+.header img { max-width:200px; margin-bottom:5px; }
+.header h2 { margin:0; font-size:22px; }
+input { padding:12px; width:100%; border-radius:10px; border:1px solid #ccc; margin-bottom:15px; font-size:16px; }
+table { width:100%; border-collapse: collapse; border-radius:10px; overflow:hidden; background:#fff; }
+th, td { border:1px solid #ddd; padding:10px; text-align:center; font-size:14px; }
+th { background:#2c3e50; color:#fff; }
+tr:nth-child(even){background:#f9f9f9;}
+.market-header { background:#cce5ff; }
+.client-header { background:#fdd; }
+.dark-cell { background:#3498db; color:#fff; }
+.edit-btn { padding:5px 10px; border:none; border-radius:5px; background:#27ae60; color:#fff; cursor:pointer; margin-top:10px; }
+.edit-btn:disabled { background:#95a5a6; cursor:not-allowed; }
+#addRowButton { background:#2980b9; }
+#addRowButton:hover { background:#3498db; }
+</style>
+</head>
+<body>
+<div class="container">
+  <div class="header">
+    <img src="logo.png" alt="Logo">
+    <h2>📦 أسعار نقلات مكتب الصفا - 2026</h2>
+  </div>
+
+  <input type="text" id="search" placeholder="اكتب المكان أو العميل..." onkeyup="searchData()">
+
+  <table>
+    <thead>
+      <tr>
+        <th rowspan="2">العميل</th>
+        <th rowspan="2">المكان</th>
+        <th colspan="3" class="market-header">سعر السوق</th>
+        <th rowspan="2">قومسيون</th>
+        <th colspan="3" class="client-header">سعر العميل</th>
+        <th rowspan="2">إجراء</th>
+      </tr>
+      <tr>
+        <th class="dark-cell">20</th>
+        <th class="dark-cell">40</th>
+        <th class="dark-cell">2×20</th>
+        <th class="dark-cell">20</th>
+        <th class="dark-cell">40</th>
+        <th class="dark-cell">2×20</th>
+      </tr>
+    </thead>
+    <tbody id="tableBody"></tbody>
+  </table>
+
+  <button id="saveBtn" class="edit-btn" onclick="saveData()">حفظ التعديلات</button>
+  <button id="addRowButton" class="edit-btn">إضافة بيانات جديدة</button>
+</div>
+
+<script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-app-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-database-compat.js"></script>
+
+<script>
+const firebaseConfig = {
+  apiKey: "AIzaSyARqSgfh78TqFQ2hhZaAtUaVQFqlPuRM3w",
+  authDomain: "trialsafaprices2026.firebaseapp.com",
+  databaseURL: "https://trialsafaprices2026-default-rtdb.firebaseio.com",
+  projectId: "trialsafaprices2026",
+  storageBucket: "trialsafaprices2026.appspot.com",
+  messagingSenderId: "177091434445",
+  appId: "1:177091434445:web:568b6ae3ba270a21d4d684"
+};
+firebase.initializeApp(firebaseConfig);
+const database = firebase.database();
+const commission = 500;
+
+// البيانات الأصلية من Excel كاملة
+let data = [
+  {place:"حلوان - عرب مساعد", market:{c20:0,c40:0,c2x20:0}, client:{c20:15950,c40:0,c2x20:23100}},
+  {place:"مدينة نصر", market:{c20:11500,c40:0,c2x20:0}, client:{c20:14000,c40:0,c2x20:0}},
+  {place:"العاشر", market:{c20:11500,c40:0,c2x20:0}, client:{c20:15000,c40:0,c2x20:0}},
+  {place:"انشاص", market:{c20:11500,c40:0,c2x20:0}, client:{c20:17500,c40:0,c2x20:23100}},
+  {place:"15 مايو", market:{c20:11500,c40:0,c2x20:0}, client:{c20:10000,c40:0,c2x20:0}},
+  {place:"العبور", market:{c20:11500,c40:0,c2x20:0}, client:{c20:0,c40:0,c2x20:0}},
+  {place:"التجمع الخامس", market:{c20:11500,c40:0,c2x20:0}, client:{c20:0,c40:0,c2x20:0}},
+  {place:"بلبيس", market:{c20:11500,c40:0,c2x20:0}, client:{c20:0,c40:0,c2x20:0}},
+  {place:"الشرقية", market:{c20:11500,c40:0,c2x20:0}, client:{c20:0,c40:0,c2x20:0}},
+  {place:"اكتوبر", market:{c20:10000,c40:0,c2x20:0}, client:{c20:0,c40:0,c2x20:0}},
+  {place:"كفر الشيخ", market:{c20:10000,c40:0,c2x20:0}, client:{c20:16150,c40:0,c2x20:0}},
+  {place:"السادات", market:{c20:10000,c40:0,c2x20:0}, client:{c20:26950,c40:0,c2x20:0}},
+  {place:"الخطاطبة", market:{c20:10000,c40:0,c2x20:0}, client:{c20:0,c40:0,c2x20:0}},
+  {place:"كفر داوود", market:{c20:10000,c40:0,c2x20:0}, client:{c20:0,c40:0,c2x20:0}},
+  {place:"شبراخيت", market:{c20:10000,c40:0,c2x20:0}, client:{c20:0,c40:0,c2x20:0}},
+  {place:"كوم حماده", market:{c20:10000,c40:0,c2x20:0}, client:{c20:0,c40:0,c2x20:0}},
+  {place:"كفر الزيات", market:{c20:10000,c40:0,c2x20:0}, client:{c20:0,c40:0,c2x20:0}},
+  {place:"حوش عيسي", market:{c20:0,c40:0,c2x20:0}, client:{c20:0,c40:0,c2x20:0}},
+  {place:"الدلنجات", market:{c20:0,c40:0,c2x20:0}, client:{c20:0,c40:0,c2x20:0}},
+  {place:"قرية الاسد", market:{c20:6700,c40:0,c2x20:0}, client:{c20:0,c40:0,c2x20:0}},
+  {place:"الكيلو 57", market:{c20:6700,c40:0,c2x20:0}, client:{c20:0,c40:0,c2x20:0}},
+  {place:"ابو المطامير", market:{c20:6700,c40:0,c2x20:0}, client:{c20:0,c40:0,c2x20:0}},
+  {place:"ايتاي", market:{c20:6700,c40:0,c2x20:0}, client:{c20:0,c40:0,c2x20:0}},
+  {place:"دمنهور", market:{c20:0,c40:0,c2x20:0}, client:{c20:0,c40:0,c2x20:0}},
+  {place:"مرغم", market:{c20:5200,c40:0,c2x20:0}, client:{c20:0,c40:0,c2x20:0}},
+  {place:"برج العرب", market:{c20:6200,c40:0,c2x20:0}, client:{c20:0,c40:0,c2x20:0}},
+  {place:"الصالحية", market:{c20:0,c40:0,c2x20:0}, client:{c20:16500,c40:0,c2x20:0}},
+  {place:"الفيوم", market:{c20:0,c40:0,c2x20:0}, client:{c20:0,c40:0,c2x20:0}}
+];
+
+// تحميل وعرض البيانات
+function render(list){
+  const tbody = document.getElementById("tableBody");
+  tbody.innerHTML = '';
+  list.forEach(row => {
+    const tr = document.createElement("tr");
+    tr.innerHTML = `
+      <td contenteditable="true">${row.clientName || ""}</td>
+      <td contenteditable="true">${row.place || ""}</td>
+      <td contenteditable="true">${row.market?.c20 || 0}</td>
+      <td contenteditable="true">${row.market?.c40 || 0}</td>
+      <td contenteditable="true">${row.market?.c2x20 || 0}</td>
+      <td contenteditable="true">${row.commission || commission}</td>
+      <td contenteditable="true">${row.client?.c20 || 0}</td>
+      <td contenteditable="true">${row.client?.c40 || 0}</td>
+      <td contenteditable="true">${row.client?.c2x20 || 0}</td>
+      <td><button class="saveRowButton">💾 حفظ</button></td>
+    `;
+    tbody.appendChild(tr);
+
+    tr.querySelector(".saveRowButton").addEventListener("click", ()=>{
+      const cells = tr.children;
+      const newEntry = {
+        clientName: cells[0].innerText,
+        place: cells[1].innerText,
+        market: {c20:+cells[2].innerText, c40:+cells[3].innerText, c2x20:+cells[4].innerText},
+        commission: +cells[5].innerText,
+        client: {c20:+cells[6].innerText, c40:+cells[7].innerText, c2x20:+cells[8].innerText}
+      };
+      data.push(newEntry);
+      database.ref('prices').set(data)
+        .then(()=>{cells[9].innerHTML="تم الحفظ ✅";})
+        .catch(err=>console.error(err));
+    });
+  });
+}
+
+function searchData(){
+  const value = document.getElementById("search").value.toLowerCase();
+  const filtered = data.filter(d=>
+    (d.place||"").toLowerCase().includes(value) ||
+    (d.clientName||"").toLowerCase().includes(value)
+  );
+  render(filtered);
+}
+
+function saveData(){
+  database.ref('prices').set(data)
+    .then(()=>alert('تم حفظ البيانات بنجاح ✅'))
+    .catch(err=>console.error(err));
+}
+
+// إضافة صف جديد
+document.getElementById("addRowButton").addEventListener("click", ()=>{
+  const tbody = document.getElementById("tableBody");
+  const tr = document.createElement("tr");
+  tr.innerHTML = `
+    <td contenteditable="true">اسم العميل</td>
+    <td contenteditable="true">اسم المكان</td>
+    <td contenteditable="true">0</td>
+    <td contenteditable="true">0</td>
+    <td contenteditable="true">0</td>
+    <td contenteditable="true">${commission}</td>
+    <td contenteditable="true">0</td>
+    <td contenteditable="true">0</td>
+    <td contenteditable="true">0</td>
+    <td><button class="saveRowButton">💾 حفظ</button></td>
+  `;
+  tbody.appendChild(tr);
+
+  tr.querySelector(".saveRowButton").addEventListener("click", ()=>{
+    const cells = tr.children;
+    const newEntry = {
+      clientName: cells[0].innerText,
+      place: cells[1].innerText,
+      market: {c20:+cells[2].innerText, c40:+cells[3].innerText, c2x20:+cells[4].innerText},
+      commission: +cells[5].innerText,
+      client: {c20:+cells[6].innerText, c40:+cells[7].innerText, c2x20:+cells[8].innerText}
+    };
+    data.push(newEntry);
+    database.ref('prices').set(data)
+      .then(()=>{cells[9].innerHTML="تم الحفظ ✅";})
+      .catch(err=>console.error(err));
+  });
+});
+
+render(data);
+</script>
+</body>
+</html>
