@@ -3,63 +3,137 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>تسجيل الدخول - أسعار مكتب الصفا</title>
+<title>تسجيل الدخول</title>
+
 <style>
+* { box-sizing:border-box; }
 body {
-  font-family: Arial; margin:0; padding:0;
-  background: url('logo.png') no-repeat center center fixed;
-  background-size: cover; filter: blur(8px);
+  margin:0;
+  font-family:Arial;
+  overflow:hidden;
 }
-.overlay {
-  position: fixed; top:0; left:0; width:100%; height:100%;
-  background: rgba(0,0,0,0.5);
-  display:flex; justify-content:center; align-items:center;
+
+/* خلفية بلور */
+.bg {
+  position:fixed;
+  width:100%;
+  height:100%;
+  background:url("logo.png") center/cover no-repeat;
+  filter:blur(10px);
+  z-index:-1;
 }
+
+/* بوكس اللوجين */
 .login-box {
-  background:#fff; padding:30px; border-radius:15px; text-align:center;
-  box-shadow: 0 5px 20px rgba(0,0,0,0.3);
-  animation: fadeIn 1s ease-in-out;
+  width:350px;
+  margin:120px auto;
+  background:rgba(255,255,255,0.95);
+  padding:30px;
+  border-radius:15px;
+  text-align:center;
+  box-shadow:0 0 20px rgba(0,0,0,0.2);
 }
+
+/* اللوجو */
 .login-box img {
-  max-width:150px; margin-bottom:10px; animation: logoMove 2s infinite alternate;
+  width:120px;
+  margin-bottom:10px;
+  animation:float 3s ease-in-out infinite;
 }
-input { display:block; width:100%; margin:10px 0; padding:12px; border-radius:10px; border:1px solid #ccc; font-size:16px; }
+
+/* عنوان */
+h2 {
+  margin-bottom:20px;
+}
+
+/* Inputs */
+input {
+  width:100%;
+  padding:12px;
+  margin:10px 0;
+  border-radius:10px;
+  border:1px solid #ccc;
+  font-size:16px;
+}
+
+/* زر */
 button {
-  padding:12px; width:100%; background:#27ae60; color:#fff; border:none; border-radius:10px; font-size:16px; cursor:pointer;
+  width:100%;
+  padding:12px;
+  margin-top:10px;
+  background:#27ae60;
+  color:#fff;
+  border:none;
+  border-radius:10px;
+  font-size:16px;
+  cursor:pointer;
+  transition:0.3s;
 }
-button:hover { background:#2ecc71; }
-@keyframes logoMove { 0%{transform: translateY(0);} 100%{transform: translateY(-10px);} }
-@keyframes fadeIn { 0%{opacity:0;} 100%{opacity:1;} }
+
+button:hover {
+  background:#219150;
+}
+
+/* أنيميشن */
+@keyframes float {
+  50% { transform:translateY(-10px); }
+}
 </style>
 </head>
+
 <body>
-<div class="overlay">
-  <div class="login-box">
-    <img src="logo.png" alt="Logo">
-    <h2>أسعار نقلات مكتب الصفا - 2026</h2>
-    <input type="text" id="username" placeholder="اسم المستخدم">
-    <input type="password" id="password" placeholder="كلمة السر">
-    <button onclick="login()">تسجيل الدخول</button>
-  </div>
+
+<div class="bg"></div>
+
+<div class="login-box">
+  <img src="logo.png">
+  <h2>أسعار نقلات مكتب الصفا - 2026</h2>
+
+  <input type="text" id="username" placeholder="اسم المستخدم">
+  <input type="password" id="password" placeholder="كلمة السر">
+
+  <button onclick="login()">تسجيل الدخول</button>
 </div>
 
-<script>
-const users = [
-  {username:"ahmed", password:"1234"},
-  {username:"hesham", password:"1234"},
-  {username:"omar", password:"1234"},
-  {username:"sabry", password:"1234"}
-];
+<!-- Firebase -->
+<script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-app-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-auth-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-database-compat.js"></script>
 
-function login(){
-  const u = document.getElementById('username').value;
-  const p = document.getElementById('password').value;
-  const user = users.find(x=>x.username===u && x.password===p);
-  if(user) {
-    localStorage.setItem('currentUser', u);
-    window.location.href = 'dashboard.html';
-  } else alert('خطأ في اسم المستخدم أو كلمة السر');
+<script>
+const firebaseConfig = {
+    apiKey: "AIzaSyARqSgfh78TqFQ2hhZaAtUaVQFqlPuRM3w",
+    authDomain: "trialsafaprices2026.firebaseapp.com",
+    databaseURL: "https://trialsafaprices2026-default-rtdb.firebaseio.com",
+    projectId: "trialsafaprices2026",
+    storageBucket: "trialsafaprices2026.appspot.com",
+    messagingSenderId: "177091434445",
+    appId: "1:177091434445:web:568b6ae3ba270a21d4d684"
+};
+
+firebase.initializeApp(firebaseConfig);
+const auth = firebase.auth();
+
+function login() {
+    const email = document.getElementById("username").value;
+    const password = document.getElementById("password").value;
+
+    auth.signInWithEmailAndPassword(email, password)
+    .then((userCredential) => {
+        const user = userCredential.user;
+
+        // نحفظ اليوزر
+        localStorage.setItem("username", user.email);
+
+        // دخول على الداشبورد
+        window.location = "dashboard.html";
+    })
+    .catch((error) => {
+        alert("بيانات الدخول غير صحيحة ❌");
+        console.error(error);
+    });
 }
 </script>
+
 </body>
 </html>

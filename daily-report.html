@@ -5,22 +5,38 @@
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>بيان الشغل اليومي</title>
 <style>
-body { font-family: Arial; padding: 15px; background:#eef2f7; margin:0; }
+body { font-family: Arial; margin:0; padding:15px; background:#eef2f7; }
 .container { max-width:1200px; margin:auto; }
 .header { text-align:center; margin-bottom:20px; }
-.header img { max-width:200px; margin-bottom:10px; }
-table { width:100%; border-collapse: collapse; background:#fff; border-radius:10px; overflow:hidden; margin-bottom:20px; }
+.header img { max-width:200px; filter: blur(1px); }
+.header h2 { margin:10px 0; font-size:24px; }
+.top-buttons { margin:15px 0; text-align:center; }
+.top-buttons button { padding:10px 20px; margin:5px; border:none; border-radius:10px; cursor:pointer; }
+.logout-btn { background:#95a5a6; color:#fff; }
+.back-btn { background:#34495e; color:#fff; }
+.add-row-btn { background:#f39c12; color:#fff; }
+table { width:100%; border-collapse: collapse; background:#fff; border-radius:10px; overflow:hidden; margin-top:15px; }
 th, td { border:1px solid #ddd; padding:10px; text-align:center; font-size:14px; }
 th { background:#2c3e50; color:#fff; }
 tr:nth-child(even){background:#f9f9f9;}
-button { padding:8px 12px; margin:5px; border:none; border-radius:5px; background:#27ae60; color:#fff; cursor:pointer; }
+.select-cell { width:100%; }
+.save-btn, .delete-btn { padding:5px 10px; border:none; border-radius:5px; cursor:pointer; }
+.save-btn { background:#27ae60; color:#fff; }
+.delete-btn { background:#c0392b; color:#fff; }
 </style>
 </head>
 <body>
+
 <div class="container">
   <div class="header">
-    <img src="logo.png" alt="Logo">
-    <h2>📋 بيان الشغل اليومي</h2>
+    <img src="logo.png" alt="logo">
+    <h2>📋 بيان الشغل اليومي - 2026</h2>
+  </div>
+
+  <div class="top-buttons">
+    <button class="back-btn" onclick="goDashboard()">⬅ العودة للوحة التحكم</button>
+    <button class="logout-btn" onclick="logout()">تسجيل خروج</button>
+    <button class="add-row-btn" id="addRowButton">إضافة صف جديد</button>
   </div>
 
   <table>
@@ -28,24 +44,23 @@ button { padding:8px 12px; margin:5px; border:none; border-radius:5px; backgroun
       <tr>
         <th>تاريخ اليوم</th>
         <th>حجم الحاوية</th>
-        <th>المكان</th>
+        <th>مكان البداية</th>
         <th>مكان النقلة</th>
         <th>التوكيلات</th>
         <th>صادر/وارد</th>
         <th>العميل</th>
+        <th>إجراءات</th>
       </tr>
     </thead>
-    <tbody id="dailyBody"></tbody>
+    <tbody id="tableBody"></tbody>
   </table>
-  <button onclick="addRow()">إضافة صف جديد</button>
-  <button onclick="saveDaily()">حفظ اليوم</button>
-  <button onclick="window.location.href='dashboard.html'">العودة للوحة التحكم</button>
 </div>
 
 <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-app-compat.js"></script>
 <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-database-compat.js"></script>
 
 <script>
+// Firebase
 const firebaseConfig = {
   apiKey: "AIzaSyARqSgfh78TqFQ2hhZaAtUaVQFqlPuRM3w",
   authDomain: "trialsafaprices2026.firebaseapp.com",
@@ -56,42 +71,97 @@ const firebaseConfig = {
   appId: "1:177091434445:web:568b6ae3ba270a21d4d684"
 };
 firebase.initializeApp(firebaseConfig);
-const db = firebase.database();
+const database = firebase.database();
 
-let dailyData = [];
+// حماية الصفحة
+firebase.auth().onAuthStateChanged((user) => {
+  if (!user) {
+    window.location = "index.html";
+  }
+});
 
-function addRow() {
-  const tbody = document.getElementById('dailyBody');
-  const tr = document.createElement('tr');
-  const today = new Date().toISOString().slice(0,10);
+function goDashboard(){ window.location="dashboard.html"; }
+function logout(){ localStorage.removeItem("username"); window.location="index.html"; }
+
+// القيم الجاهزة
+const containerSizes = ["20","40","2×20"];
+const startPlaces = ["الإسكندرية","الدخيلة"];
+const movePlaces = ["15مايو","ابو المطامير","ابو رواش","أبيس","اسماعيلية","الصالحية","اسيوط","اشمون","منوفيه","اكتوبر","الاقصر","الالف مصنع","التجمع الخامس","الجيزه الصف","الخانكه","الخطاطبة","الدلنجات","السادات","السخنه","السلام","السوق الحر","السويس","الشرقية","الصالحية","العاشر","العاصمة الادارية","العامريه","العباسية","العبور","قليوب","الغردقة","الفيوم","القاهرة","القليوبية","الكيلو 57","المعادى","المقطم","المنصورة","المنيا","النوبارية","انشاص","ايتاي البارود","برج العرب","بسيون","بلبيس","بلطيم","بنها","بني سويف","بهتيم","جيزه","مقطم","تحدي","وادي النطرون","حلوان - عرب مساعد","حوش عيسي","خورشيد","دسوق","دلنجات","دمنهور","دمياط","رشيد","شبراخيت","شق التعبان","طريق الاسماعيلية","طنطا","قرية الاسد","قرية بسيون","قطاميه","قليوب","قويسنا","كفر الدوار","كفر الزيات","كفر الشيخ","كفر داوود","كوم حماده","محرم بك","مدينة السلام","مدينة الشروق","مدينة بدر","مدينة نصر","مرغم","مركز بدر","مركز بسيون","مسطرد","من السخنه الي العاشر","نوبارية","إيتاي","توفيقية","نوبارية بور سعيد","وادي النطرون"];
+const agents = ["CMA","MSC","MESCO","بان مارين","MEARSK"];
+const directions = ["صادر","وارد"];
+const clients = ["النساجون","موفت","هيثم","سحر","شيماء","مروة","مارينوفا","إيماج","الأمراء","أمل","GWL","الماسة","محمد أمين","CQ","بى تريد","سيجل"];
+
+let data = [];
+
+// تحميل البيانات
+function loadData(){
+  database.ref('daily').on('value', snapshot => {
+    data = snapshot.val() || [];
+    renderTable(data);
+  });
+}
+
+// إنشاء صف
+function createRow(entry){
+  const tbody = document.getElementById("tableBody");
+  const tr = document.createElement("tr");
+
+  const today = new Date().toLocaleDateString("ar-EG");
+
   tr.innerHTML = `
-    <td contenteditable="false">${today}</td>
-    <td contenteditable="true" data-type="size">20</td>
-    <td contenteditable="true" data-type="place">الاسكندرية</td>
-    <td contenteditable="true" data-type="destination">اكتب المكان</td>
-    <td contenteditable="true" data-type="agency">CMA</td>
-    <td contenteditable="true" data-type="type">صادر</td>
-    <td contenteditable="true" data-type="client">النساجون</td>
+    <td contenteditable="false">${entry.date || today}</td>
+    <td><select class="select-cell">${containerSizes.map(v=>`<option ${v===entry.size?"selected":""}>${v}</option>`).join("")}</select></td>
+    <td><select class="select-cell">${startPlaces.map(v=>`<option ${v===entry.start?"selected":""}>${v}</option>`).join("")}</select></td>
+    <td contenteditable="true">${entry.move || ""}</td>
+    <td><select class="select-cell">${agents.map(v=>`<option ${v===entry.agent?"selected":""}>${v}</option>`).join("")}</select></td>
+    <td><select class="select-cell">${directions.map(v=>`<option ${v===entry.direction?"selected":""}>${v}</option>`).join("")}</select></td>
+    <td contenteditable="true">${entry.client || ""}</td>
+    <td>
+      <button class="save-btn">💾 حفظ</button>
+      <button class="delete-btn">🗑 حذف</button>
+    </td>
   `;
+
   tbody.appendChild(tr);
+
+  // زر الحفظ للصف
+  tr.querySelector(".save-btn").addEventListener("click", ()=>{
+    const cells = tr.children;
+    entry.date = cells[0].innerText;
+    entry.size = cells[1].querySelector("select").value;
+    entry.start = cells[2].querySelector("select").value;
+    entry.move = cells[3].innerText;
+    entry.agent = cells[4].querySelector("select").value;
+    entry.direction = cells[5].querySelector("select").value;
+    entry.client = cells[6].innerText;
+
+    if(!data.includes(entry)) data.push(entry);
+
+    database.ref('daily').set(data).then(()=>alert("تم حفظ البيانات ✅"));
+  });
+
+  // زر الحذف
+  tr.querySelector(".delete-btn").addEventListener("click", ()=>{
+    if(confirm("هل أنت متأكد من حذف هذا الصف؟")){
+      data = data.filter(d=>d!==entry);
+      database.ref('daily').set(data).then(()=> loadData());
+    }
+  });
 }
 
-function saveDaily() {
-  const rows = Array.from(document.getElementById('dailyBody').children);
-  dailyData = rows.map(tr => ({
-    date: tr.children[0].innerText,
-    size: tr.children[1].innerText,
-    place: tr.children[2].innerText,
-    destination: tr.children[3].innerText,
-    agency: tr.children[4].innerText,
-    type: tr.children[5].innerText,
-    client: tr.children[6].innerText
-  }));
-  const today = new Date().toISOString().slice(0,10);
-  db.ref('dailyReports/' + today).set(dailyData)
-    .then(()=>alert('تم حفظ بيانات اليوم ✅'))
-    .catch(err=>console.error(err));
+// عرض الجدول
+function renderTable(list){
+  const tbody = document.getElementById("tableBody");
+  tbody.innerHTML = "";
+  list.forEach(entry => createRow(entry));
 }
+
+// زر إضافة صف جديد
+document.getElementById("addRowButton").addEventListener("click", ()=>{
+  createRow({});
+});
+
+loadData();
 </script>
 </body>
 </html>

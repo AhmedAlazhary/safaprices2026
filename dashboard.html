@@ -5,30 +5,48 @@
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>لوحة التحكم</title>
 <style>
-body { font-family: Arial; text-align:center; padding:50px; background:#eef2f7; }
-button {
-  padding:15px 30px; margin:20px; font-size:18px;
-  border:none; border-radius:10px; cursor:pointer; background:#3498db; color:#fff;
-}
-button:hover { background:#2980b9; }
+body { font-family: Arial; margin:0; padding:0; background:#eef2f7; }
+.container { max-width:900px; margin:50px auto; text-align:center; }
+h2 { margin-bottom:30px; }
+button { padding:15px 25px; margin:10px; font-size:16px; border:none; border-radius:10px; cursor:pointer; transition:0.3s; }
+button:hover { opacity:0.8; }
+.btn-prices { background:#3498db; color:#fff; }
+.btn-daily { background:#e74c3c; color:#fff; }
+.btn-logout { background:#95a5a6; color:#fff; }
 </style>
 </head>
 <body>
-<h1>أهلا بك في نظام مكتب الصفا</h1>
-<button onclick="window.location.href='prices.html'">جدول الأسعار</button>
-<button onclick="window.location.href='daily-report.html'">بيان الشغل اليومي</button>
-<button onclick="logout()">تسجيل الخروج</button>
+
+<div class="container">
+  <h2>لوحة التحكم - مرحبًا <span id="userLabel"></span></h2>
+
+  <button class="btn-prices" onclick="goPrices()">صفحة الأسعار</button>
+  <button class="btn-daily" onclick="goDaily()">بيان الشغل اليومي</button>
+  <button class="btn-logout" onclick="logout()">تسجيل خروج</button>
+</div>
 
 <script>
+document.getElementById("userLabel").innerText = localStorage.getItem("username") || "مستخدم";
+
+// انتقال للصفحات
+function goPrices(){ window.location="prices.html"; }
+function goDaily(){ window.location="daily.html"; }
 function logout(){
-  localStorage.removeItem('currentUser');
-  window.location.href = 'index.html';
+  firebase.auth().signOut().then(()=>{
+    localStorage.removeItem("username");
+    window.location="index.html";
+  });
 }
 
-// منع الدخول بدون تسجيل
-if(!localStorage.getItem('currentUser')){
-  window.location.href = 'index.html';
-}
-</script>
+// حماية الصفحة لو مش متسجل دخول
+firebase.auth().onAuthStateChanged((user) => {
+  if (!user) {
+    window.location = "index.html";
+  }
+});
+
+<!-- Firebase -->
+<script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-app-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-auth-compat.js"></script>
 </body>
 </html>
