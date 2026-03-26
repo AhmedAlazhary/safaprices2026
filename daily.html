@@ -195,6 +195,7 @@ input:focus {
   border: 1px solid var(--border);
   border-radius: 16px;
   background: var(--surface-soft);
+  -webkit-overflow-scrolling: touch;
 }
 
 table {
@@ -267,6 +268,19 @@ tr:last-child td {
   font-size: 0.92rem;
 }
 
+.card-actions {
+  align-items: center;
+}
+
+.toggle-btn {
+  background: #eef5fb;
+  color: var(--primary);
+}
+
+.day-card.collapsed .table-wrap {
+  display: none;
+}
+
 .empty-state {
   padding: 22px;
   text-align: center;
@@ -317,14 +331,80 @@ tr:last-child td {
     min-width: 100%;
   }
 
-  th,
-  td {
-    padding: 8px 6px;
-  }
-
   input,
   button {
     font-size: 0.92rem;
+  }
+
+  .table-wrap {
+    overflow: visible;
+    border: none;
+    background: transparent;
+  }
+
+  table {
+    min-width: 100%;
+    background: transparent;
+  }
+
+  thead {
+    display: none;
+  }
+
+  tbody {
+    display: grid;
+    gap: 12px;
+  }
+
+  tr {
+    display: block;
+    background: #fff;
+    border: 1px solid var(--border);
+    border-radius: 16px;
+    box-shadow: var(--shadow);
+    padding: 8px 10px;
+  }
+
+  tr:nth-child(even) {
+    background: #fff;
+  }
+
+  td {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 12px;
+    width: 100%;
+    padding: 8px 0;
+    border: none;
+    border-bottom: 1px solid #edf2f7;
+    text-align: right;
+    white-space: normal;
+  }
+
+  td:last-child {
+    border-bottom: none;
+  }
+
+  td::before {
+    content: attr(data-label);
+    color: var(--muted);
+    font-weight: 700;
+    min-width: 95px;
+    text-align: right;
+  }
+
+  td input {
+    text-align: left;
+  }
+
+  .date-cell {
+    color: var(--primary);
+    font-size: 0.95rem;
+  }
+
+  .delete-btn {
+    width: 100%;
   }
 }
 
@@ -336,6 +416,31 @@ tr:last-child td {
   .selected-badge {
     width: 100%;
     justify-content: center;
+  }
+
+  .panel,
+  .day-card {
+    border-radius: 14px;
+  }
+
+  .card-actions,
+  .toolbar-actions {
+    gap: 8px;
+  }
+
+  td {
+    flex-direction: column;
+    align-items: stretch;
+    gap: 8px;
+    padding: 10px 0;
+  }
+
+  td::before {
+    min-width: auto;
+  }
+
+  td input {
+    text-align: center;
   }
 }
 </style>
@@ -435,6 +540,7 @@ let currentDate = today;
 let dailyData = {};
 let saveTimers = {};
 let savingDates = {};
+let collapsedDates = {};
 
 datePicker.value = today;
 
@@ -509,16 +615,16 @@ function formatArabicDate(date) {
 function renderRows(rows, date, scope) {
   return rows.map((row, index) => `
     <tr>
-      <td class="date-cell">${date}</td>
-      <td><input type="number" min="0" inputmode="numeric" data-date="${date}" data-index="${index}" data-field="containerCount" data-scope="${scope}" value="${escapeHtml(row.containerCount)}"></td>
-      <td><input list="sizes" data-date="${date}" data-index="${index}" data-field="size" data-scope="${scope}" value="${escapeHtml(row.size)}"></td>
-      <td><input list="places" data-date="${date}" data-index="${index}" data-field="place" data-scope="${scope}" value="${escapeHtml(row.place)}"></td>
-      <td><input list="moves" data-date="${date}" data-index="${index}" data-field="move" data-scope="${scope}" value="${escapeHtml(row.move)}"></td>
-      <td><input list="agencies" data-date="${date}" data-index="${index}" data-field="agency" data-scope="${scope}" value="${escapeHtml(row.agency)}"></td>
-      <td><input list="types" data-date="${date}" data-index="${index}" data-field="type" data-scope="${scope}" value="${escapeHtml(row.type)}"></td>
-      <td><input list="clients" data-date="${date}" data-index="${index}" data-field="client" data-scope="${scope}" value="${escapeHtml(row.client)}"></td>
-      <td><input data-date="${date}" data-index="${index}" data-field="notes" data-scope="${scope}" value="${escapeHtml(row.notes)}" placeholder="اكتب ملاحظات"></td>
-      <td><button class="delete-btn" onclick="deleteRow('${date}', ${index})">حذف</button></td>
+      <td class="date-cell" data-label="التاريخ">${date}</td>
+      <td data-label="عدد الحاويات"><input type="number" min="0" inputmode="numeric" data-date="${date}" data-index="${index}" data-field="containerCount" data-scope="${scope}" value="${escapeHtml(row.containerCount)}"></td>
+      <td data-label="الحجم"><input list="sizes" data-date="${date}" data-index="${index}" data-field="size" data-scope="${scope}" value="${escapeHtml(row.size)}"></td>
+      <td data-label="المكان"><input list="places" data-date="${date}" data-index="${index}" data-field="place" data-scope="${scope}" value="${escapeHtml(row.place)}"></td>
+      <td data-label="مكان النقلة"><input list="moves" data-date="${date}" data-index="${index}" data-field="move" data-scope="${scope}" value="${escapeHtml(row.move)}"></td>
+      <td data-label="التوكيل"><input list="agencies" data-date="${date}" data-index="${index}" data-field="agency" data-scope="${scope}" value="${escapeHtml(row.agency)}"></td>
+      <td data-label="نوع"><input list="types" data-date="${date}" data-index="${index}" data-field="type" data-scope="${scope}" value="${escapeHtml(row.type)}"></td>
+      <td data-label="العميل"><input list="clients" data-date="${date}" data-index="${index}" data-field="client" data-scope="${scope}" value="${escapeHtml(row.client)}"></td>
+      <td data-label="ملاحظات"><input data-date="${date}" data-index="${index}" data-field="notes" data-scope="${scope}" value="${escapeHtml(row.notes)}" placeholder="اكتب ملاحظات"></td>
+      <td data-label="حذف"><button class="delete-btn" onclick="deleteRow('${date}', ${index})">حذف</button></td>
     </tr>
   `).join("");
 }
@@ -543,14 +649,16 @@ function renderArchive() {
 
   archiveContainer.innerHTML = dates.map(date => {
     const rows = ensureDateRows(date);
+    const isCollapsed = Boolean(collapsedDates[date]);
     return `
-      <article class="day-card">
+      <article class="day-card ${isCollapsed ? "collapsed" : ""}">
         <div class="card-head">
           <div class="card-meta">
             <h3 class="card-title">جدول ${date}</h3>
             <div class="card-date">${formatArabicDate(date)}</div>
           </div>
           <div class="card-actions">
+            <button class="toggle-btn" onclick="toggleArchiveDay('${date}')">${isCollapsed ? "فتح اليوم" : "طي اليوم"}</button>
             <button class="save-btn" onclick="focusDate('${date}')">فتح هذا التاريخ</button>
             <button class="add-btn" onclick="addRow('${date}')">إضافة سطر</button>
             <button class="save-btn" onclick="saveDate('${date}', true)">حفظ</button>
@@ -583,6 +691,11 @@ function renderArchive() {
 
 function renderAll() {
   renderCurrentDate();
+  renderArchive();
+}
+
+function toggleArchiveDay(date) {
+  collapsedDates[date] = !collapsedDates[date];
   renderArchive();
 }
 
@@ -675,15 +788,26 @@ function loadAllData() {
   db.ref("daily").once("value", snap => {
     dailyData = normalizeSnapshotData(snap.val());
     mergeLocalDrafts();
+    initializeCollapsedDates();
     ensureDateRows(currentDate);
     renderAll();
     setCurrentStatus("تم تحميل البيانات ويمكنك التعديل على أي تاريخ.");
   }).catch(() => {
     dailyData = {};
     mergeLocalDrafts();
+    initializeCollapsedDates();
     ensureDateRows(currentDate);
     renderAll();
     setCurrentStatus("تعذر تحميل البيانات من الخادم، تم فتح النسخ المحلية المتاحة.", true);
+  });
+}
+
+function initializeCollapsedDates() {
+  const isMobile = window.innerWidth <= 768;
+  getSortedDates().forEach(date => {
+    if (date !== currentDate && collapsedDates[date] === undefined) {
+      collapsedDates[date] = isMobile;
+    }
   });
 }
 
@@ -691,6 +815,7 @@ function focusDate(date) {
   updateDateRowsFromDom(currentDate);
   currentDate = date;
   datePicker.value = date;
+  collapsedDates[date] = false;
   renderAll();
   setCurrentStatus("تم فتح تاريخ " + date);
   window.scrollTo({ top: 0, behavior: "smooth" });
