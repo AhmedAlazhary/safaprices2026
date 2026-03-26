@@ -534,17 +534,15 @@ function getSortedDates() {
 }
 
 function renderArchive() {
-  const dates = getSortedDates();
+  const dates = getSortedDates().filter(date => date !== currentDate);
 
   if (!dates.length) {
-    archiveContainer.innerHTML = '<div class="empty-state">لا توجد أيام محفوظة بعد.</div>';
+    archiveContainer.innerHTML = '<div class="empty-state">لا توجد أيام أخرى في الأرشيف حاليًا. بيانات التاريخ المفتوح تظهر في الجدول العلوي.</div>';
     return;
   }
 
   archiveContainer.innerHTML = dates.map(date => {
     const rows = ensureDateRows(date);
-    const isSelected = date === currentDate;
-
     return `
       <article class="day-card">
         <div class="card-head">
@@ -553,7 +551,6 @@ function renderArchive() {
             <div class="card-date">${formatArabicDate(date)}</div>
           </div>
           <div class="card-actions">
-            ${isSelected ? '<span class="selected-badge">التاريخ المفتوح الآن</span>' : ''}
             <button class="save-btn" onclick="focusDate('${date}')">فتح هذا التاريخ</button>
             <button class="add-btn" onclick="addRow('${date}')">إضافة سطر</button>
             <button class="save-btn" onclick="saveDate('${date}', true)">حفظ</button>
@@ -704,22 +701,26 @@ function openSelectedDate() {
   focusDate(selectedDate);
 }
 
-function addRow(date) {
+function syncDateFromDom(date) {
   updateDateRowsFromDom(date);
   ensureDateRows(date);
-  saveDate(date, false);
+  saveDraft(date);
+}
+
+function addRow(date) {
+  syncDateFromDom(date);
   dailyData[date].push(getEmptyRow());
   saveDraft(date);
   renderAll();
+  scheduleAutoSave(date);
 
   if (date === currentDate) {
-    setCurrentStatus("تمت إضافة سطر جديد مع حفظ التعديلات الحالية.");
+    setCurrentStatus("تمت إضافة سطر جديد والبيانات الحالية محفوظة تلقائيًا.");
   }
 }
 
 function deleteRow(date, index) {
-  updateDateRowsFromDom(date);
-  ensureDateRows(date);
+  syncDateFromDom(date);
   dailyData[date].splice(index, 1);
 
   if (!dailyData[date].length) {
@@ -728,7 +729,7 @@ function deleteRow(date, index) {
 
   saveDraft(date);
   renderAll();
-  saveDate(date, false);
+  scheduleAutoSave(date);
 }
 
 function saveDate(date, showAlert = false) {
