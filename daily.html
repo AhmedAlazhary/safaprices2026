@@ -337,74 +337,42 @@ tr:last-child td {
   }
 
   .table-wrap {
-    overflow: visible;
-    border: none;
-    background: transparent;
+    overflow-x: auto;
+    overflow-y: visible;
+    border: 1px solid var(--border);
+    background: var(--surface-soft);
   }
 
   table {
-    min-width: 100%;
-    background: transparent;
+    min-width: 980px;
   }
 
-  thead {
-    display: none;
-  }
-
-  tbody {
-    display: grid;
-    gap: 12px;
-  }
-
-  tr {
-    display: block;
-    background: #fff;
-    border: 1px solid var(--border);
-    border-radius: 16px;
-    box-shadow: var(--shadow);
-    padding: 8px 10px;
-  }
-
-  tr:nth-child(even) {
-    background: #fff;
-  }
-
+  th,
   td {
-    display: flex;
-    align-items: center;
-    justify-content: space-between;
-    gap: 12px;
-    width: 100%;
-    padding: 8px 0;
-    border: none;
-    border-bottom: 1px solid #edf2f7;
-    text-align: right;
-    white-space: normal;
-  }
-
-  td:last-child {
-    border-bottom: none;
+    padding: 8px 6px;
+    font-size: 0.84rem;
+    white-space: nowrap;
   }
 
   td::before {
-    content: attr(data-label);
-    color: var(--muted);
-    font-weight: 700;
-    min-width: 95px;
-    text-align: right;
+    content: none;
   }
 
   td input {
-    text-align: left;
+    min-width: 90px;
+    padding: 8px 6px;
+    font-size: 0.84rem;
+    text-align: center;
   }
 
   .date-cell {
-    color: var(--primary);
-    font-size: 0.95rem;
+    font-size: 0.84rem;
   }
 
   .delete-btn {
-    width: 100%;
+    width: auto;
+    min-width: 64px;
+    padding: 8px 10px;
   }
 }
 
@@ -428,19 +396,20 @@ tr:last-child td {
     gap: 8px;
   }
 
-  td {
-    flex-direction: column;
-    align-items: stretch;
-    gap: 8px;
-    padding: 10px 0;
-  }
-
-  td::before {
-    min-width: auto;
-  }
-
   td input {
-    text-align: center;
+    min-width: 82px;
+    font-size: 0.8rem;
+    padding: 7px 5px;
+  }
+
+  th,
+  td {
+    font-size: 0.78rem;
+    padding: 7px 5px;
+  }
+
+  table {
+    min-width: 920px;
   }
 }
 </style>
