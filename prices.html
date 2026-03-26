@@ -47,10 +47,11 @@ input {
 }
 
 .table-wrap {
-  overflow: auto;
-  max-height: 70vh;
+  overflow-x: auto;
+  overflow-y: visible;
   border-radius: 12px;
   box-shadow: 0 8px 24px rgba(44, 62, 80, 0.08);
+  position: relative;
 }
 
 table {
@@ -78,6 +79,7 @@ thead th {
   background: #eaf2f8;
   font-weight: bold;
   position: sticky;
+  top: 0;
   z-index: 8;
 }
 
@@ -174,7 +176,7 @@ header > div {
   }
 
   .table-wrap {
-    max-height: 65vh;
+    overflow-x: auto;
   }
 
   th,
@@ -200,7 +202,7 @@ header > div {
   }
 
   .table-wrap {
-    max-height: 60vh;
+    overflow-x: auto;
   }
 
   thead tr:nth-child(2) th {
@@ -284,6 +286,31 @@ firebase.auth().onAuthStateChanged(user => {
 let data = [];
 let filteredData = null;
 
+function syncTableToData() {
+  const rows = document.querySelectorAll("#tableBody tr");
+
+  data = Array.from(rows).map(tr => {
+    const cells = tr.children;
+
+    return {
+      clientName: cells[0].innerText.trim(),
+      place: cells[1].innerText.trim(),
+      market: {
+        c20: Number(cells[2].innerText) || 0,
+        c40: Number(cells[3].innerText) || 0,
+        c2x20: Number(cells[4].innerText) || 0
+      },
+      commission: Number(cells[5].innerText) || 0,
+      client: {
+        c20: Number(cells[6].innerText) || 0,
+        c40: Number(cells[7].innerText) || 0,
+        c2x20: Number(cells[8].innerText) || 0
+      },
+      notes: cells[9].innerText.trim()
+    };
+  });
+}
+
 function loadData() {
   database.ref("prices").on("value", snapshot => {
     data = snapshot.val() || [];
@@ -340,6 +367,8 @@ function addRow() {
     return;
   }
 
+  syncTableToData();
+
   const newRow = {
     clientName: "",
     place: "",
@@ -360,6 +389,7 @@ function deleteRow(index) {
   }
 
   if (confirm("هل تريد حذف الصف؟")) {
+    syncTableToData();
     data.splice(index, 1);
     database.ref("prices").set(data);
   }
@@ -371,28 +401,7 @@ function saveAll() {
     return;
   }
 
-  const rows = document.querySelectorAll("#tableBody tr");
-
-  data = Array.from(rows).map(tr => {
-    const cells = tr.children;
-
-    return {
-      clientName: cells[0].innerText.trim(),
-      place: cells[1].innerText.trim(),
-      market: {
-        c20: Number(cells[2].innerText) || 0,
-        c40: Number(cells[3].innerText) || 0,
-        c2x20: Number(cells[4].innerText) || 0
-      },
-      commission: Number(cells[5].innerText) || 0,
-      client: {
-        c20: Number(cells[6].innerText) || 0,
-        c40: Number(cells[7].innerText) || 0,
-        c2x20: Number(cells[8].innerText) || 0
-      },
-      notes: cells[9].innerText.trim()
-    };
-  });
+  syncTableToData();
 
   database.ref("prices").set(data)
     .then(() => alert("تم الحفظ بنجاح"));
