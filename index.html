@@ -42,50 +42,21 @@ body::before {
   z-index: 0;
 }
 
-.intro-screen,
 .login-box {
   position: relative;
   z-index: 1;
-}
-
-.intro-screen {
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  justify-content: center;
-  gap: 14px;
-  animation: fadeOut 0.7s ease 2.1s forwards;
-}
-
-.intro-logo {
-  width: clamp(140px, 30vw, 240px);
-  height: auto;
-  filter: drop-shadow(0 10px 24px rgba(31, 79, 122, 0.18));
-}
-
-.intro-text {
-  color: var(--primary-dark);
-  font-size: clamp(1rem, 2.5vw, 1.25rem);
-  font-weight: bold;
-  text-align: center;
-}
-
-.login-box {
   background: var(--surface);
-  padding: 30px;
-  border-radius: 18px;
-  width: min(92vw, 420px);
+  padding: 34px 28px;
+  border-radius: 22px;
+  width: min(92vw, 460px);
   text-align: center;
   box-shadow: 0 12px 32px rgba(0, 0, 0, 0.16);
-  opacity: 0;
-  transform: translateY(18px);
-  animation: revealBox 0.7s ease 2.3s forwards;
   backdrop-filter: blur(6px);
 }
 
 .login-box img {
-  width: clamp(82px, 18vw, 110px);
-  margin-bottom: 12px;
+  width: clamp(95px, 18vw, 130px);
+  margin-bottom: 14px;
 }
 
 .login-title {
@@ -134,25 +105,11 @@ button:hover {
   background: #2980b9;
 }
 
-@keyframes fadeOut {
-  to {
-    opacity: 0;
-    visibility: hidden;
-    transform: scale(0.96);
-  }
-}
-
-@keyframes revealBox {
-  to {
-    opacity: 1;
-    transform: translateY(0);
-  }
-}
-
 @media (max-width: 480px) {
   .login-box {
-    padding: 22px 16px;
-    border-radius: 16px;
+    width: calc(100vw - 24px);
+    padding: 24px 16px;
+    border-radius: 18px;
   }
 
   input,
@@ -164,11 +121,6 @@ button:hover {
 </head>
 
 <body>
-
-<div class="intro-screen">
-  <img class="intro-logo" src="logo.gif" alt="شعار مكتب الصفا المتحرك">
-  <div class="intro-text">مكتب الصفا للنقل</div>
-</div>
 
 <div class="login-box">
   <img src="logo.gif" alt="شعار مكتب الصفا">
