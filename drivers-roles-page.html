@@ -1,0 +1,592 @@
+<!DOCTYPE html>
+<html lang="ar" dir="rtl">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>أدوار سواقين المكتب</title>
+
+<style>
+:root {
+  --bg: #eef3f8;
+  --surface: #ffffff;
+  --primary: #24415c;
+  --accent: #2f89d9;
+  --soft-blue: #dceefc;
+  --soft-gold: #fdf1d8;
+  --border: #d6e0ea;
+  --text: #1f2937;
+  --muted: #667085;
+  --shadow: 0 12px 28px rgba(36, 65, 92, 0.08);
+}
+
+* {
+  box-sizing: border-box;
+}
+
+body {
+  margin: 0;
+  font-family: Arial, sans-serif;
+  background: linear-gradient(180deg, #f5f8fc 0%, var(--bg) 100%);
+  color: var(--text);
+}
+
+header {
+  background: linear-gradient(135deg, #1f3243 0%, #2c3e50 100%);
+  color: white;
+  padding: 14px 18px;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  flex-wrap: wrap;
+}
+
+header img {
+  height: 56px;
+  width: auto;
+}
+
+header .brand {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+
+header h1 {
+  margin: 0;
+  font-size: clamp(1.05rem, 2.5vw, 1.5rem);
+}
+
+.header-actions,
+.toolbar-actions {
+  display: flex;
+  gap: 8px;
+  flex-wrap: wrap;
+}
+
+.container {
+  width: min(1240px, calc(100% - 24px));
+  margin: 18px auto 28px;
+}
+
+.panel {
+  background: var(--surface);
+  border-radius: 18px;
+  box-shadow: var(--shadow);
+  padding: 18px;
+}
+
+.title-block {
+  text-align: center;
+  margin-bottom: 18px;
+}
+
+.title-block h2 {
+  margin: 0 0 8px;
+  color: var(--primary);
+  font-size: clamp(1.2rem, 2.6vw, 1.8rem);
+}
+
+.title-block p {
+  margin: 0;
+  color: var(--muted);
+  font-size: 0.95rem;
+}
+
+.toolbar {
+  display: flex;
+  gap: 12px;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: 14px;
+}
+
+.search-box {
+  flex: 1 1 280px;
+}
+
+.search-box input {
+  width: 100%;
+  padding: 12px;
+  border-radius: 12px;
+  border: 1px solid #ccd7e2;
+  font-size: 15px;
+}
+
+.info-badge {
+  padding: 10px 12px;
+  border-radius: 12px;
+  background: #edf5fd;
+  color: var(--primary);
+  font-weight: bold;
+  font-size: 0.92rem;
+}
+
+.status-text {
+  color: var(--muted);
+  font-size: 0.92rem;
+  min-height: 22px;
+}
+
+.table-wrap {
+  overflow-x: auto;
+  border: 1px solid var(--border);
+  border-radius: 16px;
+  background: #f9fbfe;
+  -webkit-overflow-scrolling: touch;
+}
+
+table {
+  width: 100%;
+  min-width: 760px;
+  border-collapse: collapse;
+  background: white;
+}
+
+th,
+td {
+  border-bottom: 1px solid var(--border);
+  padding: 11px 10px;
+  text-align: center;
+  white-space: nowrap;
+}
+
+td[contenteditable="true"] {
+  background: #fff;
+  outline: none;
+}
+
+td[contenteditable="true"]:focus {
+  box-shadow: inset 0 0 0 2px rgba(47, 137, 217, 0.22);
+}
+
+thead th {
+  font-weight: bold;
+}
+
+.group-header {
+  background: var(--accent);
+  color: white;
+}
+
+.sub-header {
+  background: #eaf2fb;
+  color: var(--primary);
+}
+
+.place-col {
+  background: var(--soft-gold);
+  font-weight: bold;
+}
+
+.role-col {
+  background: var(--soft-blue);
+}
+
+.delete-col {
+  width: 86px;
+}
+
+.page-btn {
+  padding: 10px 14px;
+  border: none;
+  border-radius: 10px;
+  cursor: pointer;
+  font-size: 0.95rem;
+  font-weight: bold;
+}
+
+.ghost-btn {
+  background: rgba(255, 255, 255, 0.15);
+  color: white;
+}
+
+.add-btn {
+  background: #2980b9;
+  color: white;
+}
+
+.save-btn {
+  background: #27ae60;
+  color: white;
+}
+
+.delete-btn {
+  background: #e74c3c;
+  color: white;
+  padding: 8px 10px;
+  border: none;
+  border-radius: 8px;
+  cursor: pointer;
+}
+
+tbody tr:hover {
+  background: #fafcff;
+}
+
+.notes {
+  margin-top: 16px;
+  display: grid;
+  gap: 10px;
+}
+
+.note-card {
+  background: #fff8e8;
+  border: 1px solid #f0dfb4;
+  color: #6d4f16;
+  border-radius: 14px;
+  padding: 14px;
+}
+
+.note-label {
+  display: block;
+  margin-bottom: 8px;
+  font-weight: bold;
+}
+
+.note-input {
+  width: 100%;
+  border: 1px solid #ead8aa;
+  border-radius: 10px;
+  padding: 11px 12px;
+  font-size: 0.95rem;
+  font-family: inherit;
+  background: #fffdf8;
+}
+
+.empty-state {
+  padding: 18px;
+  text-align: center;
+  color: var(--muted);
+}
+
+@media (max-width: 768px) {
+  .container {
+    width: min(100% - 16px, 1000px);
+    margin-top: 14px;
+  }
+
+  .panel {
+    padding: 12px;
+    border-radius: 14px;
+  }
+
+  .toolbar {
+    align-items: stretch;
+  }
+
+  .header-actions,
+  .toolbar-actions,
+  .brand,
+  .info-badge,
+  .search-box {
+    width: 100%;
+  }
+
+  .header-actions .page-btn,
+  .toolbar-actions .page-btn {
+    flex: 1 1 140px;
+  }
+
+  th,
+  td {
+    padding: 9px 8px;
+    font-size: 0.88rem;
+  }
+}
+
+@media (max-width: 480px) {
+  table {
+    min-width: 700px;
+  }
+
+  th,
+  td {
+    padding: 8px 7px;
+    font-size: 0.82rem;
+  }
+}
+</style>
+</head>
+
+<body>
+<header>
+  <div class="brand">
+    <img src="logo.png" alt="شعار مكتب الصفا">
+    <h1>أدوار سواقين المكتب</h1>
+  </div>
+  <div class="header-actions">
+    <button class="page-btn ghost-btn" onclick="goBack()">رجوع</button>
+    <button class="page-btn ghost-btn" onclick="logout()">تسجيل خروج</button>
+  </div>
+</header>
+
+<div class="container">
+  <section class="panel">
+    <div class="title-block">
+      <h2>ادوار سواقين المكتب</h2>
+      <p>البيانات مستخرجة بالكامل من ملف الإكسيل ومضمنة داخل الكود بدون أي ترحيل أو نقص.</p>
+    </div>
+
+    <div class="toolbar">
+      <div class="search-box">
+        <input type="text" id="searchInput" placeholder="ابحث باسم المكان..." oninput="renderTable()">
+      </div>
+      <div class="info-badge" id="rowsCount"></div>
+      <div class="toolbar-actions">
+        <button class="page-btn add-btn" onclick="addRow()">إضافة صف جديد</button>
+        <button class="page-btn save-btn" onclick="saveAll()">حفظ التعديلات</button>
+      </div>
+      <div class="status-text" id="statusText"></div>
+    </div>
+
+    <div class="table-wrap">
+      <table>
+        <thead>
+          <tr>
+            <th rowspan="2" class="group-header place-col">المكان</th>
+            <th colspan="2" class="group-header">1*40</th>
+            <th colspan="2" class="group-header">2*20</th>
+            <th rowspan="2" class="group-header delete-col">حذف</th>
+          </tr>
+          <tr>
+            <th class="sub-header role-col">سائق</th>
+            <th class="sub-header role-col">تباع</th>
+            <th class="sub-header role-col">سائق</th>
+            <th class="sub-header role-col">تباع</th>
+          </tr>
+        </thead>
+        <tbody id="tableBody"></tbody>
+      </table>
+    </div>
+
+    <div class="notes">
+      <div class="note-card">
+        <label class="note-label" for="noteText">ملاحظة</label>
+        <textarea class="note-input" id="noteText" rows="2"></textarea>
+      </div>
+      <div class="note-card">
+        <label class="note-label" for="effectiveDate">تاريخ بداية الأسعار</label>
+        <input class="note-input" id="effectiveDate" type="text">
+      </div>
+    </div>
+  </section>
+</div>
+
+<script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-app-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-auth-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-database-compat.js"></script>
+
+<script>
+const firebaseConfig = {
+  apiKey: "AIzaSyARqSgfh78TqFQ2hhZaAtUaVQFqlPuRM3w",
+  authDomain: "trialsafaprices2026.firebaseapp.com",
+  databaseURL: "https://trialsafaprices2026-default-rtdb.firebaseio.com",
+  projectId: "trialsafaprices2026",
+  storageBucket: "trialsafaprices2026.appspot.com",
+  messagingSenderId: "177091434445",
+  appId: "1:177091434445:web:568b6ae3ba270a21d4d684"
+};
+
+firebase.initializeApp(firebaseConfig);
+const db = firebase.database();
+const statusText = document.getElementById("statusText");
+
+const sourceData = {
+  title: "ادوار سواقين المكتب",
+  sheetName: "Sheet6",
+  headers: {
+    group40: "1*40",
+    group20: "2*20",
+    subHeaders: ["سائق", "تباع", "سائق", "تباع"]
+  },
+  rows: [
+    { place: "السوق الحر", c40Driver: "800", c40Assistant: "320", c20Driver: "", c20Assistant: "" },
+    { place: "ابيس", c40Driver: "800", c40Assistant: "320", c20Driver: "", c20Assistant: "" },
+    { place: "البرج", c40Driver: "900", c40Assistant: "340", c20Driver: "1100", c20Assistant: "420" },
+    { place: "قريه الاسد", c40Driver: "900", c40Assistant: "350", c20Driver: "1100", c20Assistant: "430" },
+    { place: "دمنهور", c40Driver: "900", c40Assistant: "350", c20Driver: "1100", c20Assistant: "430" },
+    { place: "الدلنجات", c40Driver: "975", c40Assistant: "370", c20Driver: "1175", c20Assistant: "450" },
+    { place: "ابو المطامير", c40Driver: "975", c40Assistant: "370", c20Driver: "1175", c20Assistant: "450" },
+    { place: "حوش عيسي", c40Driver: "975", c40Assistant: "370", c20Driver: "1175", c20Assistant: "450" },
+    { place: "النوباريه", c40Driver: "975", c40Assistant: "370", c20Driver: "1175", c20Assistant: "450" },
+    { place: "التحدي", c40Driver: "1025", c40Assistant: "370", c20Driver: "1225", c20Assistant: "450" },
+    { place: "السادات", c40Driver: "1250", c40Assistant: "525", c20Driver: "1550", c20Assistant: "625" },
+    { place: "اكتوبر", c40Driver: "1300", c40Assistant: "525", c20Driver: "1600", c20Assistant: "625" },
+    { place: "جمصه", c40Driver: "1300", c40Assistant: "525", c20Driver: "1600", c20Assistant: "625" },
+    { place: "كفر الشيخ", c40Driver: "1300", c40Assistant: "525", c20Driver: "1600", c20Assistant: "625" },
+    { place: "شبين الكوم", c40Driver: "1300", c40Assistant: "525", c20Driver: "1600", c20Assistant: "625" },
+    { place: "القناطر", c40Driver: "1300", c40Assistant: "525", c20Driver: "1600", c20Assistant: "625" },
+    { place: "بنها", c40Driver: "1300", c40Assistant: "525", c20Driver: "1600", c20Assistant: "625" },
+    { place: "المنصوره", c40Driver: "1300", c40Assistant: "525", c20Driver: "1600", c20Assistant: "625" },
+    { place: "الشرقية", c40Driver: "1450", c40Assistant: "545", c20Driver: "1750", c20Assistant: "645" },
+    { place: "العاشر", c40Driver: "1450", c40Assistant: "545", c20Driver: "1750", c20Assistant: "645" },
+    { place: "الصالحية", c40Driver: "1550", c40Assistant: "565", c20Driver: "1850", c20Assistant: "665" },
+    { place: "العاصمه", c40Driver: "1550", c40Assistant: "565", c20Driver: "1850", c20Assistant: "665" },
+    { place: "الاسماعيليه", c40Driver: "1550", c40Assistant: "565", c20Driver: "1850", c20Assistant: "665" },
+    { place: "الفيوم", c40Driver: "1550", c40Assistant: "565", c20Driver: "1850", c20Assistant: "665" },
+    { place: "السويس", c40Driver: "1550", c40Assistant: "565", c20Driver: "1850", c20Assistant: "665" },
+    { place: "بني سويف", c40Driver: "1650", c40Assistant: "615", c20Driver: "1950", c20Assistant: "715" },
+    { place: "السخنه", c40Driver: "1650", c40Assistant: "615", c20Driver: "1950", c20Assistant: "715" },
+    { place: "المنيا", c40Driver: "1900", c40Assistant: "750", c20Driver: "2200", c20Assistant: "850" },
+    { place: "اسيوط", c40Driver: "2200", c40Assistant: "850", c20Driver: "2500", c20Assistant: "850" },
+    { place: "سوهاج", c40Driver: "2500", c40Assistant: "900", c20Driver: "2800", c20Assistant: "1000" },
+    { place: "الاقصر", c40Driver: "3350", c40Assistant: "1225", c20Driver: "3650", c20Assistant: "1325" }
+  ],
+  note: "ملاحظة :- العاشر النساجون الصادر يزيد 50 التباع 25",
+  effectiveDate: "الاسعار بدايه من 1 - 4 - 2026"
+};
+
+let pageData = JSON.parse(JSON.stringify(sourceData));
+
+firebase.auth().onAuthStateChanged(user => {
+  if (!user) {
+    window.location = "index.html";
+  }
+});
+
+function setStatus(message, isError = false) {
+  statusText.textContent = message;
+  statusText.style.color = isError ? "#c0392b" : "#667085";
+}
+
+function syncTableToState() {
+  const rows = document.querySelectorAll("#tableBody tr[data-row]");
+
+  pageData.rows = Array.from(rows).map(tr => {
+    const cells = tr.children;
+
+    return {
+      place: cells[0].innerText.trim(),
+      c40Driver: cells[1].innerText.trim(),
+      c40Assistant: cells[2].innerText.trim(),
+      c20Driver: cells[3].innerText.trim(),
+      c20Assistant: cells[4].innerText.trim()
+    };
+  });
+
+  pageData.note = document.getElementById("noteText").value.trim();
+  pageData.effectiveDate = document.getElementById("effectiveDate").value.trim();
+}
+
+function renderTable() {
+  const tbody = document.getElementById("tableBody");
+  const query = document.getElementById("searchInput").value.trim().toLowerCase();
+
+  const filteredRows = pageData.rows
+    .map((row, index) => ({ row, index }))
+    .filter(item => !query || item.row.place.toLowerCase().includes(query));
+
+  tbody.innerHTML = filteredRows.map(item => `
+    <tr data-row="${item.index}">
+      <td class="place-col" contenteditable="true">${item.row.place}</td>
+      <td class="role-col" contenteditable="true">${item.row.c40Driver || ""}</td>
+      <td class="role-col" contenteditable="true">${item.row.c40Assistant || ""}</td>
+      <td class="role-col" contenteditable="true">${item.row.c20Driver || ""}</td>
+      <td class="role-col" contenteditable="true">${item.row.c20Assistant || ""}</td>
+      <td><button class="delete-btn" onclick="deleteRow(${item.index})">حذف</button></td>
+    </tr>
+  `).join("");
+
+  if (!filteredRows.length) {
+    tbody.innerHTML = '<tr><td colspan="6" class="empty-state">لا توجد نتائج مطابقة للبحث.</td></tr>';
+  }
+
+  document.getElementById("rowsCount").textContent = "عدد الأماكن: " + filteredRows.length;
+}
+
+function addRow() {
+  if (document.getElementById("searchInput").value.trim()) {
+    alert("امسح البحث الأول قبل إضافة صف جديد");
+    return;
+  }
+
+  syncTableToState();
+  pageData.rows.push({
+    place: "",
+    c40Driver: "",
+    c40Assistant: "",
+    c20Driver: "",
+    c20Assistant: ""
+  });
+  renderTable();
+  setStatus("تمت إضافة صف جديد.");
+}
+
+function deleteRow(index) {
+  if (document.getElementById("searchInput").value.trim()) {
+    alert("امسح البحث الأول قبل الحذف");
+    return;
+  }
+
+  syncTableToState();
+  if (confirm("هل تريد حذف الصف؟")) {
+    pageData.rows.splice(index, 1);
+    renderTable();
+    saveAll(false);
+  }
+}
+
+function saveAll(showAlert = true) {
+  if (document.getElementById("searchInput").value.trim()) {
+    alert("امسح البحث الأول قبل الحفظ");
+    return Promise.resolve();
+  }
+
+  syncTableToState();
+
+  return db.ref("driversRoles").set(pageData)
+    .then(() => {
+      setStatus("تم حفظ التعديلات بنجاح.");
+      if (showAlert) {
+        alert("تم حفظ التعديلات بنجاح");
+      }
+    })
+    .catch(() => {
+      setStatus("حدثت مشكلة أثناء الحفظ.", true);
+      if (showAlert) {
+        alert("حدثت مشكلة أثناء الحفظ");
+      }
+    });
+}
+
+function loadData() {
+  db.ref("driversRoles").once("value", snapshot => {
+    const savedData = snapshot.val();
+
+    if (savedData && Array.isArray(savedData.rows) && savedData.rows.length) {
+      pageData = savedData;
+      setStatus("تم تحميل البيانات من Firebase.");
+    } else {
+      pageData = JSON.parse(JSON.stringify(sourceData));
+      setStatus("تم تحميل البيانات الأصلية من ملف الإكسيل.");
+    }
+
+    document.getElementById("noteText").value = pageData.note || "";
+    document.getElementById("effectiveDate").value = pageData.effectiveDate || "";
+    renderTable();
+  }).catch(() => {
+    pageData = JSON.parse(JSON.stringify(sourceData));
+    document.getElementById("noteText").value = pageData.note || "";
+    document.getElementById("effectiveDate").value = pageData.effectiveDate || "";
+    renderTable();
+    setStatus("تعذر تحميل البيانات من Firebase، تم عرض النسخة الأصلية.", true);
+  });
+}
+
+function goBack() {
+  window.location = "dashboard.html";
+}
+
+function logout() {
+  firebase.auth().signOut().then(() => {
+    window.location = "index.html";
+  });
+}
+
+loadData();
+</script>
+
+</body>
+</html>

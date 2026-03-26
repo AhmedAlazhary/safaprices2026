@@ -58,6 +58,7 @@ button:hover {
   <h3>اختر الصفحة التي تريد الدخول إليها</h3>
   <button onclick="goToPrices()">📦 أسعار الحاويات</button>
   <button onclick="goToDaily()">📝 بيان الشغل اليومي</button>
+  <button onclick="goToDriversRoles()">🚚 أدوار سواقين المكتب</button>
 </div>
 
 <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-app-compat.js"></script>
@@ -87,6 +88,9 @@ function goToPrices(){
 }
 function goToDaily(){
   window.location.href = "daily.html";
+}
+function goToDriversRoles(){
+  window.location.href = "drivers-roles-page.html";
 }
 
 function logout(){
