@@ -3,50 +3,100 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>لوحة التحكم</title>
+<title>لوحة التحكم - مكتب الصفا</title>
 <style>
-body { font-family: Arial; margin:0; padding:0; background:#eef2f7; }
-.container { max-width:900px; margin:50px auto; text-align:center; }
-h2 { margin-bottom:30px; }
-button { padding:15px 25px; margin:10px; font-size:16px; border:none; border-radius:10px; cursor:pointer; transition:0.3s; }
-button:hover { opacity:0.8; }
-.btn-prices { background:#3498db; color:#fff; }
-.btn-daily { background:#e74c3c; color:#fff; }
-.btn-logout { background:#95a5a6; color:#fff; }
+body {
+  font-family: Arial, sans-serif;
+  background: #eef2f7;
+  margin: 0;
+  padding: 0;
+}
+header {
+  background: #2c3e50;
+  color: white;
+  padding: 15px;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+}
+header img {
+  height: 50px;
+}
+header h2 {
+  margin: 0;
+}
+.container {
+  max-width: 900px;
+  margin: 20px auto;
+  text-align: center;
+}
+button {
+  padding: 12px 20px;
+  margin: 10px;
+  border: none;
+  border-radius: 10px;
+  font-size: 16px;
+  cursor: pointer;
+  background: #3498db;
+  color: white;
+  transition: 0.3s;
+}
+button:hover {
+  background: #2980b9;
+}
 </style>
 </head>
 <body>
 
-<div class="container">
-  <h2>لوحة التحكم - مرحبًا <span id="userLabel"></span></h2>
+<header>
+  <img src="logo.png" alt="logo">
+  <h2>لوحة التحكم - مكتب الصفا</h2>
+  <button onclick="logout()">تسجيل الخروج</button>
+</header>
 
-  <button class="btn-prices" onclick="goPrices()">صفحة الأسعار</button>
-  <button class="btn-daily" onclick="goDaily()">بيان الشغل اليومي</button>
-  <button class="btn-logout" onclick="logout()">تسجيل خروج</button>
+<div class="container">
+  <h3>اختر الصفحة التي تريد الدخول إليها</h3>
+  <button onclick="goToPrices()">📦 أسعار الحاويات</button>
+  <button onclick="goToDaily()">📝 بيان الشغل اليومي</button>
 </div>
 
+<script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-app-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-auth-compat.js"></script>
+
 <script>
-document.getElementById("userLabel").innerText = localStorage.getItem("username") || "مستخدم";
+const firebaseConfig = {
+  apiKey: "AIzaSyARqSgfh78TqFQ2hhZaAtUaVQFqlPuRM3w",
+  authDomain: "trialsafaprices2026.firebaseapp.com",
+  projectId: "trialsafaprices2026",
+  storageBucket: "trialsafaprices2026.appspot.com",
+  messagingSenderId: "177091434445",
+  appId: "1:177091434445:web:568b6ae3ba270a21d4d684"
+};
+firebase.initializeApp(firebaseConfig);
 
-// انتقال للصفحات
-function goPrices(){ window.location="prices.html"; }
-function goDaily(){ window.location="daily.html"; }
-function logout(){
-  firebase.auth().signOut().then(()=>{
-    localStorage.removeItem("username");
-    window.location="index.html";
-  });
-}
-
-// حماية الصفحة لو مش متسجل دخول
-firebase.auth().onAuthStateChanged((user) => {
-  if (!user) {
-    window.location = "index.html";
+// تحقق من تسجيل الدخول
+firebase.auth().onAuthStateChanged(user => {
+  if(!user){
+    window.location.href = "index.html";
   }
 });
 
-<!-- Firebase -->
-<script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-app-compat.js"></script>
-<script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-auth-compat.js"></script>
+// وظائف الأزرار
+function goToPrices(){
+  window.location.href = "prices.html";
+}
+function goToDaily(){
+  window.location.href = "daily.html";
+}
+
+function logout(){
+  firebase.auth().signOut()
+  .then(()=>{
+    window.location.href = "index.html";
+  })
+  .catch(err => console.error(err));
+}
+</script>
+
 </body>
 </html>
