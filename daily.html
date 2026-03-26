@@ -7,17 +7,18 @@
 
 <style>
 :root {
-  --bg: #eef2f7;
+  --bg: #edf3f9;
   --surface: #ffffff;
-  --surface-soft: #f8fbff;
-  --primary: #2c3e50;
-  --accent: #3498db;
+  --surface-soft: #f7fbff;
+  --primary: #223547;
+  --accent: #2f89d9;
+  --accent-soft: #e8f3fe;
   --success: #27ae60;
   --danger: #e74c3c;
   --text: #1f2937;
-  --muted: #6b7280;
-  --border: #d8e1ea;
-  --shadow: 0 10px 30px rgba(44, 62, 80, 0.08);
+  --muted: #697586;
+  --border: #d6e0eb;
+  --shadow: 0 12px 30px rgba(34, 53, 71, 0.08);
 }
 
 * {
@@ -25,22 +26,22 @@
 }
 
 body {
-  font-family: "Tahoma", "Segoe UI", Arial, sans-serif;
-  background: linear-gradient(180deg, #f4f7fb 0%, #eaf1f8 100%);
   margin: 0;
   color: var(--text);
+  background: linear-gradient(180deg, #f5f8fc 0%, #eaf1f8 100%);
+  font-family: "Tahoma", "Segoe UI", Arial, sans-serif;
 }
 
 header {
-  background: linear-gradient(135deg, #233446 0%, #2c3e50 100%);
-  color: #fff;
-  padding: 14px 18px;
   display: flex;
   justify-content: space-between;
   align-items: center;
   gap: 16px;
   flex-wrap: wrap;
-  box-shadow: 0 8px 24px rgba(24, 35, 49, 0.18);
+  padding: 14px 18px;
+  color: #fff;
+  background: linear-gradient(135deg, #1f3243 0%, #2c3e50 100%);
+  box-shadow: 0 8px 24px rgba(20, 31, 44, 0.18);
 }
 
 .brand {
@@ -50,26 +51,27 @@ header {
 }
 
 header img {
-  height: clamp(48px, 7vw, 64px);
+  height: clamp(46px, 7vw, 64px);
   width: auto;
 }
 
-header h3 {
+header h1 {
   margin: 0;
-  font-size: clamp(1rem, 2.2vw, 1.4rem);
+  font-size: clamp(1.05rem, 2.4vw, 1.5rem);
 }
 
 .header-actions,
-.page-actions {
+.toolbar-actions,
+.card-actions {
   display: flex;
   gap: 10px;
   flex-wrap: wrap;
 }
 
 button {
-  padding: 10px 14px;
   border: none;
   border-radius: 10px;
+  padding: 10px 14px;
   cursor: pointer;
   font-size: clamp(0.9rem, 1.8vw, 1rem);
   font-weight: 700;
@@ -84,36 +86,108 @@ button:active {
   transform: translateY(0);
 }
 
+.ghost-btn {
+  background: rgba(255, 255, 255, 0.16);
+  color: #fff;
+}
+
+.add-btn {
+  background: var(--success);
+  color: #fff;
+}
+
+.save-btn {
+  background: var(--accent);
+  color: #fff;
+}
+
+.delete-btn {
+  background: var(--danger);
+  color: #fff;
+  padding: 8px 12px;
+}
+
 .container {
-  width: min(1280px, calc(100% - 24px));
+  width: min(1320px, calc(100% - 24px));
   margin: 18px auto 28px;
 }
 
-.panel {
+.panel,
+.day-card {
   background: var(--surface);
   border-radius: 18px;
-  padding: 18px;
   box-shadow: var(--shadow);
 }
 
-.page-head {
+.panel {
+  padding: 18px;
+  margin-bottom: 18px;
+}
+
+.panel-head {
   display: flex;
   justify-content: space-between;
   align-items: center;
   gap: 12px;
-  margin-bottom: 14px;
   flex-wrap: wrap;
+  margin-bottom: 14px;
 }
 
-#todayDate {
+.panel-head h2,
+.section-title,
+.card-title {
   margin: 0;
-  font-size: clamp(1rem, 2vw, 1.2rem);
 }
 
-.save-status {
+.toolbar {
+  display: flex;
+  justify-content: space-between;
+  align-items: end;
+  gap: 14px;
+  flex-wrap: wrap;
+  margin-bottom: 14px;
+}
+
+.toolbar-fields {
+  display: flex;
+  gap: 12px;
+  flex-wrap: wrap;
+  align-items: end;
+}
+
+.field {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  min-width: 220px;
+}
+
+.field label {
+  color: var(--muted);
+  font-size: 0.92rem;
+  font-weight: 700;
+}
+
+.status-line {
+  min-height: 22px;
   color: var(--muted);
   font-size: 0.95rem;
-  min-height: 22px;
+}
+
+input {
+  width: 100%;
+  padding: 9px 10px;
+  border-radius: 10px;
+  border: 1px solid #ccd8e4;
+  background: #fff;
+  font-size: 0.95rem;
+  text-align: center;
+}
+
+input:focus {
+  outline: none;
+  border-color: var(--accent);
+  box-shadow: 0 0 0 3px rgba(47, 137, 217, 0.14);
 }
 
 .table-wrap {
@@ -125,44 +199,28 @@ button:active {
 
 table {
   width: 100%;
-  min-width: 1080px;
+  min-width: 1120px;
   border-collapse: collapse;
   background: #fff;
 }
 
 th,
 td {
-  border-bottom: 1px solid var(--border);
   padding: 10px 8px;
   text-align: center;
   vertical-align: middle;
+  border-bottom: 1px solid var(--border);
 }
 
 th {
   background: var(--accent);
   color: #fff;
-  font-size: 0.95rem;
   white-space: nowrap;
+  font-size: 0.95rem;
 }
 
 tr:last-child td {
   border-bottom: none;
-}
-
-input {
-  width: 100%;
-  padding: 9px 10px;
-  border: 1px solid #cfd9e4;
-  border-radius: 10px;
-  background: #fff;
-  font-size: 0.95rem;
-  text-align: center;
-}
-
-input:focus {
-  outline: none;
-  border-color: var(--accent);
-  box-shadow: 0 0 0 3px rgba(52, 152, 219, 0.15);
 }
 
 .date-cell {
@@ -171,20 +229,63 @@ input:focus {
   white-space: nowrap;
 }
 
-.add-btn {
-  background: var(--success);
-  color: #fff;
+.section-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 12px;
+  flex-wrap: wrap;
+  margin-bottom: 14px;
 }
 
-.save-btn {
-  background: #2980b9;
-  color: #fff;
+.archive-grid {
+  display: grid;
+  gap: 16px;
 }
 
-.delete-btn {
-  background: var(--danger);
-  color: #fff;
-  padding: 8px 12px;
+.day-card {
+  padding: 16px;
+}
+
+.card-head {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 12px;
+  flex-wrap: wrap;
+  margin-bottom: 12px;
+}
+
+.card-meta {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+
+.card-date {
+  color: var(--muted);
+  font-size: 0.92rem;
+}
+
+.empty-state {
+  padding: 22px;
+  text-align: center;
+  color: var(--muted);
+  background: var(--surface);
+  border-radius: 16px;
+  box-shadow: var(--shadow);
+}
+
+.selected-badge {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 6px 10px;
+  border-radius: 999px;
+  background: var(--accent-soft);
+  color: var(--accent);
+  font-size: 0.88rem;
+  font-weight: 700;
 }
 
 @media (max-width: 768px) {
@@ -193,25 +294,27 @@ input:focus {
     margin-top: 12px;
   }
 
-  .panel {
-    padding: 12px;
-    border-radius: 14px;
-  }
-
-  header {
+  header,
+  .panel,
+  .day-card {
     padding: 12px;
   }
 
   .brand,
   .header-actions,
-  .page-actions,
-  .page-head {
+  .toolbar-fields,
+  .toolbar-actions {
     width: 100%;
   }
 
   .header-actions button,
-  .page-actions button {
+  .toolbar-actions button,
+  .card-actions button {
     flex: 1 1 140px;
+  }
+
+  .field {
+    min-width: 100%;
   }
 
   th,
@@ -230,36 +333,47 @@ input:focus {
     font-size: 14px;
   }
 
-  header h3 {
-    font-size: 1rem;
-  }
-
-  input {
-    padding: 8px;
+  .selected-badge {
+    width: 100%;
+    justify-content: center;
   }
 }
 </style>
 </head>
 
 <body>
-
 <header>
   <div class="brand">
     <img src="logo.png" alt="شعار مكتب الصفا">
-    <h3>بيان الشغل اليومي</h3>
+    <h1>بيان الشغل اليومي</h1>
   </div>
 
   <div class="header-actions">
-    <button onclick="goBack()">رجوع</button>
-    <button onclick="logout()">تسجيل خروج</button>
+    <button class="ghost-btn" onclick="goBack()">رجوع</button>
+    <button class="ghost-btn" onclick="logout()">تسجيل خروج</button>
   </div>
 </header>
 
 <div class="container">
-  <div class="panel">
-    <div class="page-head">
-      <h3 id="todayDate"></h3>
-      <div id="saveStatus" class="save-status">جارٍ تحميل البيانات...</div>
+  <section class="panel">
+    <div class="panel-head">
+      <h2 id="currentDateTitle">بيان اليوم</h2>
+      <div id="currentSaveStatus" class="status-line">جارٍ تحميل البيانات...</div>
+    </div>
+
+    <div class="toolbar">
+      <div class="toolbar-fields">
+        <div class="field">
+          <label for="datePicker">اختيار التاريخ</label>
+          <input type="date" id="datePicker">
+        </div>
+      </div>
+
+      <div class="toolbar-actions">
+        <button class="save-btn" onclick="openSelectedDate()">عرض التاريخ</button>
+        <button class="add-btn" onclick="addRow(currentDate)">إضافة سطر للتاريخ الحالي</button>
+        <button class="save-btn" onclick="saveDate(currentDate, true)">حفظ التاريخ الحالي</button>
+      </div>
     </div>
 
     <div class="table-wrap">
@@ -278,18 +392,18 @@ input:focus {
             <th>حذف</th>
           </tr>
         </thead>
-
-        <tbody id="tableBody"></tbody>
+        <tbody id="currentTableBody"></tbody>
       </table>
     </div>
+  </section>
 
-    <br>
-
-    <div class="page-actions">
-      <button class="add-btn" onclick="addRow()">إضافة سطر</button>
-      <button class="save-btn" onclick="saveData(true)">حفظ اليوم</button>
+  <section>
+    <div class="section-header">
+      <h2 class="section-title">الأرشيف اليومي</h2>
+      <div class="selected-badge">يعرض كل يوم في جدول منفصل ويمكن تعديله</div>
     </div>
-  </div>
+    <div id="archiveContainer" class="archive-grid"></div>
+  </section>
 </div>
 
 <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-app-compat.js"></script>
@@ -311,13 +425,18 @@ firebase.initializeApp(firebaseConfig);
 
 const db = firebase.database();
 const today = new Date().toISOString().split("T")[0];
-const storageKey = "dailyDraft-" + today;
-const saveStatus = document.getElementById("saveStatus");
-let rows = [];
-let autoSaveTimer = null;
-let isSaving = false;
+const datePicker = document.getElementById("datePicker");
+const currentTableBody = document.getElementById("currentTableBody");
+const archiveContainer = document.getElementById("archiveContainer");
+const currentDateTitle = document.getElementById("currentDateTitle");
+const currentSaveStatus = document.getElementById("currentSaveStatus");
 
-document.getElementById("todayDate").innerText = "تاريخ اليوم: " + today;
+let currentDate = today;
+let dailyData = {};
+let saveTimers = {};
+let savingDates = {};
+
+datePicker.value = today;
 
 firebase.auth().onAuthStateChanged(user => {
   if (!user) {
@@ -338,9 +457,35 @@ function getEmptyRow() {
   };
 }
 
-function setStatus(message, isError = false) {
-  saveStatus.textContent = message;
-  saveStatus.style.color = isError ? "#c0392b" : "#6b7280";
+function ensureDateRows(date) {
+  if (!Array.isArray(dailyData[date]) || !dailyData[date].length) {
+    dailyData[date] = [getEmptyRow()];
+  }
+  return dailyData[date];
+}
+
+function getStorageKey(date) {
+  return "dailyDraft-" + date;
+}
+
+function readDraft(date) {
+  const raw = localStorage.getItem(getStorageKey(date));
+  if (!raw) return null;
+
+  try {
+    return JSON.parse(raw);
+  } catch (error) {
+    return null;
+  }
+}
+
+function saveDraft(date) {
+  localStorage.setItem(getStorageKey(date), JSON.stringify(ensureDateRows(date)));
+}
+
+function setCurrentStatus(message, isError = false) {
+  currentSaveStatus.textContent = message;
+  currentSaveStatus.style.color = isError ? "#c0392b" : "#697586";
 }
 
 function escapeHtml(value) {
@@ -352,188 +497,306 @@ function escapeHtml(value) {
     .replace(/'/g, "&#39;");
 }
 
-function persistDraftLocal() {
-  localStorage.setItem(storageKey, JSON.stringify(rows));
-}
-
-function readDraftLocal() {
-  const raw = localStorage.getItem(storageKey);
-  if (!raw) return null;
-
-  try {
-    return JSON.parse(raw);
-  } catch (error) {
-    return null;
-  }
-}
-
-function render() {
-  const tbody = document.getElementById("tableBody");
-  tbody.innerHTML = "";
-
-  if (!rows.length) {
-    rows = [getEmptyRow()];
-  }
-
-  rows.forEach((row, index) => {
-    const tr = document.createElement("tr");
-
-    tr.innerHTML = `
-      <td class="date-cell">${today}</td>
-      <td><input type="number" min="0" inputmode="numeric" data-index="${index}" data-field="containerCount" value="${escapeHtml(row.containerCount)}"></td>
-      <td><input list="sizes" data-index="${index}" data-field="size" value="${escapeHtml(row.size)}"></td>
-      <td><input list="places" data-index="${index}" data-field="place" value="${escapeHtml(row.place)}"></td>
-      <td><input list="moves" data-index="${index}" data-field="move" value="${escapeHtml(row.move)}"></td>
-      <td><input list="agencies" data-index="${index}" data-field="agency" value="${escapeHtml(row.agency)}"></td>
-      <td><input list="types" data-index="${index}" data-field="type" value="${escapeHtml(row.type)}"></td>
-      <td><input list="clients" data-index="${index}" data-field="client" value="${escapeHtml(row.client)}"></td>
-      <td><input data-index="${index}" data-field="notes" value="${escapeHtml(row.notes)}" placeholder="اكتب ملاحظات"></td>
-      <td><button class="delete-btn" onclick="deleteRow(${index})">حذف</button></td>
-    `;
-
-    tbody.appendChild(tr);
+function formatArabicDate(date) {
+  return new Date(date + "T00:00:00").toLocaleDateString("ar-EG", {
+    weekday: "long",
+    year: "numeric",
+    month: "long",
+    day: "numeric"
   });
 }
 
-function updateRowsFromDom() {
-  const inputs = document.querySelectorAll("#tableBody input");
+function renderRows(rows, date, scope) {
+  return rows.map((row, index) => `
+    <tr>
+      <td class="date-cell">${date}</td>
+      <td><input type="number" min="0" inputmode="numeric" data-date="${date}" data-index="${index}" data-field="containerCount" data-scope="${scope}" value="${escapeHtml(row.containerCount)}"></td>
+      <td><input list="sizes" data-date="${date}" data-index="${index}" data-field="size" data-scope="${scope}" value="${escapeHtml(row.size)}"></td>
+      <td><input list="places" data-date="${date}" data-index="${index}" data-field="place" data-scope="${scope}" value="${escapeHtml(row.place)}"></td>
+      <td><input list="moves" data-date="${date}" data-index="${index}" data-field="move" data-scope="${scope}" value="${escapeHtml(row.move)}"></td>
+      <td><input list="agencies" data-date="${date}" data-index="${index}" data-field="agency" data-scope="${scope}" value="${escapeHtml(row.agency)}"></td>
+      <td><input list="types" data-date="${date}" data-index="${index}" data-field="type" data-scope="${scope}" value="${escapeHtml(row.type)}"></td>
+      <td><input list="clients" data-date="${date}" data-index="${index}" data-field="client" data-scope="${scope}" value="${escapeHtml(row.client)}"></td>
+      <td><input data-date="${date}" data-index="${index}" data-field="notes" data-scope="${scope}" value="${escapeHtml(row.notes)}" placeholder="اكتب ملاحظات"></td>
+      <td><button class="delete-btn" onclick="deleteRow('${date}', ${index})">حذف</button></td>
+    </tr>
+  `).join("");
+}
+
+function renderCurrentDate() {
+  const rows = ensureDateRows(currentDate);
+  currentDateTitle.textContent = "بيان التاريخ: " + currentDate;
+  currentTableBody.innerHTML = renderRows(rows, currentDate, "current");
+}
+
+function getSortedDates() {
+  return Object.keys(dailyData).sort((a, b) => b.localeCompare(a));
+}
+
+function renderArchive() {
+  const dates = getSortedDates();
+
+  if (!dates.length) {
+    archiveContainer.innerHTML = '<div class="empty-state">لا توجد أيام محفوظة بعد.</div>';
+    return;
+  }
+
+  archiveContainer.innerHTML = dates.map(date => {
+    const rows = ensureDateRows(date);
+    const isSelected = date === currentDate;
+
+    return `
+      <article class="day-card">
+        <div class="card-head">
+          <div class="card-meta">
+            <h3 class="card-title">جدول ${date}</h3>
+            <div class="card-date">${formatArabicDate(date)}</div>
+          </div>
+          <div class="card-actions">
+            ${isSelected ? '<span class="selected-badge">التاريخ المفتوح الآن</span>' : ''}
+            <button class="save-btn" onclick="focusDate('${date}')">فتح هذا التاريخ</button>
+            <button class="add-btn" onclick="addRow('${date}')">إضافة سطر</button>
+            <button class="save-btn" onclick="saveDate('${date}', true)">حفظ</button>
+          </div>
+        </div>
+
+        <div class="table-wrap">
+          <table>
+            <thead>
+              <tr>
+                <th>التاريخ</th>
+                <th>عدد الحاويات</th>
+                <th>الحجم</th>
+                <th>المكان</th>
+                <th>مكان النقلة</th>
+                <th>التوكيل</th>
+                <th>نوع</th>
+                <th>العميل</th>
+                <th>ملاحظات</th>
+                <th>حذف</th>
+              </tr>
+            </thead>
+            <tbody>${renderRows(rows, date, "archive")}</tbody>
+          </table>
+        </div>
+      </article>
+    `;
+  }).join("");
+}
+
+function renderAll() {
+  renderCurrentDate();
+  renderArchive();
+}
+
+function updateDateRowsFromDom(date) {
+  const inputs = document.querySelectorAll(`input[data-date="${date}"][data-field]`);
+  const rows = [];
 
   inputs.forEach(input => {
-    const rowIndex = Number(input.dataset.index);
+    const index = Number(input.dataset.index);
     const field = input.dataset.field;
 
-    if (!rows[rowIndex]) {
-      rows[rowIndex] = getEmptyRow();
+    if (!rows[index]) {
+      rows[index] = getEmptyRow();
     }
 
-    rows[rowIndex][field] = input.value;
+    rows[index][field] = input.value;
   });
 
-  persistDraftLocal();
+  dailyData[date] = rows.filter(Boolean);
+
+  if (!dailyData[date].length) {
+    dailyData[date] = [getEmptyRow()];
+  }
+
+  saveDraft(date);
 }
 
-function scheduleAutoSave() {
-  clearTimeout(autoSaveTimer);
-  setStatus("هناك تعديلات لم تُرفع بعد...");
-  autoSaveTimer = setTimeout(() => saveData(false), 700);
+function scheduleAutoSave(date) {
+  clearTimeout(saveTimers[date]);
+  if (date === currentDate) {
+    setCurrentStatus("هناك تعديلات لم تُرفع بعد...");
+  }
+  saveTimers[date] = setTimeout(() => saveDate(date, false), 700);
 }
 
 function handleInput(event) {
   const input = event.target;
 
-  if (!input.matches("#tableBody input")) {
+  if (!input.matches('input[data-date][data-field]')) {
     return;
   }
 
-  const rowIndex = Number(input.dataset.index);
+  const date = input.dataset.date;
+  const index = Number(input.dataset.index);
   const field = input.dataset.field;
 
-  if (!rows[rowIndex]) {
-    rows[rowIndex] = getEmptyRow();
+  ensureDateRows(date);
+  if (!dailyData[date][index]) {
+    dailyData[date][index] = getEmptyRow();
   }
 
-  rows[rowIndex][field] = input.value;
-  persistDraftLocal();
-  scheduleAutoSave();
+  dailyData[date][index][field] = input.value;
+  saveDraft(date);
+  scheduleAutoSave(date);
 }
 
-function loadData() {
-  const localDraft = readDraftLocal();
+function normalizeSnapshotData(snapshotValue) {
+  const normalized = {};
+  if (!snapshotValue || typeof snapshotValue !== "object") {
+    return normalized;
+  }
 
-  db.ref("daily/" + today).once("value", snap => {
-    const remoteRows = snap.val();
-
-    if (Array.isArray(localDraft) && localDraft.length) {
-      rows = localDraft;
-      setStatus("تم استرجاع آخر تعديلات محفوظة تلقائيًا.");
-    } else if (Array.isArray(remoteRows) && remoteRows.length) {
-      rows = remoteRows;
-      setStatus("تم تحميل بيانات اليوم.");
-    } else {
-      rows = [getEmptyRow()];
-      setStatus("ابدأ بإضافة بيانات اليوم.");
+  Object.keys(snapshotValue).forEach(date => {
+    if (Array.isArray(snapshotValue[date]) && snapshotValue[date].length) {
+      normalized[date] = snapshotValue[date];
     }
+  });
 
-    render();
-  }).catch(() => {
-    rows = Array.isArray(localDraft) && localDraft.length ? localDraft : [getEmptyRow()];
-    render();
-    setStatus("تعذر تحميل البيانات من الخادم، تم فتح آخر نسخة محلية.", true);
+  return normalized;
+}
+
+function mergeLocalDrafts() {
+  const allDates = new Set([...Object.keys(dailyData), currentDate, today]);
+
+  Object.keys(localStorage).forEach(key => {
+    if (key.startsWith("dailyDraft-")) {
+      allDates.add(key.replace("dailyDraft-", ""));
+    }
+  });
+
+  allDates.forEach(date => {
+    const draft = readDraft(date);
+    if (Array.isArray(draft) && draft.length) {
+      dailyData[date] = draft;
+    }
   });
 }
 
-function addRow() {
-  updateRowsFromDom();
-  saveData(false);
-  rows.push(getEmptyRow());
-  persistDraftLocal();
-  render();
-  setStatus("تمت إضافة سطر جديد وحفظ التعديلات الحالية.");
+function loadAllData() {
+  db.ref("daily").once("value", snap => {
+    dailyData = normalizeSnapshotData(snap.val());
+    mergeLocalDrafts();
+    ensureDateRows(currentDate);
+    renderAll();
+    setCurrentStatus("تم تحميل البيانات ويمكنك التعديل على أي تاريخ.");
+  }).catch(() => {
+    dailyData = {};
+    mergeLocalDrafts();
+    ensureDateRows(currentDate);
+    renderAll();
+    setCurrentStatus("تعذر تحميل البيانات من الخادم، تم فتح النسخ المحلية المتاحة.", true);
+  });
 }
 
-function deleteRow(index) {
-  updateRowsFromDom();
-  rows.splice(index, 1);
+function focusDate(date) {
+  updateDateRowsFromDom(currentDate);
+  currentDate = date;
+  datePicker.value = date;
+  renderAll();
+  setCurrentStatus("تم فتح تاريخ " + date);
+  window.scrollTo({ top: 0, behavior: "smooth" });
+}
 
-  if (!rows.length) {
-    rows = [getEmptyRow()];
+function openSelectedDate() {
+  const selectedDate = datePicker.value || today;
+  focusDate(selectedDate);
+}
+
+function addRow(date) {
+  updateDateRowsFromDom(date);
+  ensureDateRows(date);
+  saveDate(date, false);
+  dailyData[date].push(getEmptyRow());
+  saveDraft(date);
+  renderAll();
+
+  if (date === currentDate) {
+    setCurrentStatus("تمت إضافة سطر جديد مع حفظ التعديلات الحالية.");
+  }
+}
+
+function deleteRow(date, index) {
+  updateDateRowsFromDom(date);
+  ensureDateRows(date);
+  dailyData[date].splice(index, 1);
+
+  if (!dailyData[date].length) {
+    dailyData[date] = [getEmptyRow()];
   }
 
-  persistDraftLocal();
-  render();
-  saveData(false);
+  saveDraft(date);
+  renderAll();
+  saveDate(date, false);
 }
 
-function saveData(showAlert = true) {
-  updateRowsFromDom();
-  clearTimeout(autoSaveTimer);
+function saveDate(date, showAlert = false) {
+  updateDateRowsFromDom(date);
+  clearTimeout(saveTimers[date]);
 
-  if (isSaving) {
+  if (savingDates[date]) {
     return Promise.resolve();
   }
 
-  isSaving = true;
-  setStatus("جارٍ الحفظ...");
+  savingDates[date] = true;
+  if (date === currentDate) {
+    setCurrentStatus("جارٍ حفظ بيانات " + date + "...");
+  }
 
-  return db.ref("daily/" + today).set(rows)
+  return db.ref("daily/" + date).set(ensureDateRows(date))
     .then(() => {
-      persistDraftLocal();
-      setStatus("تم الحفظ تلقائيًا في " + new Date().toLocaleTimeString("ar-EG", { hour: "2-digit", minute: "2-digit" }));
+      saveDraft(date);
+      if (date === currentDate) {
+        setCurrentStatus("تم الحفظ تلقائيًا في " + new Date().toLocaleTimeString("ar-EG", { hour: "2-digit", minute: "2-digit" }));
+      }
       if (showAlert) {
-        alert("تم حفظ اليوم بنجاح");
+        alert("تم حفظ بيانات " + date + " بنجاح");
       }
     })
     .catch(() => {
-      setStatus("تعذر رفع التعديلات الآن، لكن تم الاحتفاظ بها على هذا الجهاز.", true);
+      if (date === currentDate) {
+        setCurrentStatus("تعذر الحفظ على الخادم الآن، لكن البيانات محفوظة محليًا.", true);
+      }
       if (showAlert) {
         alert("تعذر الحفظ على الخادم الآن، لكن البيانات محفوظة محليًا.");
       }
     })
     .finally(() => {
-      isSaving = false;
+      savingDates[date] = false;
     });
 }
 
+async function saveVisibleDatesBeforeLeave() {
+  const dates = getSortedDates();
+  for (const date of dates) {
+    updateDateRowsFromDom(date);
+  }
+  await Promise.all(dates.map(date => saveDate(date, false)));
+}
+
 async function logout() {
-  await saveData(false);
+  await saveVisibleDatesBeforeLeave();
   firebase.auth().signOut().then(() => {
     window.location = "index.html";
   });
 }
 
 async function goBack() {
-  await saveData(false);
+  await saveVisibleDatesBeforeLeave();
   window.location = "dashboard.html";
 }
 
-document.getElementById("tableBody").addEventListener("input", handleInput);
+document.addEventListener("input", handleInput);
 
 window.addEventListener("beforeunload", () => {
-  updateRowsFromDom();
-  persistDraftLocal();
+  getSortedDates().forEach(date => {
+    updateDateRowsFromDom(date);
+    saveDraft(date);
+  });
 });
 
-loadData();
+loadAllData();
 </script>
 
 <datalist id="sizes">
