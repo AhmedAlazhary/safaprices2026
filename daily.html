@@ -6,72 +6,237 @@
 <title>بيان الشغل اليومي - مكتب الصفا</title>
 
 <style>
+:root {
+  --bg: #eef2f7;
+  --surface: #ffffff;
+  --surface-soft: #f8fbff;
+  --primary: #2c3e50;
+  --accent: #3498db;
+  --success: #27ae60;
+  --danger: #e74c3c;
+  --text: #1f2937;
+  --muted: #6b7280;
+  --border: #d8e1ea;
+  --shadow: 0 10px 30px rgba(44, 62, 80, 0.08);
+}
+
+* {
+  box-sizing: border-box;
+}
+
 body {
-  font-family: Arial;
-  background:#eef2f7;
-  margin:0;
+  font-family: "Tahoma", "Segoe UI", Arial, sans-serif;
+  background: linear-gradient(180deg, #f4f7fb 0%, #eaf1f8 100%);
+  margin: 0;
+  color: var(--text);
 }
 
 header {
-  background:#2c3e50;
-  color:#fff;
-  padding:10px;
-  display:flex;
-  justify-content:space-between;
-  align-items:center;
+  background: linear-gradient(135deg, #233446 0%, #2c3e50 100%);
+  color: #fff;
+  padding: 14px 18px;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 16px;
+  flex-wrap: wrap;
+  box-shadow: 0 8px 24px rgba(24, 35, 49, 0.18);
+}
+
+.brand {
+  display: flex;
+  align-items: center;
+  gap: 12px;
 }
 
 header img {
-  height:60px;
+  height: clamp(48px, 7vw, 64px);
+  width: auto;
+}
+
+header h3 {
+  margin: 0;
+  font-size: clamp(1rem, 2.2vw, 1.4rem);
+}
+
+.header-actions,
+.page-actions {
+  display: flex;
+  gap: 10px;
+  flex-wrap: wrap;
 }
 
 button {
-  padding:8px 12px;
-  border:none;
-  border-radius:6px;
-  cursor:pointer;
+  padding: 10px 14px;
+  border: none;
+  border-radius: 10px;
+  cursor: pointer;
+  font-size: clamp(0.9rem, 1.8vw, 1rem);
+  font-weight: 700;
+  transition: transform 0.15s ease, opacity 0.15s ease;
+}
+
+button:hover {
+  transform: translateY(-1px);
+}
+
+button:active {
+  transform: translateY(0);
 }
 
 .container {
-  max-width:1100px;
-  margin:20px auto;
+  width: min(1280px, calc(100% - 24px));
+  margin: 18px auto 28px;
+}
+
+.panel {
+  background: var(--surface);
+  border-radius: 18px;
+  padding: 18px;
+  box-shadow: var(--shadow);
+}
+
+.page-head {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 12px;
+  margin-bottom: 14px;
+  flex-wrap: wrap;
+}
+
+#todayDate {
+  margin: 0;
+  font-size: clamp(1rem, 2vw, 1.2rem);
+}
+
+.save-status {
+  color: var(--muted);
+  font-size: 0.95rem;
+  min-height: 22px;
+}
+
+.table-wrap {
+  overflow-x: auto;
+  border: 1px solid var(--border);
+  border-radius: 16px;
+  background: var(--surface-soft);
 }
 
 table {
-  width:100%;
-  border-collapse:collapse;
-  background:#fff;
+  width: 100%;
+  min-width: 1080px;
+  border-collapse: collapse;
+  background: #fff;
 }
 
-th, td {
-  border:1px solid #ddd;
-  padding:8px;
-  text-align:center;
+th,
+td {
+  border-bottom: 1px solid var(--border);
+  padding: 10px 8px;
+  text-align: center;
+  vertical-align: middle;
 }
 
 th {
-  background:#3498db;
-  color:#fff;
+  background: var(--accent);
+  color: #fff;
+  font-size: 0.95rem;
+  white-space: nowrap;
 }
 
-select, input {
-  width:100%;
-  padding:5px;
+tr:last-child td {
+  border-bottom: none;
+}
+
+input {
+  width: 100%;
+  padding: 9px 10px;
+  border: 1px solid #cfd9e4;
+  border-radius: 10px;
+  background: #fff;
+  font-size: 0.95rem;
+  text-align: center;
+}
+
+input:focus {
+  outline: none;
+  border-color: var(--accent);
+  box-shadow: 0 0 0 3px rgba(52, 152, 219, 0.15);
+}
+
+.date-cell {
+  font-weight: 700;
+  color: var(--primary);
+  white-space: nowrap;
 }
 
 .add-btn {
-  background:#27ae60;
-  color:#fff;
+  background: var(--success);
+  color: #fff;
 }
 
 .save-btn {
-  background:#2980b9;
-  color:#fff;
+  background: #2980b9;
+  color: #fff;
 }
 
 .delete-btn {
-  background:#e74c3c;
-  color:#fff;
+  background: var(--danger);
+  color: #fff;
+  padding: 8px 12px;
+}
+
+@media (max-width: 768px) {
+  .container {
+    width: min(100% - 16px, 1000px);
+    margin-top: 12px;
+  }
+
+  .panel {
+    padding: 12px;
+    border-radius: 14px;
+  }
+
+  header {
+    padding: 12px;
+  }
+
+  .brand,
+  .header-actions,
+  .page-actions,
+  .page-head {
+    width: 100%;
+  }
+
+  .header-actions button,
+  .page-actions button {
+    flex: 1 1 140px;
+  }
+
+  th,
+  td {
+    padding: 8px 6px;
+  }
+
+  input,
+  button {
+    font-size: 0.92rem;
+  }
+}
+
+@media (max-width: 480px) {
+  body {
+    font-size: 14px;
+  }
+
+  header h3 {
+    font-size: 1rem;
+  }
+
+  input {
+    padding: 8px;
+  }
 }
 </style>
 </head>
@@ -79,42 +244,54 @@ select, input {
 <body>
 
 <header>
-  <img src="logo.png">
-  <h3>📋 بيان الشغل اليومي</h3>
-  <div>
+  <div class="brand">
+    <img src="logo.png" alt="شعار مكتب الصفا">
+    <h3>بيان الشغل اليومي</h3>
+  </div>
+
+  <div class="header-actions">
     <button onclick="goBack()">رجوع</button>
     <button onclick="logout()">تسجيل خروج</button>
   </div>
 </header>
 
 <div class="container">
+  <div class="panel">
+    <div class="page-head">
+      <h3 id="todayDate"></h3>
+      <div id="saveStatus" class="save-status">جارٍ تحميل البيانات...</div>
+    </div>
 
-<h3 id="todayDate"></h3>
+    <div class="table-wrap">
+      <table>
+        <thead>
+          <tr>
+            <th>التاريخ</th>
+            <th>عدد الحاويات</th>
+            <th>الحجم</th>
+            <th>المكان</th>
+            <th>مكان النقلة</th>
+            <th>التوكيل</th>
+            <th>نوع</th>
+            <th>العميل</th>
+            <th>ملاحظات</th>
+            <th>حذف</th>
+          </tr>
+        </thead>
 
-<table>
-<thead>
-<tr>
-<th>التاريخ</th>
-<th>الحجم</th>
-<th>المكان</th>
-<th>مكان النقلة</th>
-<th>التوكيل</th>
-<th>نوع</th>
-<th>العميل</th>
-<th>حذف</th>
-</tr>
-</thead>
+        <tbody id="tableBody"></tbody>
+      </table>
+    </div>
 
-<tbody id="tableBody"></tbody>
-</table>
+    <br>
 
-<br>
-<button class="add-btn" onclick="addRow()">➕ إضافة سطر</button>
-<button class="save-btn" onclick="saveData()">💾 حفظ اليوم</button>
-
+    <div class="page-actions">
+      <button class="add-btn" onclick="addRow()">إضافة سطر</button>
+      <button class="save-btn" onclick="saveData(true)">حفظ اليوم</button>
+    </div>
+  </div>
 </div>
 
-<!-- Firebase -->
 <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-app-compat.js"></script>
 <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-auth-compat.js"></script>
 <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-database-compat.js"></script>
@@ -129,128 +306,236 @@ const firebaseConfig = {
   messagingSenderId: "177091434445",
   appId: "1:177091434445:web:568b6ae3ba270a21d4d684"
 };
+
 firebase.initializeApp(firebaseConfig);
 
 const db = firebase.database();
-
-// حماية
-firebase.auth().onAuthStateChanged(user=>{
-  if(!user) window.location="index.html";
-});
-
-// التاريخ
 const today = new Date().toISOString().split("T")[0];
+const storageKey = "dailyDraft-" + today;
+const saveStatus = document.getElementById("saveStatus");
+let rows = [];
+let autoSaveTimer = null;
+let isSaving = false;
+
 document.getElementById("todayDate").innerText = "تاريخ اليوم: " + today;
 
-// قوائم
-let sizes = ["20","40","2*20"];
-let places = ["الإسكندرية","الدخيلة"];
-let moves = ["15مايو","ابو المطامير","ابو رواش","اكتوبر","العاشر","السادات"];
-let agencies = ["CMA","MSC","MESCO","بان مارين","MAERSK"];
-let types = ["صادر","وارد"];
-let clients = ["النساجون","موفت","هيثم","سحر","شيماء","مروة"];
+firebase.auth().onAuthStateChanged(user => {
+  if (!user) {
+    window.location = "index.html";
+  }
+});
 
-let rows = [];
-
-// تحميل
-function loadData(){
-  db.ref("daily/"+today).once("value",snap=>{
-    rows = snap.val() || [];
-    render();
-  });
+function getEmptyRow() {
+  return {
+    containerCount: "",
+    size: "",
+    place: "",
+    move: "",
+    agency: "",
+    type: "",
+    client: "",
+    notes: ""
+  };
 }
 
-function render(){
+function setStatus(message, isError = false) {
+  saveStatus.textContent = message;
+  saveStatus.style.color = isError ? "#c0392b" : "#6b7280";
+}
+
+function escapeHtml(value) {
+  return String(value || "")
+    .replace(/&/g, "&amp;")
+    .replace(/</g, "&lt;")
+    .replace(/>/g, "&gt;")
+    .replace(/"/g, "&quot;")
+    .replace(/'/g, "&#39;");
+}
+
+function persistDraftLocal() {
+  localStorage.setItem(storageKey, JSON.stringify(rows));
+}
+
+function readDraftLocal() {
+  const raw = localStorage.getItem(storageKey);
+  if (!raw) return null;
+
+  try {
+    return JSON.parse(raw);
+  } catch (error) {
+    return null;
+  }
+}
+
+function render() {
   const tbody = document.getElementById("tableBody");
   tbody.innerHTML = "";
 
-  rows.forEach((r,i)=>{
+  if (!rows.length) {
+    rows = [getEmptyRow()];
+  }
+
+  rows.forEach((row, index) => {
     const tr = document.createElement("tr");
 
     tr.innerHTML = `
-      <td>${today}</td>
-
-      <td>
-        <input list="sizes" value="${r.size||""}">
-      </td>
-
-      <td>
-        <input list="places" value="${r.place||""}">
-      </td>
-
-      <td>
-        <input list="moves" value="${r.move||""}">
-      </td>
-
-      <td>
-        <input list="agencies" value="${r.agency||""}">
-      </td>
-
-      <td>
-        <input list="types" value="${r.type||""}">
-      </td>
-
-      <td>
-        <input list="clients" value="${r.client||""}">
-      </td>
-
-      <td>
-        <button class="delete-btn" onclick="deleteRow(${i})">❌</button>
-      </td>
+      <td class="date-cell">${today}</td>
+      <td><input type="number" min="0" inputmode="numeric" data-index="${index}" data-field="containerCount" value="${escapeHtml(row.containerCount)}"></td>
+      <td><input list="sizes" data-index="${index}" data-field="size" value="${escapeHtml(row.size)}"></td>
+      <td><input list="places" data-index="${index}" data-field="place" value="${escapeHtml(row.place)}"></td>
+      <td><input list="moves" data-index="${index}" data-field="move" value="${escapeHtml(row.move)}"></td>
+      <td><input list="agencies" data-index="${index}" data-field="agency" value="${escapeHtml(row.agency)}"></td>
+      <td><input list="types" data-index="${index}" data-field="type" value="${escapeHtml(row.type)}"></td>
+      <td><input list="clients" data-index="${index}" data-field="client" value="${escapeHtml(row.client)}"></td>
+      <td><input data-index="${index}" data-field="notes" value="${escapeHtml(row.notes)}" placeholder="اكتب ملاحظات"></td>
+      <td><button class="delete-btn" onclick="deleteRow(${index})">حذف</button></td>
     `;
 
     tbody.appendChild(tr);
   });
 }
 
-// إضافة
-function addRow(){
-  rows.push({});
-  render();
-}
+function updateRowsFromDom() {
+  const inputs = document.querySelectorAll("#tableBody input");
 
-// حذف
-function deleteRow(i){
-  rows.splice(i,1);
-  render();
-}
+  inputs.forEach(input => {
+    const rowIndex = Number(input.dataset.index);
+    const field = input.dataset.field;
 
-// حفظ
-function saveData(){
-  const trs = document.querySelectorAll("#tableBody tr");
+    if (!rows[rowIndex]) {
+      rows[rowIndex] = getEmptyRow();
+    }
 
-  rows = Array.from(trs).map(tr=>{
-    const inputs = tr.querySelectorAll("input");
-    return {
-      size: inputs[0].value,
-      place: inputs[1].value,
-      move: inputs[2].value,
-      agency: inputs[3].value,
-      type: inputs[4].value,
-      client: inputs[5].value
-    };
+    rows[rowIndex][field] = input.value;
   });
 
-  db.ref("daily/"+today).set(rows)
-  .then(()=> alert("تم حفظ اليوم ✅"));
+  persistDraftLocal();
 }
 
-// خروج
-function logout(){
-  firebase.auth().signOut().then(()=>{
-    window.location="index.html";
+function scheduleAutoSave() {
+  clearTimeout(autoSaveTimer);
+  setStatus("هناك تعديلات لم تُرفع بعد...");
+  autoSaveTimer = setTimeout(() => saveData(false), 700);
+}
+
+function handleInput(event) {
+  const input = event.target;
+
+  if (!input.matches("#tableBody input")) {
+    return;
+  }
+
+  const rowIndex = Number(input.dataset.index);
+  const field = input.dataset.field;
+
+  if (!rows[rowIndex]) {
+    rows[rowIndex] = getEmptyRow();
+  }
+
+  rows[rowIndex][field] = input.value;
+  persistDraftLocal();
+  scheduleAutoSave();
+}
+
+function loadData() {
+  const localDraft = readDraftLocal();
+
+  db.ref("daily/" + today).once("value", snap => {
+    const remoteRows = snap.val();
+
+    if (Array.isArray(localDraft) && localDraft.length) {
+      rows = localDraft;
+      setStatus("تم استرجاع آخر تعديلات محفوظة تلقائيًا.");
+    } else if (Array.isArray(remoteRows) && remoteRows.length) {
+      rows = remoteRows;
+      setStatus("تم تحميل بيانات اليوم.");
+    } else {
+      rows = [getEmptyRow()];
+      setStatus("ابدأ بإضافة بيانات اليوم.");
+    }
+
+    render();
+  }).catch(() => {
+    rows = Array.isArray(localDraft) && localDraft.length ? localDraft : [getEmptyRow()];
+    render();
+    setStatus("تعذر تحميل البيانات من الخادم، تم فتح آخر نسخة محلية.", true);
   });
 }
 
-// رجوع
-function goBack(){
-  window.location="dashboard.html";
+function addRow() {
+  updateRowsFromDom();
+  saveData(false);
+  rows.push(getEmptyRow());
+  persistDraftLocal();
+  render();
+  setStatus("تمت إضافة سطر جديد وحفظ التعديلات الحالية.");
 }
+
+function deleteRow(index) {
+  updateRowsFromDom();
+  rows.splice(index, 1);
+
+  if (!rows.length) {
+    rows = [getEmptyRow()];
+  }
+
+  persistDraftLocal();
+  render();
+  saveData(false);
+}
+
+function saveData(showAlert = true) {
+  updateRowsFromDom();
+  clearTimeout(autoSaveTimer);
+
+  if (isSaving) {
+    return Promise.resolve();
+  }
+
+  isSaving = true;
+  setStatus("جارٍ الحفظ...");
+
+  return db.ref("daily/" + today).set(rows)
+    .then(() => {
+      persistDraftLocal();
+      setStatus("تم الحفظ تلقائيًا في " + new Date().toLocaleTimeString("ar-EG", { hour: "2-digit", minute: "2-digit" }));
+      if (showAlert) {
+        alert("تم حفظ اليوم بنجاح");
+      }
+    })
+    .catch(() => {
+      setStatus("تعذر رفع التعديلات الآن، لكن تم الاحتفاظ بها على هذا الجهاز.", true);
+      if (showAlert) {
+        alert("تعذر الحفظ على الخادم الآن، لكن البيانات محفوظة محليًا.");
+      }
+    })
+    .finally(() => {
+      isSaving = false;
+    });
+}
+
+async function logout() {
+  await saveData(false);
+  firebase.auth().signOut().then(() => {
+    window.location = "index.html";
+  });
+}
+
+async function goBack() {
+  await saveData(false);
+  window.location = "dashboard.html";
+}
+
+document.getElementById("tableBody").addEventListener("input", handleInput);
+
+window.addEventListener("beforeunload", () => {
+  updateRowsFromDom();
+  persistDraftLocal();
+});
 
 loadData();
 </script>
 
-<!-- datalist -->
 <datalist id="sizes">
   <option value="20">
   <option value="40">
