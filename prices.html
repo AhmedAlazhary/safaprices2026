@@ -3,78 +3,131 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>صفحة الأسعار</title>
+<title>أسعار الحاويات - مكتب الصفا</title>
 <style>
-body { font-family: Arial; margin:0; padding:15px; background:#eef2f7; }
-.container { max-width:1200px; margin:auto; }
-.header { text-align:center; margin-bottom:20px; }
-.header img { max-width:200px; filter: blur(1px); }
-.header h2 { margin:10px 0; font-size:24px; }
-input[type="text"] { padding:12px; width:100%; border-radius:10px; border:1px solid #ccc; margin-bottom:15px; font-size:16px; }
-table { width:100%; border-collapse: collapse; background:#fff; border-radius:10px; overflow:hidden; }
-th, td { border:1px solid #ddd; padding:10px; text-align:center; font-size:14px; }
-th { background:#2c3e50; color:#fff; }
+body {
+  font-family: Arial, sans-serif;
+  background:#eef2f7;
+  margin:0;
+  padding:0;
+}
+header {
+  display:flex;
+  align-items:center;
+  justify-content:space-between;
+  background:#2c3e50;
+  color:white;
+  padding:10px 20px;
+}
+header img {
+  height:60px;
+}
+header h2 {
+  margin:0;
+}
+header button {
+  padding:8px 15px;
+  border:none;
+  border-radius:5px;
+  background:#e74c3c;
+  color:white;
+  cursor:pointer;
+}
+.container {
+  max-width:1000px;
+  margin:20px auto;
+  text-align:center;
+}
+input {
+  padding:12px;
+  width:100%;
+  border-radius:10px;
+  border:1px solid #ccc;
+  margin-bottom:15px;
+  font-size:16px;
+}
+table {
+  width:100%;
+  border-collapse:collapse;
+  background:#fff;
+  border-radius:10px;
+  overflow:hidden;
+}
+th, td {
+  border:1px solid #ddd;
+  padding:10px;
+  text-align:center;
+  font-size:14px;
+}
 tr:nth-child(even){background:#f9f9f9;}
-.save-btn, .delete-btn { padding:5px 10px; border:none; border-radius:5px; cursor:pointer; }
-.save-btn { background:#27ae60; color:#fff; }
-.delete-btn { background:#c0392b; color:#fff; }
-
-.market-header { background:#cce5ff; font-weight:bold; }
-.client-header { background:#f8d7da; font-weight:bold; }
-.market-cell { background:#3498db; color:#fff; font-weight:bold; }
-.client-cell { background:#e74c3c; color:#fff; font-weight:bold; }
-
-.top-buttons { margin:15px 0; text-align:center; }
-.top-buttons button { padding:10px 20px; margin:5px; border:none; border-radius:10px; cursor:pointer; }
-.logout-btn { background:#95a5a6; color:#fff; }
-.back-btn { background:#34495e; color:#fff; }
-.add-row-btn { background:#f39c12; color:#fff; }
+th {
+  color:#fff;
+}
+.header-row {
+  background:#3498db;
+  color:white;
+  font-weight:bold;
+}
+.market-col { background:#d6eaf8; }
+.client-col { background:#f8d7da; }
+.edit-btn {
+  padding:5px 10px;
+  border:none;
+  border-radius:5px;
+  background:#27ae60;
+  color:white;
+  cursor:pointer;
+}
+.edit-btn:disabled { background:#95a5a6; cursor:not-allowed; }
+.delete-btn {
+  padding:5px 10px;
+  border:none;
+  border-radius:5px;
+  background:#e74c3c;
+  color:white;
+  cursor:pointer;
+}
 </style>
 </head>
 <body>
 
+<header>
+  <img src="logo.png" alt="logo">
+  <h2>📦 أسعار الحاويات - مكتب الصفا</h2>
+  <button onclick="logout()">تسجيل الخروج</button>
+</header>
+
 <div class="container">
-  <div class="header">
-    <img src="logo.png" alt="logo">
-    <h2>📦 أسعار نقلات مكتب الصفا - 2026</h2>
-  </div>
-
-  <div class="top-buttons">
-    <button class="back-btn" onclick="goDashboard()">⬅ العودة للوحة التحكم</button>
-    <button class="logout-btn" onclick="logout()">تسجيل خروج</button>
-    <button class="add-row-btn" id="addRowButton">إضافة صف جديد</button>
-  </div>
-
   <input type="text" id="search" placeholder="اكتب المكان أو العميل..." onkeyup="searchData()">
-
   <table>
     <thead>
       <tr>
         <th rowspan="2">العميل</th>
         <th rowspan="2">المكان</th>
-        <th colspan="3" class="market-header">سعر السوق</th>
+        <th colspan="3" class="header-row market-col">سعر السوق</th>
         <th rowspan="2">قومسيون</th>
-        <th colspan="3" class="client-header">سعر العميل</th>
-        <th rowspan="2">إجراءات</th>
+        <th colspan="3" class="header-row client-col">سعر العميل</th>
+        <th rowspan="2">حذف</th>
       </tr>
       <tr>
-        <th class="market-cell">20</th>
-        <th class="market-cell">40</th>
-        <th class="market-cell">2×20</th>
-        <th class="client-cell">20</th>
-        <th class="client-cell">40</th>
-        <th class="client-cell">2×20</th>
+        <th class="market-col">20</th>
+        <th class="market-col">40</th>
+        <th class="market-col">2×20</th>
+        <th class="client-col">20</th>
+        <th class="client-col">40</th>
+        <th class="client-col">2×20</th>
       </tr>
     </thead>
     <tbody id="tableBody"></tbody>
   </table>
+  <button id="addRowButton">إضافة بيانات جديدة</button>
 </div>
 
 <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-app-compat.js"></script>
 <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-database-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-auth-compat.js"></script>
 
 <script>
-// Firebase
 const firebaseConfig = {
   apiKey: "AIzaSyARqSgfh78TqFQ2hhZaAtUaVQFqlPuRM3w",
   authDomain: "trialsafaprices2026.firebaseapp.com",
@@ -88,19 +141,13 @@ firebase.initializeApp(firebaseConfig);
 const database = firebase.database();
 
 // حماية الصفحة
-firebase.auth().onAuthStateChanged((user) => {
-  if (!user) {
-    window.location = "index.html";
-  }
+firebase.auth().onAuthStateChanged(user => {
+  if(!user) window.location.href = "index.html";
 });
-
-function goDashboard(){ window.location="dashboard.html"; }
-function logout(){ localStorage.removeItem("username"); window.location="index.html"; }
 
 let data = [];
 const commission = 500;
 
-// تحميل البيانات من Firebase
 function loadData(){
   database.ref('prices').on('value', snapshot => {
     data = snapshot.val() || [];
@@ -108,70 +155,64 @@ function loadData(){
   });
 }
 
-// عرض الجدول
 function renderTable(list){
-  const tbody = document.getElementById("tableBody");
-  tbody.innerHTML = "";
-  list.forEach((row, idx)=>{
-    const tr = document.createElement("tr");
+  const tbody = document.getElementById('tableBody');
+  tbody.innerHTML = '';
+  list.forEach((row,index)=>{
+    const tr = document.createElement('tr');
     tr.innerHTML = `
-      <td contenteditable="true">${row.clientName || ""}</td>
-      <td contenteditable="true">${row.place || ""}</td>
-      <td contenteditable="true">${row.market?.c20 || 0}</td>
-      <td contenteditable="true">${row.market?.c40 || 0}</td>
-      <td contenteditable="true">${row.market?.c2x20 || 0}</td>
-      <td contenteditable="true">${row.commission || commission}</td>
-      <td contenteditable="true">${row.client?.c20 || 0}</td>
-      <td contenteditable="true">${row.client?.c40 || 0}</td>
-      <td contenteditable="true">${row.client?.c2x20 || 0}</td>
-      <td>
-        <button class="save-btn" onclick="saveRow(${idx})">💾 حفظ</button>
-        <button class="delete-btn" onclick="deleteRow(${idx})">🗑 حذف</button>
-      </td>
+      <td contenteditable="true">${row.clientName||""}</td>
+      <td contenteditable="true">${row.place||""}</td>
+      <td class="market-col" contenteditable="true">${row.market?.c20||0}</td>
+      <td class="market-col" contenteditable="true">${row.market?.c40||0}</td>
+      <td class="market-col" contenteditable="true">${row.market?.c2x20||0}</td>
+      <td contenteditable="true">${row.commission||commission}</td>
+      <td class="client-col" contenteditable="true">${row.client?.c20||0}</td>
+      <td class="client-col" contenteditable="true">${row.client?.c40||0}</td>
+      <td class="client-col" contenteditable="true">${row.client?.c2x20||0}</td>
+      <td><button class="delete-btn" onclick="deleteRow(${index})">❌</button></td>
     `;
     tbody.appendChild(tr);
   });
 }
 
-// البحث
 function searchData(){
-  const q = document.getElementById("search").value.toLowerCase();
+  const q = document.getElementById('search').value.toLowerCase();
   const filtered = data.filter(row =>
-    (row.place || "").toLowerCase().includes(q) ||
-    (row.clientName || "").toLowerCase().includes(q)
+    (row.place||"").toLowerCase().includes(q) ||
+    (row.clientName||"").toLowerCase().includes(q)
   );
   renderTable(filtered);
 }
 
-// حفظ الصف الواحد
-function saveRow(idx){
-  const tbody = document.getElementById("tableBody");
-  const tr = tbody.children[idx];
-  data[idx] = {
-    clientName: tr.children[0].innerText,
-    place: tr.children[1].innerText,
-    market: { c20:+tr.children[2].innerText, c40:+tr.children[3].innerText, c2x20:+tr.children[4].innerText },
-    commission: +tr.children[5].innerText || commission,
-    client: { c20:+tr.children[6].innerText, c40:+tr.children[7].innerText, c2x20:+tr.children[8].innerText }
-  };
-  database.ref('prices').set(data).then(()=>alert("تم حفظ البيانات ✅"));
-}
-
-// حذف صف
-function deleteRow(idx){
-  if(confirm("هل أنت متأكد من حذف هذا الصف؟")){
-    data.splice(idx,1);
-    database.ref('prices').set(data).then(()=> loadData());
+function deleteRow(index){
+  if(confirm("هل تريد حذف هذا الصف؟")){
+    data.splice(index,1);
+    database.ref('prices').set(data);
   }
 }
 
-// إضافة صف جديد
-document.getElementById("addRowButton").addEventListener("click", ()=>{
-  data.push({clientName:"", place:"", market:{c20:0,c40:0,c2x20:0}, commission:commission, client:{c20:0,c40:0,c2x20:0}});
-  renderTable(data);
+document.getElementById('addRowButton').addEventListener('click',()=>{
+  const tbody = document.getElementById('tableBody');
+  const newRow = {
+    clientName:"",
+    place:"",
+    market:{c20:0,c40:0,c2x20:0},
+    commission:commission,
+    client:{c20:0,c40:0,c2x20:0}
+  };
+  data.push(newRow);
+  database.ref('prices').set(data);
 });
+
+function logout(){
+  firebase.auth().signOut().then(()=>{
+    window.location.href = "index.html";
+  });
+}
 
 loadData();
 </script>
+
 </body>
 </html>
