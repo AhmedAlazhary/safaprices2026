@@ -6,92 +6,174 @@
 <title>تسجيل الدخول - مكتب الصفا</title>
 
 <style>
+:root {
+  --primary: #1f4f7a;
+  --primary-dark: #173b5b;
+  --surface: rgba(255, 255, 255, 0.95);
+  --text: #1f2937;
+  --muted: #5f6b7a;
+  --border: #d4dce5;
+}
+
+* {
+  box-sizing: border-box;
+}
+
 body {
   margin: 0;
   font-family: Arial, sans-serif;
-  height: 100vh;
+  min-height: 100vh;
   display: flex;
   justify-content: center;
   align-items: center;
   position: relative;
   overflow: hidden;
+  background: linear-gradient(180deg, #eef4fa 0%, #dfeaf4 100%);
 }
 
-/* خلفية بلور */
 body::before {
   content: "";
   position: absolute;
-  width: 100%;
-  height: 100%;
+  inset: 0;
   background: url("logo.png") no-repeat center center;
-  background-size: 60%;
-  filter: blur(20px);
-  opacity: 0.2;
+  background-size: min(62vw, 420px);
+  filter: blur(22px);
+  opacity: 0.17;
   z-index: 0;
 }
 
-/* صندوق تسجيل الدخول */
+.intro-screen,
 .login-box {
   position: relative;
   z-index: 1;
-  background: rgba(255,255,255,0.95);
-  padding: 30px;
-  border-radius: 15px;
-  width: 320px;
+}
+
+.intro-screen {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 14px;
+  animation: fadeOut 0.7s ease 2.1s forwards;
+}
+
+.intro-logo {
+  width: clamp(140px, 30vw, 240px);
+  height: auto;
+  filter: drop-shadow(0 10px 24px rgba(31, 79, 122, 0.18));
+}
+
+.intro-text {
+  color: var(--primary-dark);
+  font-size: clamp(1rem, 2.5vw, 1.25rem);
+  font-weight: bold;
   text-align: center;
-  box-shadow: 0 0 20px rgba(0,0,0,0.2);
 }
 
-/* اللوجو */
+.login-box {
+  background: var(--surface);
+  padding: 30px;
+  border-radius: 18px;
+  width: min(92vw, 420px);
+  text-align: center;
+  box-shadow: 0 12px 32px rgba(0, 0, 0, 0.16);
+  opacity: 0;
+  transform: translateY(18px);
+  animation: revealBox 0.7s ease 2.3s forwards;
+  backdrop-filter: blur(6px);
+}
+
 .login-box img {
-  width: 120px;
-  margin-bottom: 10px;
-  animation: float 2s ease-in-out infinite alternate;
+  width: clamp(82px, 18vw, 110px);
+  margin-bottom: 12px;
 }
 
-/* حركة اللوجو */
-@keyframes float {
-  from { transform: translateY(0px); }
-  to { transform: translateY(-10px); }
+.login-title {
+  margin: 0 0 10px;
+  color: var(--primary-dark);
+  font-size: clamp(1.15rem, 2.6vw, 1.55rem);
+  line-height: 1.6;
 }
 
-h3 {
-  margin-bottom: 20px;
+.login-subtitle {
+  margin: 0 0 22px;
+  color: var(--muted);
+  font-size: clamp(0.88rem, 1.9vw, 0.98rem);
+  line-height: 1.8;
 }
 
 input {
   width: 100%;
   padding: 12px;
   margin: 10px 0;
-  border-radius: 10px;
-  border: 1px solid #ccc;
+  border-radius: 12px;
+  border: 1px solid var(--border);
   font-size: 16px;
 }
 
-/* زر */
+input:focus {
+  outline: none;
+  border-color: #7fb1dd;
+  box-shadow: 0 0 0 3px rgba(52, 152, 219, 0.14);
+}
+
 button {
   width: 100%;
   padding: 12px;
   border: none;
-  border-radius: 10px;
+  border-radius: 12px;
   background: #3498db;
   color: white;
   font-size: 16px;
   cursor: pointer;
   transition: 0.3s;
+  margin-top: 6px;
 }
 
 button:hover {
   background: #2980b9;
+}
+
+@keyframes fadeOut {
+  to {
+    opacity: 0;
+    visibility: hidden;
+    transform: scale(0.96);
+  }
+}
+
+@keyframes revealBox {
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+@media (max-width: 480px) {
+  .login-box {
+    padding: 22px 16px;
+    border-radius: 16px;
+  }
+
+  input,
+  button {
+    font-size: 15px;
+  }
 }
 </style>
 </head>
 
 <body>
 
+<div class="intro-screen">
+  <img class="intro-logo" src="logo.gif" alt="شعار مكتب الصفا المتحرك">
+  <div class="intro-text">مكتب الصفا للنقل</div>
+</div>
+
 <div class="login-box">
-  <img src="logo.png" alt="logo">
-  <h3>أسعار نقلات مكتب الصفا - 2026</h3>
+  <img src="logo.gif" alt="شعار مكتب الصفا">
+  <h3 class="login-title">مرحبًا بك فى نظام مكتب الصفا للنقل</h3>
+  <p class="login-subtitle">من فضلك قم بتسجيل الدخول باسم المستخدم وكلمة المرور الخاصة بك والمقدمة من مكتب الصفا للنقل</p>
 
   <input type="text" id="username" placeholder="اسم المستخدم">
   <input type="password" id="password" placeholder="كلمة السر">
@@ -99,7 +181,6 @@ button:hover {
   <button onclick="login()">تسجيل الدخول</button>
 </div>
 
-<!-- Firebase -->
 <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-app-compat.js"></script>
 <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-auth-compat.js"></script>
 
@@ -115,7 +196,6 @@ const firebaseConfig = {
 
 firebase.initializeApp(firebaseConfig);
 
-/* ربط اليوزر بالإيميل */
 const usersMap = {
   "ahmed": "ahmed@safatrans.com",
   "hesham": "hesham@safatrans.com",
@@ -123,27 +203,25 @@ const usersMap = {
   "sabry": "sabry@safatrans.com"
 };
 
-function login(){
+function login() {
   const username = document.getElementById("username").value.trim().toLowerCase();
   const password = document.getElementById("password").value;
-
   const email = usersMap[username];
 
-  if(!email){
-    alert("اسم المستخدم غير صحيح ❌");
+  if (!email) {
+    alert("اسم المستخدم غير صحيح");
     return;
   }
 
   firebase.auth().signInWithEmailAndPassword(email, password)
-  .then(()=>{
-    window.location.href = "dashboard.html";
-  })
-  .catch(()=>{
-    alert("كلمة السر غير صحيحة ❌");
-  });
+    .then(() => {
+      window.location.href = "dashboard.html";
+    })
+    .catch(() => {
+      alert("كلمة السر غير صحيحة");
+    });
 }
 </script>
 
 </body>
 </html>
-
