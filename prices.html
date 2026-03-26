@@ -8,88 +8,204 @@
 <style>
 body {
   font-family: Arial, sans-serif;
-  background:#eef2f7;
-  margin:0;
+  background: #eef2f7;
+  margin: 0;
+}
+
+* {
+  box-sizing: border-box;
 }
 
 header {
-  display:flex;
-  align-items:center;
-  justify-content:space-between;
-  background:#2c3e50;
-  color:white;
-  padding:10px 20px;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  background: #2c3e50;
+  color: white;
+  padding: 10px 20px;
+  gap: 12px;
+  flex-wrap: wrap;
 }
 
 header img {
-  height:60px;
+  height: 60px;
 }
 
 .container {
-  max-width:1100px;
-  margin:20px auto;
-  text-align:center;
+  width: min(1200px, calc(100% - 24px));
+  margin: 20px auto;
+  text-align: center;
 }
 
 input {
-  padding:12px;
-  width:100%;
-  border-radius:10px;
-  border:1px solid #ccc;
-  margin-bottom:15px;
-  font-size:16px;
+  padding: 12px;
+  width: 100%;
+  border-radius: 10px;
+  border: 1px solid #ccc;
+  margin-bottom: 15px;
+  font-size: 16px;
+}
+
+.table-wrap {
+  overflow: auto;
+  max-height: 70vh;
+  border-radius: 12px;
+  box-shadow: 0 8px 24px rgba(44, 62, 80, 0.08);
 }
 
 table {
-  width:100%;
-  border-collapse:collapse;
-  background:#fff;
-  border-radius:10px;
-  overflow:hidden;
+  width: 100%;
+  border-collapse: collapse;
+  background: #fff;
+  border-radius: 10px;
+  overflow: hidden;
+  min-width: 1100px;
 }
 
 th, td {
-  border:1px solid #ddd;
-  padding:10px;
-  text-align:center;
+  border: 1px solid #ddd;
+  padding: 10px 8px;
+  text-align: center;
+  white-space: nowrap;
 }
 
-tr:nth-child(even){background:#f9f9f9;}
+tr:nth-child(even) {
+  background: #f9f9f9;
+}
 
-th {
-  color:#fff;
+thead th {
+  color: #1f2937;
+  background: #eaf2f8;
+  font-weight: bold;
+  position: sticky;
+  z-index: 8;
+}
+
+thead tr:first-child th {
+  top: 0;
+}
+
+thead tr:nth-child(2) th {
+  top: 43px;
+  z-index: 9;
 }
 
 .header-row {
-  background:#3498db;
-  color:white;
-  font-weight:bold;
+  background: #3498db !important;
+  color: white !important;
+  font-weight: bold;
 }
 
 .market-col {
-  background:#d6eaf8;
-  font-weight:bold;
+  background: #d6eaf8;
+  font-weight: bold;
+  color: #1f2937;
 }
 
 .client-col {
-  background:#f8d7da;
-  font-weight:bold;
+  background: #f8d7da;
+  font-weight: bold;
+  color: #1f2937;
+}
+
+.notes-col {
+  min-width: 180px;
 }
 
 button {
-  padding:10px 15px;
-  border:none;
-  border-radius:8px;
-  cursor:pointer;
-  margin:5px;
+  padding: 10px 15px;
+  border: none;
+  border-radius: 8px;
+  cursor: pointer;
+  margin: 5px;
 }
 
-.save-btn { background:#27ae60; color:white; }
-.delete-btn { background:#e74c3c; color:white; }
-.add-btn { background:#2980b9; color:white; }
+.save-btn { background: #27ae60; color: white; }
+.delete-btn { background: #e74c3c; color: white; }
+.add-btn { background: #2980b9; color: white; }
 
 .top-buttons {
-  margin-bottom:10px;
+  margin-bottom: 10px;
+  margin-top: 12px;
+  display: flex;
+  justify-content: center;
+  gap: 10px;
+  flex-wrap: wrap;
+}
+
+header h2 {
+  margin: 0;
+  font-size: clamp(1rem, 2.4vw, 1.5rem);
+}
+
+header > div {
+  display: flex;
+  gap: 8px;
+  flex-wrap: wrap;
+}
+
+@media (max-width: 768px) {
+  header {
+    padding: 12px;
+  }
+
+  header img {
+    height: 50px;
+  }
+
+  .container {
+    width: min(100% - 16px, 1000px);
+    margin: 14px auto 20px;
+  }
+
+  input {
+    font-size: 15px;
+    padding: 10px;
+  }
+
+  button {
+    font-size: 14px;
+    padding: 10px 12px;
+  }
+
+  .top-buttons button,
+  header > div button {
+    flex: 1 1 140px;
+  }
+
+  .table-wrap {
+    max-height: 65vh;
+  }
+
+  th,
+  td {
+    padding: 9px 7px;
+    font-size: 14px;
+  }
+
+  thead tr:nth-child(2) th {
+    top: 41px;
+  }
+}
+
+@media (max-width: 480px) {
+  .container {
+    width: calc(100% - 12px);
+  }
+
+  th,
+  td {
+    font-size: 13px;
+    padding: 8px 6px;
+  }
+
+  .table-wrap {
+    max-height: 60vh;
+  }
+
+  thead tr:nth-child(2) th {
+    top: 39px;
+  }
 }
 </style>
 </head>
@@ -97,8 +213,8 @@ button {
 <body>
 
 <header>
-  <img src="logo.png">
-  <h2>📦 أسعار الحاويات - مكتب الصفا</h2>
+  <img src="logo.png" alt="شعار مكتب الصفا">
+  <h2>أسعار الحاويات - مكتب الصفا</h2>
   <div>
     <button onclick="goBack()">رجوع</button>
     <button onclick="logout()">تسجيل خروج</button>
@@ -107,8 +223,9 @@ button {
 
 <div class="container">
 
-<input type="text" id="search" placeholder="اكتب المكان أو العميل..." onkeyup="searchData()">
+<input type="text" id="search" placeholder="اكتب المكان أو العميل أو الملاحظات..." onkeyup="searchData()">
 
+<div class="table-wrap">
 <table>
 <thead>
 <tr>
@@ -117,6 +234,7 @@ button {
 <th colspan="3" class="header-row market-col">سعر السوق</th>
 <th rowspan="2">قومسيون</th>
 <th colspan="3" class="header-row client-col">سعر العميل</th>
+<th rowspan="2" class="notes-col">ملاحظات</th>
 <th rowspan="2">حذف</th>
 </tr>
 
@@ -132,15 +250,15 @@ button {
 
 <tbody id="tableBody"></tbody>
 </table>
+</div>
 
 <div class="top-buttons">
-  <button class="add-btn" onclick="addRow()">➕ إضافة بيانات جديدة</button>
-  <button class="save-btn" onclick="saveAll()">💾 حفظ التعديلات</button>
+  <button class="add-btn" onclick="addRow()">إضافة بيانات جديدة</button>
+  <button class="save-btn" onclick="saveAll()">حفظ التعديلات</button>
 </div>
 
 </div>
 
-<!-- Firebase -->
 <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-app-compat.js"></script>
 <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-auth-compat.js"></script>
 <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-database-compat.js"></script>
@@ -159,40 +277,38 @@ const firebaseConfig = {
 firebase.initializeApp(firebaseConfig);
 const database = firebase.database();
 
-// حماية الصفحة
 firebase.auth().onAuthStateChanged(user => {
-  if(!user) window.location = "index.html";
+  if (!user) window.location = "index.html";
 });
 
 let data = [];
 let filteredData = null;
 
-// تحميل البيانات
-function loadData(){
-  database.ref('prices').on('value', snapshot => {
+function loadData() {
+  database.ref("prices").on("value", snapshot => {
     data = snapshot.val() || [];
     renderTable(data);
   });
 }
 
-// عرض الجدول
-function renderTable(list){
-  const tbody = document.getElementById('tableBody');
-  tbody.innerHTML = '';
+function renderTable(list) {
+  const tbody = document.getElementById("tableBody");
+  tbody.innerHTML = "";
 
-  list.forEach((row,index)=>{
-    const tr = document.createElement('tr');
+  list.forEach((row, index) => {
+    const tr = document.createElement("tr");
 
     tr.innerHTML = `
-      <td contenteditable="true">${row.clientName||""}</td>
-      <td contenteditable="true">${row.place||""}</td>
-      <td class="market-col" contenteditable="true">${row.market?.c20||0}</td>
-      <td class="market-col" contenteditable="true">${row.market?.c40||0}</td>
-      <td class="market-col" contenteditable="true">${row.market?.c2x20||0}</td>
-      <td contenteditable="true">${row.commission||0}</td>
-      <td class="client-col" contenteditable="true">${row.client?.c20||0}</td>
-      <td class="client-col" contenteditable="true">${row.client?.c40||0}</td>
-      <td class="client-col" contenteditable="true">${row.client?.c2x20||0}</td>
+      <td contenteditable="true">${row.clientName || ""}</td>
+      <td contenteditable="true">${row.place || ""}</td>
+      <td class="market-col" contenteditable="true">${row.market?.c20 || 0}</td>
+      <td class="market-col" contenteditable="true">${row.market?.c40 || 0}</td>
+      <td class="market-col" contenteditable="true">${row.market?.c2x20 || 0}</td>
+      <td contenteditable="true">${row.commission || 0}</td>
+      <td class="client-col" contenteditable="true">${row.client?.c20 || 0}</td>
+      <td class="client-col" contenteditable="true">${row.client?.c40 || 0}</td>
+      <td class="client-col" contenteditable="true">${row.client?.c2x20 || 0}</td>
+      <td class="notes-col" contenteditable="true">${row.notes || ""}</td>
       <td><button class="delete-btn" onclick="deleteRow(${index})">❌</button></td>
     `;
 
@@ -200,60 +316,58 @@ function renderTable(list){
   });
 }
 
-// بحث
-function searchData(){
-  const q = document.getElementById('search').value.toLowerCase();
+function searchData() {
+  const q = document.getElementById("search").value.toLowerCase();
 
-  if(!q){
+  if (!q) {
     filteredData = null;
     renderTable(data);
     return;
   }
 
   filteredData = data.filter(row =>
-    (row.place||"").toLowerCase().includes(q) ||
-    (row.clientName||"").toLowerCase().includes(q)
+    (row.place || "").toLowerCase().includes(q) ||
+    (row.clientName || "").toLowerCase().includes(q) ||
+    (row.notes || "").toLowerCase().includes(q)
   );
 
   renderTable(filteredData);
 }
 
-// إضافة صف
-function addRow(){
-  if(filteredData){
-    alert("امسح البحث الأول قبل الإضافة ⚠️");
+function addRow() {
+  if (filteredData) {
+    alert("امسح البحث الأول قبل الإضافة");
     return;
   }
 
   const newRow = {
-    clientName:"",
-    place:"",
-    market:{c20:0,c40:0,c2x20:0},
-    commission:0,
-    client:{c20:0,c40:0,c2x20:0}
+    clientName: "",
+    place: "",
+    market: { c20: 0, c40: 0, c2x20: 0 },
+    commission: 0,
+    client: { c20: 0, c40: 0, c2x20: 0 },
+    notes: ""
   };
 
   data.push(newRow);
   renderTable(data);
 }
 
-// حذف صف
-function deleteRow(index){
-  if(filteredData){
-    alert("امسح البحث الأول قبل الحذف ⚠️");
+function deleteRow(index) {
+  if (filteredData) {
+    alert("امسح البحث الأول قبل الحذف");
     return;
   }
 
-  if(confirm("هل تريد حذف الصف؟")){
-    data.splice(index,1);
-    database.ref('prices').set(data);
+  if (confirm("هل تريد حذف الصف؟")) {
+    data.splice(index, 1);
+    database.ref("prices").set(data);
   }
 }
 
-// حفظ
-function saveAll(){
-  if(filteredData){
-    alert("امسح البحث الأول قبل الحفظ ⚠️");
+function saveAll() {
+  if (filteredData) {
+    alert("امسح البحث الأول قبل الحفظ");
     return;
   }
 
@@ -263,34 +377,33 @@ function saveAll(){
     const cells = tr.children;
 
     return {
-      clientName: cells[0].innerText,
-      place: cells[1].innerText,
+      clientName: cells[0].innerText.trim(),
+      place: cells[1].innerText.trim(),
       market: {
-        c20: Number(cells[2].innerText)||0,
-        c40: Number(cells[3].innerText)||0,
-        c2x20: Number(cells[4].innerText)||0
+        c20: Number(cells[2].innerText) || 0,
+        c40: Number(cells[3].innerText) || 0,
+        c2x20: Number(cells[4].innerText) || 0
       },
-      commission: Number(cells[5].innerText)||0,
+      commission: Number(cells[5].innerText) || 0,
       client: {
-        c20: Number(cells[6].innerText)||0,
-        c40: Number(cells[7].innerText)||0,
-        c2x20: Number(cells[8].innerText)||0
-      }
+        c20: Number(cells[6].innerText) || 0,
+        c40: Number(cells[7].innerText) || 0,
+        c2x20: Number(cells[8].innerText) || 0
+      },
+      notes: cells[9].innerText.trim()
     };
   });
 
-  database.ref('prices').set(data)
-  .then(()=> alert("تم الحفظ بنجاح ✅"));
+  database.ref("prices").set(data)
+    .then(() => alert("تم الحفظ بنجاح"));
 }
 
-// رجوع
-function goBack(){
+function goBack() {
   window.location = "dashboard.html";
 }
 
-// خروج
-function logout(){
-  firebase.auth().signOut().then(()=>{
+function logout() {
+  firebase.auth().signOut().then(() => {
     window.location = "index.html";
   });
 }
