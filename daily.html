@@ -696,6 +696,24 @@ const summaryMonthPicker = document.getElementById("summaryMonthPicker");
 const archiveSearchInput = document.getElementById("archiveSearchInput");
 const printArea = document.getElementById("printArea");
 
+const DEFAULT_LIST_OPTIONS = {
+  sizes: ["20", "40", "2*20"],
+  places: ["الإسكندرية", "الدخيلة"],
+  moves: ["15مايو", "ابو المطامير", "ابو رواش", "اكتوبر", "العاشر", "السادات"],
+  agencies: ["CMA", "MSC", "MESCO", "بان مارين", "MAERSK"],
+  types: ["صادر", "وارد"],
+  clients: ["النساجون", "موفت", "هيثم", "سحر", "شيماء", "مروة"]
+};
+
+const FIELD_TO_LIST_ID = {
+  size: "sizes",
+  place: "places",
+  move: "moves",
+  agency: "agencies",
+  type: "types",
+  client: "clients"
+};
+
 let currentUser = null;
 let currentDate = today;
 let currentSummaryMonth = today.slice(0, 7);
@@ -708,6 +726,7 @@ let pendingImmediateSaves = {};
 let collapsedDates = {};
 let activeLocks = {};
 let lockIntervals = {};
+let sharedListOptions = {};
 
 datePicker.value = today;
 summaryMonthPicker.value = currentSummaryMonth;
@@ -810,6 +829,51 @@ function markDateDirty(date) {
 
 function clearDateDirty(date) {
   delete dirtyDates[date];
+}
+
+function normalizeOptionValue(value) {
+  return String(value || "").trim();
+}
+
+function makeOptionKey(value) {
+  const normalized = normalizeOptionValue(value).toLocaleLowerCase("ar");
+  return btoa(unescape(encodeURIComponent(normalized))).replace(/[+/=]/g, "_");
+}
+
+function getMergedListOptions(listId) {
+  const defaults = DEFAULT_LIST_OPTIONS[listId] || [];
+  const shared = sharedListOptions[listId] || [];
+  return Array.from(new Set([...defaults, ...shared].map(normalizeOptionValue).filter(Boolean)));
+}
+
+function renderSharedDatalist(listId) {
+  const datalist = document.getElementById(listId);
+  if (!datalist) return;
+
+  datalist.innerHTML = getMergedListOptions(listId)
+    .map(option => `<option value="${escapeHtml(option)}">`)
+    .join("");
+}
+
+function renderAllSharedDatalists() {
+  Object.keys(DEFAULT_LIST_OPTIONS).forEach(renderSharedDatalist);
+}
+
+function saveSharedOptionForField(field, value) {
+  const listId = FIELD_TO_LIST_ID[field];
+  const normalized = normalizeOptionValue(value);
+
+  if (!listId || !normalized) {
+    return Promise.resolve();
+  }
+
+  const existing = getMergedListOptions(listId).map(item => item.toLocaleLowerCase("ar"));
+  if (existing.includes(normalized.toLocaleLowerCase("ar"))) {
+    return Promise.resolve();
+  }
+
+  const optionKey = makeOptionKey(normalized);
+  return db.ref("sharedLists/" + listId + "/" + optionKey).set(normalized).catch(() => {});
 }
 
 function setCurrentStatus(message, isError = false) {
@@ -1224,6 +1288,7 @@ function handleInput(event) {
     row[field] = input.value;
     markDateDirty(date);
     saveDraft(date);
+    saveSharedOptionForField(field, input.value);
     scheduleAutoSave(date);
   }).catch(error => {
     setCurrentStatus(error.message || "تعذر تعديل هذا السطر الآن.", true);
@@ -1248,6 +1313,7 @@ function handleCellCommit(event) {
     row[field] = input.value;
     markDateDirty(date);
     saveDraft(date);
+    saveSharedOptionForField(field, input.value);
     return requestImmediateSave(date, rowId);
   }).catch(error => {
     setCurrentStatus(error.message || "تعذر حفظ هذا السطر الآن.", true);
@@ -1364,8 +1430,6 @@ function renderPrintableRows(date) {
       <td>${escapeHtml(row.type)}</td>
       <td>${escapeHtml(row.client)}</td>
       <td>${escapeHtml(row.notes)}</td>
-      <td>${escapeHtml(row.updatedBy || "-")}</td>
-      <td>${escapeHtml(formatTimestamp(row.updatedAt))}</td>
     </tr>
   `).join("");
 }
@@ -1457,6 +1521,26 @@ function mergeLocalDraftsFallback() {
     if (Array.isArray(draft) && draft.length) {
       dailyData[date] = draft;
     }
+  });
+}
+
+function loadSharedLists() {
+  db.ref("sharedLists").on("value", snap => {
+    const raw = snap.val() || {};
+    const nextOptions = {};
+
+    Object.keys(DEFAULT_LIST_OPTIONS).forEach(listId => {
+      const values = raw[listId] && typeof raw[listId] === "object"
+        ? Object.values(raw[listId]).map(normalizeOptionValue).filter(Boolean)
+        : [];
+      nextOptions[listId] = values;
+    });
+
+    sharedListOptions = nextOptions;
+    renderAllSharedDatalists();
+  }, () => {
+    sharedListOptions = {};
+    renderAllSharedDatalists();
   });
 }
 
@@ -1601,8 +1685,6 @@ function printDate(date) {
           <th>نوع</th>
           <th>العميل</th>
           <th>ملاحظات</th>
-          <th>آخر تعديل بواسطة</th>
-          <th>وقت آخر تعديل</th>
         </tr>
       </thead>
         <tbody>${renderPrintableRows(date)}</tbody>
@@ -1673,50 +1755,16 @@ window.addEventListener("beforeunload", () => {
   });
 });
 
+renderAllSharedDatalists();
+loadSharedLists();
 loadAllData();
 </script>
-
-<datalist id="sizes">
-  <option value="20">
-  <option value="40">
-  <option value="2*20">
-</datalist>
-
-<datalist id="places">
-  <option value="الإسكندرية">
-  <option value="الدخيلة">
-</datalist>
-
-<datalist id="moves">
-  <option value="15مايو">
-  <option value="ابو المطامير">
-  <option value="ابو رواش">
-  <option value="اكتوبر">
-  <option value="العاشر">
-  <option value="السادات">
-</datalist>
-
-<datalist id="agencies">
-  <option value="CMA">
-  <option value="MSC">
-  <option value="MESCO">
-  <option value="بان مارين">
-  <option value="MAERSK">
-</datalist>
-
-<datalist id="types">
-  <option value="صادر">
-  <option value="وارد">
-</datalist>
-
-<datalist id="clients">
-  <option value="النساجون">
-  <option value="موفت">
-  <option value="هيثم">
-  <option value="سحر">
-  <option value="شيماء">
-  <option value="مروة">
-</datalist>
+<datalist id="sizes"></datalist>
+<datalist id="places"></datalist>
+<datalist id="moves"></datalist>
+<datalist id="agencies"></datalist>
+<datalist id="types"></datalist>
+<datalist id="clients"></datalist>
 
 </body>
 </html>
