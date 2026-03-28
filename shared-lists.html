@@ -1,0 +1,412 @@
+<!DOCTYPE html>
+<html lang="ar" dir="rtl">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>إدارة القوائم المشتركة - مكتب الصفا</title>
+<style>
+:root {
+  --surface: #ffffff;
+  --surface-soft: #f7fbff;
+  --primary: #223547;
+  --accent: #2f89d9;
+  --success: #27ae60;
+  --danger: #e74c3c;
+  --muted: #697586;
+  --border: #d6e0eb;
+  --shadow: 0 12px 30px rgba(34, 53, 71, 0.08);
+}
+
+* { box-sizing: border-box; }
+body {
+  margin: 0;
+  font-family: "Tahoma", "Segoe UI", Arial, sans-serif;
+  background: linear-gradient(180deg, #f5f8fc 0%, #eaf1f8 100%);
+  color: #1f2937;
+}
+header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 12px;
+  flex-wrap: wrap;
+  padding: 14px 18px;
+  color: #fff;
+  background: linear-gradient(135deg, #1f3243 0%, #2c3e50 100%);
+}
+.brand {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+header img {
+  height: 52px;
+}
+h1, h2, h3, p { margin: 0; }
+.header-actions {
+  display: flex;
+  gap: 10px;
+  flex-wrap: wrap;
+}
+button {
+  border: none;
+  border-radius: 10px;
+  padding: 10px 14px;
+  cursor: pointer;
+  font-size: 0.95rem;
+  font-weight: 700;
+}
+.ghost-btn { background: rgba(255,255,255,0.16); color: #fff; }
+.save-btn { background: var(--accent); color: #fff; }
+.add-btn { background: var(--success); color: #fff; }
+.delete-btn { background: var(--danger); color: #fff; padding: 8px 12px; }
+.container {
+  width: min(1280px, calc(100% - 24px));
+  margin: 18px auto 28px;
+}
+.panel {
+  background: var(--surface);
+  border-radius: 18px;
+  box-shadow: var(--shadow);
+  padding: 18px;
+  margin-bottom: 18px;
+}
+.panel-head {
+  display: flex;
+  justify-content: space-between;
+  gap: 12px;
+  align-items: center;
+  flex-wrap: wrap;
+  margin-bottom: 14px;
+}
+.status-line {
+  min-height: 22px;
+  color: var(--muted);
+}
+.lists-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(320px, 1fr));
+  gap: 16px;
+}
+.list-card {
+  background: var(--surface-soft);
+  border: 1px solid var(--border);
+  border-radius: 16px;
+  padding: 14px;
+}
+.list-card h3 {
+  color: var(--primary);
+  margin-bottom: 8px;
+}
+.list-meta {
+  color: var(--muted);
+  font-size: 0.88rem;
+  margin-bottom: 12px;
+}
+.add-row {
+  display: flex;
+  gap: 8px;
+  margin-bottom: 12px;
+}
+.add-row input {
+  flex: 1;
+  border: 1px solid #ccd8e4;
+  border-radius: 10px;
+  padding: 9px 10px;
+  font-size: 0.95rem;
+}
+.items {
+  display: grid;
+  gap: 8px;
+  max-height: 360px;
+  overflow-y: auto;
+}
+.item {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 8px;
+  padding: 9px 10px;
+  border-radius: 12px;
+  background: #fff;
+  border: 1px solid var(--border);
+}
+.empty {
+  padding: 18px;
+  text-align: center;
+  color: var(--muted);
+  background: #fff;
+  border-radius: 12px;
+  border: 1px dashed var(--border);
+}
+@media (max-width: 640px) {
+  .add-row {
+    flex-direction: column;
+  }
+  .header-actions,
+  .header-actions button {
+    width: 100%;
+  }
+}
+</style>
+</head>
+<body>
+<header>
+  <div class="brand">
+    <img src="logo.png" alt="شعار مكتب الصفا">
+    <h1>إدارة القوائم المشتركة</h1>
+  </div>
+  <div class="header-actions">
+    <button class="ghost-btn" onclick="goToDaily()">العودة لبيان الشغل</button>
+    <button class="ghost-btn" onclick="goToDashboard()">لوحة التحكم</button>
+  </div>
+</header>
+
+<div class="container">
+  <section class="panel">
+    <div class="panel-head">
+      <div>
+        <h2>التحكم في القيم المشتركة</h2>
+        <p class="status-line" id="statusLine">جارٍ تحميل القوائم...</p>
+      </div>
+    </div>
+    <div id="listsContainer" class="lists-grid"></div>
+  </section>
+</div>
+
+<script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-app-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-auth-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-database-compat.js"></script>
+<script>
+const firebaseConfig = {
+  apiKey: "AIzaSyARqSgfh78TqFQ2hhZaAtUaVQFqlPuRM3w",
+  authDomain: "trialsafaprices2026.firebaseapp.com",
+  databaseURL: "https://trialsafaprices2026-default-rtdb.firebaseio.com",
+  projectId: "trialsafaprices2026",
+  storageBucket: "trialsafaprices2026.appspot.com",
+  messagingSenderId: "177091434445",
+  appId: "1:177091434445:web:568b6ae3ba270a21d4d684"
+};
+
+firebase.initializeApp(firebaseConfig);
+
+const db = firebase.database();
+const statusLine = document.getElementById("statusLine");
+const listsContainer = document.getElementById("listsContainer");
+
+const LIST_LABELS = {
+  sizes: "الحجم",
+  places: "المكان",
+  moves: "مكان النقلة",
+  agencies: "التوكيل",
+  types: "النوع",
+  clients: "العميل"
+};
+
+const DEFAULT_LIST_OPTIONS = {
+  sizes: ["20", "40", "2*20"],
+  places: ["الإسكندرية", "الدخيلة"],
+  moves: ["15مايو", "ابو المطامير", "ابو رواش", "اكتوبر", "العاشر", "السادات"],
+  agencies: ["CMA", "MSC", "MESCO", "بان مارين", "MAERSK"],
+  types: ["صادر", "وارد"],
+  clients: ["النساجون", "موفت", "هيثم", "سحر", "شيماء", "مروة"]
+};
+
+let sharedLists = {};
+let currentUser = null;
+
+firebase.auth().onAuthStateChanged(user => {
+  currentUser = user;
+  if (!user) {
+    window.location = "index.html";
+  }
+});
+
+function setStatus(message, isError = false) {
+  statusLine.textContent = message;
+  statusLine.style.color = isError ? "#c0392b" : "#697586";
+}
+
+function normalizeOptionValue(value) {
+  return String(value || "").trim();
+}
+
+function makeOptionKey(value) {
+  const normalized = normalizeOptionValue(value).toLocaleLowerCase("ar");
+  return btoa(unescape(encodeURIComponent(normalized))).replace(/[+/=]/g, "_");
+}
+
+function getListValues(listId) {
+  const defaults = DEFAULT_LIST_OPTIONS[listId] || [];
+  const shared = sharedLists[listId] || [];
+  return Array.from(new Set([...defaults, ...shared].map(normalizeOptionValue).filter(Boolean)))
+    .sort((a, b) => a.localeCompare(b, "ar"));
+}
+
+function renderLists() {
+  listsContainer.innerHTML = Object.keys(LIST_LABELS).map(listId => {
+    const values = getListValues(listId);
+    return `
+      <article class="list-card">
+        <h3>${LIST_LABELS[listId]}</h3>
+        <div class="list-meta">عدد العناصر: ${values.length}</div>
+        <div class="add-row">
+          <input id="input-${listId}" type="text" placeholder="أضف قيمة جديدة">
+          <button class="add-btn" onclick="addListValue('${listId}')">إضافة</button>
+        </div>
+        <div class="items">
+          ${values.length ? values.map(value => `
+            <div class="item">
+              <span>${value}</span>
+              <button class="delete-btn" onclick="removeListValue('${listId}', '${escapeForJs(value)}')">حذف</button>
+            </div>
+          `).join("") : '<div class="empty">لا توجد قيم في هذه القائمة.</div>'}
+        </div>
+      </article>
+    `;
+  }).join("");
+}
+
+function escapeForJs(value) {
+  return String(value).replace(/\\/g, "\\\\").replace(/'/g, "\\'");
+}
+
+function getUserLabel() {
+  if (!currentUser) return "مستخدم غير معروف";
+  return currentUser.email || currentUser.displayName || currentUser.uid;
+}
+
+function logChange(action, details = {}) {
+  const entry = {
+    action,
+    user: getUserLabel(),
+    createdAt: firebase.database.ServerValue.TIMESTAMP,
+    ...details
+  };
+
+  return db.ref("changeLog").push(entry).catch(() => {});
+}
+
+function addListValue(listId) {
+  const input = document.getElementById("input-" + listId);
+  const value = normalizeOptionValue(input.value);
+  if (!value) return;
+
+  const existing = getListValues(listId).map(item => item.toLocaleLowerCase("ar"));
+  if (existing.includes(value.toLocaleLowerCase("ar"))) {
+    setStatus("القيمة موجودة بالفعل في قائمة " + LIST_LABELS[listId] + ".");
+    input.value = "";
+    return;
+  }
+
+  const optionKey = makeOptionKey(value);
+  db.ref("sharedLists/" + listId + "/" + optionKey).set(value)
+    .then(() => {
+      input.value = "";
+      setStatus("تمت إضافة القيمة الجديدة إلى قائمة " + LIST_LABELS[listId] + ".");
+    })
+    .catch(() => {
+      setStatus("تعذر إضافة القيمة الآن.", true);
+    });
+}
+
+function removeListValue(listId, value) {
+  const normalized = normalizeOptionValue(value);
+  if (!normalized) return;
+
+  const confirmed = window.confirm("هل تريد حذف القيمة \"" + normalized + "\" من قائمة " + LIST_LABELS[listId] + "؟");
+  if (!confirmed) return;
+
+  const optionKey = makeOptionKey(normalized);
+  db.ref("sharedLists/" + listId + "/" + optionKey).remove()
+    .then(() => {
+      setStatus("تم حذف القيمة من قائمة " + LIST_LABELS[listId] + ".");
+    })
+    .catch(() => {
+      setStatus("تعذر حذف القيمة الآن.", true);
+    });
+}
+
+function addListValue(listId) {
+  const input = document.getElementById("input-" + listId);
+  const value = normalizeOptionValue(input.value);
+  if (!value) return;
+
+  const existing = getListValues(listId).map(item => item.toLocaleLowerCase("ar"));
+  if (existing.includes(value.toLocaleLowerCase("ar"))) {
+    setStatus("القيمة موجودة بالفعل في قائمة " + LIST_LABELS[listId] + ".");
+    input.value = "";
+    return;
+  }
+
+  const optionKey = makeOptionKey(value);
+  db.ref("sharedLists/" + listId + "/" + optionKey).set(value)
+    .then(() => {
+      input.value = "";
+      setStatus("تمت إضافة القيمة الجديدة إلى قائمة " + LIST_LABELS[listId] + ".");
+      return logChange("shared_list_add", {
+        listId,
+        value,
+        message: `تمت إضافة القيمة "${value}" إلى قائمة ${LIST_LABELS[listId]}`
+      });
+    })
+    .catch(() => {
+      setStatus("تعذر إضافة القيمة الآن.", true);
+    });
+}
+
+function removeListValue(listId, value) {
+  const normalized = normalizeOptionValue(value);
+  if (!normalized) return;
+
+  const confirmed = window.confirm("هل تريد حذف القيمة \"" + normalized + "\" من قائمة " + LIST_LABELS[listId] + "؟");
+  if (!confirmed) return;
+
+  const optionKey = makeOptionKey(normalized);
+  db.ref("sharedLists/" + listId + "/" + optionKey).remove()
+    .then(() => {
+      setStatus("تم حذف القيمة من قائمة " + LIST_LABELS[listId] + ".");
+      return logChange("shared_list_remove", {
+        listId,
+        value: normalized,
+        message: `تم حذف القيمة "${normalized}" من قائمة ${LIST_LABELS[listId]}`
+      });
+    })
+    .catch(() => {
+      setStatus("تعذر حذف القيمة الآن.", true);
+    });
+}
+
+function loadSharedLists() {
+  db.ref("sharedLists").on("value", snap => {
+    const raw = snap.val() || {};
+    const next = {};
+
+    Object.keys(LIST_LABELS).forEach(listId => {
+      next[listId] = raw[listId] && typeof raw[listId] === "object"
+        ? Object.values(raw[listId]).map(normalizeOptionValue).filter(Boolean)
+        : [];
+    });
+
+    sharedLists = next;
+    renderLists();
+    setStatus("تم تحميل القوائم المشتركة.");
+  }, () => {
+    sharedLists = {};
+    renderLists();
+    setStatus("تعذر تحميل القوائم الآن.", true);
+  });
+}
+
+function goToDaily() {
+  window.location = "daily.html";
+}
+
+function goToDashboard() {
+  window.location = "dashboard.html";
+}
+
+loadSharedLists();
+</script>
+</body>
+</html>
