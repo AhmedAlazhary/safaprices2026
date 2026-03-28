@@ -15,6 +15,7 @@
   --accent-soft: #e8f3fe;
   --success: #27ae60;
   --danger: #e74c3c;
+  --warning: #f39c12;
   --text: #1f2937;
   --muted: #697586;
   --border: #d6e0eb;
@@ -63,7 +64,8 @@ header h1 {
 .header-actions,
 .toolbar-actions,
 .card-actions,
-.table-actions {
+.table-actions,
+.summary-cards {
   display: flex;
   gap: 10px;
   flex-wrap: wrap;
@@ -103,18 +105,22 @@ button:active {
 }
 
 .print-btn {
-  background: #f39c12;
+  background: var(--warning);
+  color: #fff;
+}
+
+.delete-btn,
+.delete-day-btn {
+  background: var(--danger);
   color: #fff;
 }
 
 .delete-btn {
-  background: var(--danger);
-  color: #fff;
   padding: 8px 12px;
 }
 
 .container {
-  width: min(1320px, calc(100% - 24px));
+  width: min(1480px, calc(100% - 24px));
   margin: 18px auto 28px;
 }
 
@@ -143,6 +149,40 @@ button:active {
 .section-title,
 .card-title {
   margin: 0;
+}
+
+.summary-cards {
+  margin-bottom: 16px;
+}
+
+.summary-card {
+  flex: 1 1 230px;
+  min-width: 220px;
+  padding: 14px 16px;
+  border-radius: 16px;
+  background: linear-gradient(135deg, #f7fbff 0%, #edf5fd 100%);
+  border: 1px solid var(--border);
+}
+
+.summary-label {
+  display: block;
+  color: var(--muted);
+  font-size: 0.92rem;
+  margin-bottom: 6px;
+}
+
+.summary-value {
+  display: block;
+  color: var(--primary);
+  font-size: 1.55rem;
+  font-weight: 700;
+}
+
+.summary-note {
+  display: block;
+  color: var(--muted);
+  font-size: 0.85rem;
+  margin-top: 4px;
 }
 
 .toolbar {
@@ -196,6 +236,12 @@ input:focus {
   box-shadow: 0 0 0 3px rgba(47, 137, 217, 0.14);
 }
 
+input[disabled] {
+  background: #f5f7fa;
+  color: #8b95a7;
+  cursor: not-allowed;
+}
+
 .table-wrap {
   overflow-x: auto;
   border: 1px solid var(--border);
@@ -211,7 +257,7 @@ input:focus {
 
 table {
   width: 100%;
-  min-width: 1120px;
+  min-width: 1440px;
   border-collapse: collapse;
   background: #fff;
 }
@@ -239,6 +285,24 @@ tr:last-child td {
   font-weight: 700;
   color: var(--primary);
   white-space: nowrap;
+}
+
+.row-meta {
+  font-size: 0.83rem;
+  color: var(--muted);
+  white-space: normal;
+  line-height: 1.4;
+}
+
+.row-lock {
+  display: inline-block;
+  margin-top: 4px;
+  padding: 3px 7px;
+  border-radius: 999px;
+  background: #fff3e6;
+  color: #b26100;
+  font-size: 0.76rem;
+  font-weight: 700;
 }
 
 .section-header {
@@ -329,7 +393,8 @@ tr:last-child td {
   .header-actions,
   .toolbar-fields,
   .toolbar-actions,
-  .table-actions {
+  .table-actions,
+  .summary-card {
     width: 100%;
   }
 
@@ -349,17 +414,10 @@ tr:last-child td {
     font-size: 0.92rem;
   }
 
-  .table-wrap {
-    overflow-x: auto;
-    overflow-y: visible;
-    border: 1px solid var(--border);
-    background: var(--surface-soft);
-  }
-
   table {
-    width: 980px;
-    min-width: 980px;
-    max-width: 980px;
+    width: 1320px;
+    min-width: 1320px;
+    max-width: 1320px;
   }
 
   th,
@@ -369,25 +427,10 @@ tr:last-child td {
     white-space: nowrap;
   }
 
-  td::before {
-    content: none;
-  }
-
   td input {
-    min-width: 90px;
+    min-width: 88px;
     padding: 8px 6px;
     font-size: 0.84rem;
-    text-align: center;
-  }
-
-  .date-cell {
-    font-size: 0.84rem;
-  }
-
-  .delete-btn {
-    width: auto;
-    min-width: 64px;
-    padding: 8px 10px;
   }
 }
 
@@ -412,22 +455,10 @@ tr:last-child td {
     gap: 8px;
   }
 
-  td input {
-    min-width: 82px;
-    font-size: 0.8rem;
-    padding: 7px 5px;
-  }
-
-  th,
-  td {
-    font-size: 0.78rem;
-    padding: 7px 5px;
-  }
-
   table {
-    width: 920px;
-    min-width: 920px;
-    max-width: 920px;
+    width: 1280px;
+    min-width: 1280px;
+    max-width: 1280px;
   }
 }
 </style>
@@ -451,6 +482,14 @@ tr:last-child td {
     <div class="panel-head">
       <h2 id="currentDateTitle">بيان اليوم</h2>
       <div id="currentSaveStatus" class="status-line">جارٍ تحميل البيانات...</div>
+    </div>
+
+    <div class="summary-cards">
+      <div class="summary-card">
+        <span class="summary-label">إجمالي الحاويات خلال الشهر</span>
+        <span id="monthContainerTotal" class="summary-value">0</span>
+        <span id="monthRangeLabel" class="summary-note">يتم الحساب حسب التاريخ المفتوح</span>
+      </div>
     </div>
 
     <div class="toolbar">
@@ -479,6 +518,8 @@ tr:last-child td {
             <th>نوع</th>
             <th>العميل</th>
             <th>ملاحظات</th>
+            <th>آخر تعديل بواسطة</th>
+            <th>وقت آخر تعديل</th>
             <th>حذف</th>
           </tr>
         </thead>
@@ -490,6 +531,7 @@ tr:last-child td {
       <button class="add-btn" onclick="addRow(currentDate)">إضافة سطر للتاريخ الحالي</button>
       <button class="save-btn" onclick="saveDate(currentDate, true)">حفظ التاريخ الحالي</button>
       <button class="print-btn" onclick="printDate(currentDate)">طباعة الجدول الحالي</button>
+      <button class="delete-day-btn" onclick="deleteDay(currentDate)">حذف اليوم الحالي</button>
     </div>
   </section>
 
@@ -501,7 +543,6 @@ tr:last-child td {
     <div id="archiveContainer" class="archive-grid"></div>
   </section>
 </div>
-
 <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-app-compat.js"></script>
 <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-auth-compat.js"></script>
 <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-database-compat.js"></script>
@@ -521,43 +562,94 @@ firebase.initializeApp(firebaseConfig);
 
 const db = firebase.database();
 const today = new Date().toISOString().split("T")[0];
+const companyName = "مكتب الصفا";
+const companyLogo = "logo.png";
+const LOCK_DURATION_MS = 20000;
+const LOCK_RENEW_MS = 8000;
+
 const datePicker = document.getElementById("datePicker");
 const currentTableBody = document.getElementById("currentTableBody");
 const archiveContainer = document.getElementById("archiveContainer");
 const currentDateTitle = document.getElementById("currentDateTitle");
 const currentSaveStatus = document.getElementById("currentSaveStatus");
+const monthContainerTotal = document.getElementById("monthContainerTotal");
+const monthRangeLabel = document.getElementById("monthRangeLabel");
 
+let currentUser = null;
 let currentDate = today;
 let dailyData = {};
 let saveTimers = {};
 let savingDates = {};
 let pendingImmediateSaves = {};
 let collapsedDates = {};
+let activeLocks = {};
+let lockIntervals = {};
 
 datePicker.value = today;
 
 firebase.auth().onAuthStateChanged(user => {
+  currentUser = user;
   if (!user) {
     window.location = "index.html";
   }
 });
 
-function getEmptyRow() {
+function getUserId() {
+  return currentUser ? currentUser.uid : "anonymous";
+}
+
+function getUserLabel() {
+  if (!currentUser) return "مستخدم غير معروف";
+  return currentUser.email || currentUser.displayName || currentUser.uid;
+}
+
+function generateRowId() {
+  return db.ref().push().key;
+}
+
+function createRow(overrides = {}) {
   return {
-    containerCount: "",
-    size: "",
-    place: "",
-    move: "",
-    agency: "",
-    type: "",
-    client: "",
-    notes: ""
+    id: overrides.id || generateRowId(),
+    order: typeof overrides.order === "number" ? overrides.order : Date.now(),
+    containerCount: overrides.containerCount || "",
+    size: overrides.size || "",
+    place: overrides.place || "",
+    move: overrides.move || "",
+    agency: overrides.agency || "",
+    type: overrides.type || "",
+    client: overrides.client || "",
+    notes: overrides.notes || "",
+    updatedAt: overrides.updatedAt || null,
+    updatedBy: overrides.updatedBy || "",
+    lock: overrides.lock || null
   };
+}
+
+function normalizeRow(row, index = 0) {
+  return createRow({
+    id: row && row.id ? row.id : "legacy-" + index,
+    order: row && typeof row.order === "number" ? row.order : index,
+    containerCount: row && row.containerCount ? row.containerCount : "",
+    size: row && row.size ? row.size : "",
+    place: row && row.place ? row.place : "",
+    move: row && row.move ? row.move : "",
+    agency: row && row.agency ? row.agency : "",
+    type: row && row.type ? row.type : "",
+    client: row && row.client ? row.client : "",
+    notes: row && row.notes ? row.notes : "",
+    updatedAt: row && row.updatedAt ? row.updatedAt : null,
+    updatedBy: row && row.updatedBy ? row.updatedBy : "",
+    lock: row && row.lock ? row.lock : null
+  });
+}
+
+function sortRows(rows) {
+  return [...rows].sort((a, b) => Number(a.order) - Number(b.order));
 }
 
 function ensureDateRows(date) {
   if (!Array.isArray(dailyData[date]) || !dailyData[date].length) {
-    dailyData[date] = [getEmptyRow()];
+    dailyData[date] = [createRow()];
   }
   return dailyData[date];
 }
@@ -571,7 +663,9 @@ function readDraft(date) {
   if (!raw) return null;
 
   try {
-    return JSON.parse(raw);
+    const parsed = JSON.parse(raw);
+    if (!Array.isArray(parsed)) return null;
+    return parsed.map((row, index) => normalizeRow(row, index));
   } catch (error) {
     return null;
   }
@@ -604,27 +698,87 @@ function formatArabicDate(date) {
   });
 }
 
+function formatTimestamp(ts) {
+  if (!ts) return "-";
+  return new Date(ts).toLocaleString("ar-EG", {
+    year: "numeric",
+    month: "2-digit",
+    day: "2-digit",
+    hour: "2-digit",
+    minute: "2-digit"
+  });
+}
+
+function isRowLockedByOther(row) {
+  if (!row || !row.lock || !row.lock.expiresAt) return false;
+  if (Date.now() > row.lock.expiresAt) return false;
+  return row.lock.userId && row.lock.userId !== getUserId();
+}
+
+function getRowLockLabel(row) {
+  if (!isRowLockedByOther(row)) return "";
+  const name = row.lock.userName || "مستخدم آخر";
+  return "السطر قيد التعديل بواسطة " + name;
+}
+
+function renderMetaCell(row) {
+  return `
+    <div class="row-meta">${escapeHtml(row.updatedBy || "-")}</div>
+    ${isRowLockedByOther(row) ? `<span class="row-lock">${escapeHtml(getRowLockLabel(row))}</span>` : ""}
+  `;
+}
+
+function renderTimeCell(row) {
+  return `
+    <div class="row-meta">${escapeHtml(formatTimestamp(row.updatedAt))}</div>
+    ${isRowLockedByOther(row) ? `<span class="row-lock">مقفول مؤقتًا</span>` : ""}
+  `;
+}
+
 function renderRows(rows, date, scope) {
-  return rows.map((row, index) => `
-    <tr>
-      <td class="date-cell" data-label="التاريخ">${date}</td>
-      <td data-label="عدد الحاويات"><input type="number" min="0" inputmode="numeric" data-date="${date}" data-index="${index}" data-field="containerCount" data-scope="${scope}" value="${escapeHtml(row.containerCount)}"></td>
-      <td data-label="الحجم"><input list="sizes" data-date="${date}" data-index="${index}" data-field="size" data-scope="${scope}" value="${escapeHtml(row.size)}"></td>
-      <td data-label="المكان"><input list="places" data-date="${date}" data-index="${index}" data-field="place" data-scope="${scope}" value="${escapeHtml(row.place)}"></td>
-      <td data-label="مكان النقلة"><input list="moves" data-date="${date}" data-index="${index}" data-field="move" data-scope="${scope}" value="${escapeHtml(row.move)}"></td>
-      <td data-label="التوكيل"><input list="agencies" data-date="${date}" data-index="${index}" data-field="agency" data-scope="${scope}" value="${escapeHtml(row.agency)}"></td>
-      <td data-label="نوع"><input list="types" data-date="${date}" data-index="${index}" data-field="type" data-scope="${scope}" value="${escapeHtml(row.type)}"></td>
-      <td data-label="العميل"><input list="clients" data-date="${date}" data-index="${index}" data-field="client" data-scope="${scope}" value="${escapeHtml(row.client)}"></td>
-      <td data-label="ملاحظات"><input data-date="${date}" data-index="${index}" data-field="notes" data-scope="${scope}" value="${escapeHtml(row.notes)}" placeholder="اكتب ملاحظات"></td>
-      <td data-label="حذف"><button class="delete-btn" onclick="deleteRow('${date}', ${index})">حذف</button></td>
-    </tr>
-  `).join("");
+  return sortRows(rows).map(row => {
+    const locked = isRowLockedByOther(row);
+    const disabledAttr = locked ? "disabled" : "";
+
+    return `
+      <tr>
+        <td class="date-cell">${date}</td>
+        <td><input ${disabledAttr} type="number" min="0" inputmode="numeric" data-date="${date}" data-row-id="${row.id}" data-field="containerCount" data-scope="${scope}" value="${escapeHtml(row.containerCount)}"></td>
+        <td><input ${disabledAttr} list="sizes" data-date="${date}" data-row-id="${row.id}" data-field="size" data-scope="${scope}" value="${escapeHtml(row.size)}"></td>
+        <td><input ${disabledAttr} list="places" data-date="${date}" data-row-id="${row.id}" data-field="place" data-scope="${scope}" value="${escapeHtml(row.place)}"></td>
+        <td><input ${disabledAttr} list="moves" data-date="${date}" data-row-id="${row.id}" data-field="move" data-scope="${scope}" value="${escapeHtml(row.move)}"></td>
+        <td><input ${disabledAttr} list="agencies" data-date="${date}" data-row-id="${row.id}" data-field="agency" data-scope="${scope}" value="${escapeHtml(row.agency)}"></td>
+        <td><input ${disabledAttr} list="types" data-date="${date}" data-row-id="${row.id}" data-field="type" data-scope="${scope}" value="${escapeHtml(row.type)}"></td>
+        <td><input ${disabledAttr} list="clients" data-date="${date}" data-row-id="${row.id}" data-field="client" data-scope="${scope}" value="${escapeHtml(row.client)}"></td>
+        <td><input ${disabledAttr} data-date="${date}" data-row-id="${row.id}" data-field="notes" data-scope="${scope}" value="${escapeHtml(row.notes)}" placeholder="${locked ? escapeHtml(getRowLockLabel(row)) : "اكتب ملاحظات"}"></td>
+        <td>${renderMetaCell(row)}</td>
+        <td>${renderTimeCell(row)}</td>
+        <td><button class="delete-btn" onclick="deleteRow('${date}', '${row.id}')" ${locked ? "disabled" : ""}>حذف</button></td>
+      </tr>
+    `;
+  }).join("");
+}
+
+function updateMonthSummary() {
+  const monthKey = currentDate.slice(0, 7);
+  let total = 0;
+
+  Object.keys(dailyData).forEach(date => {
+    if (!date.startsWith(monthKey)) return;
+    (dailyData[date] || []).forEach(row => {
+      total += Number(row.containerCount || 0);
+    });
+  });
+
+  monthContainerTotal.textContent = String(total);
+  monthRangeLabel.textContent = "إجمالي شهر " + formatArabicDate(monthKey + "-01").replace(/^\S+\s/, "");
 }
 
 function renderCurrentDate() {
   const rows = ensureDateRows(currentDate);
   currentDateTitle.textContent = "بيان التاريخ: " + currentDate;
   currentTableBody.innerHTML = renderRows(rows, currentDate, "current");
+  updateMonthSummary();
 }
 
 function getSortedDates() {
@@ -642,6 +796,7 @@ function renderArchive() {
   archiveContainer.innerHTML = dates.map(date => {
     const rows = ensureDateRows(date);
     const isCollapsed = Boolean(collapsedDates[date]);
+
     return `
       <article class="day-card ${isCollapsed ? "collapsed" : ""}">
         <div class="card-head">
@@ -664,6 +819,8 @@ function renderArchive() {
                 <th>نوع</th>
                 <th>العميل</th>
                 <th>ملاحظات</th>
+                <th>آخر تعديل بواسطة</th>
+                <th>وقت آخر تعديل</th>
                 <th>حذف</th>
               </tr>
             </thead>
@@ -677,6 +834,7 @@ function renderArchive() {
           <button class="add-btn" onclick="addRow('${date}')">إضافة سطر</button>
           <button class="save-btn" onclick="saveDate('${date}', true)">حفظ</button>
           <button class="print-btn" onclick="printDate('${date}')">طباعة الجدول</button>
+          <button class="delete-day-btn" onclick="deleteDay('${date}')">حذف اليوم</button>
         </div>
       </article>
     `;
@@ -693,28 +851,38 @@ function toggleArchiveDay(date) {
   renderArchive();
 }
 
+function findRow(date, rowId) {
+  return (dailyData[date] || []).find(row => row.id === rowId);
+}
+
 function updateDateRowsFromDom(date) {
   const inputs = document.querySelectorAll(`input[data-date="${date}"][data-field]`);
-  const rows = [];
+  const existingMap = new Map((dailyData[date] || []).map(row => [row.id, row]));
+  const rowMap = new Map();
 
   inputs.forEach(input => {
-    const index = Number(input.dataset.index);
+    const rowId = input.dataset.rowId;
     const field = input.dataset.field;
 
-    if (!rows[index]) {
-      rows[index] = getEmptyRow();
+    if (!rowMap.has(rowId)) {
+      const existingRow = existingMap.get(rowId) || createRow({ id: rowId });
+      rowMap.set(rowId, { ...existingRow });
     }
 
-    rows[index][field] = input.value;
+    rowMap.get(rowId)[field] = input.value;
   });
 
-  dailyData[date] = rows.filter(Boolean);
-
-  if (!dailyData[date].length) {
-    dailyData[date] = [getEmptyRow()];
-  }
-
+  const rows = Array.from(rowMap.values());
+  dailyData[date] = rows.length ? sortRows(rows) : [createRow()];
   saveDraft(date);
+}
+
+function getActiveEditingDate() {
+  const el = document.activeElement;
+  if (el && el.matches('input[data-date][data-field]')) {
+    return el.dataset.date;
+  }
+  return null;
 }
 
 function scheduleAutoSave(date) {
@@ -725,7 +893,25 @@ function scheduleAutoSave(date) {
   saveTimers[date] = setTimeout(() => saveDate(date, false), 700);
 }
 
-function requestImmediateSave(date) {
+function buildRowPayload(row) {
+  return {
+    id: row.id,
+    order: row.order,
+    containerCount: row.containerCount || "",
+    size: row.size || "",
+    place: row.place || "",
+    move: row.move || "",
+    agency: row.agency || "",
+    type: row.type || "",
+    client: row.client || "",
+    notes: row.notes || "",
+    updatedAt: firebase.database.ServerValue.TIMESTAMP,
+    updatedBy: getUserLabel(),
+    lock: row.lock || null
+  };
+}
+
+function saveRows(date, rows, showAlert = false) {
   clearTimeout(saveTimers[date]);
 
   if (savingDates[date]) {
@@ -733,49 +919,170 @@ function requestImmediateSave(date) {
     return Promise.resolve();
   }
 
-  return saveDate(date, false);
+  savingDates[date] = true;
+  if (date === currentDate) {
+    setCurrentStatus("جارٍ حفظ بيانات " + date + "...");
+  }
+
+  const updates = {};
+  sortRows(rows).forEach(row => {
+    updates[row.id] = buildRowPayload(row);
+  });
+
+  return db.ref("daily/" + date + "/rows").update(updates)
+    .then(() => {
+      saveDraft(date);
+      if (date === currentDate) {
+        setCurrentStatus("تم الحفظ تلقائيًا في " + new Date().toLocaleTimeString("ar-EG", { hour: "2-digit", minute: "2-digit" }));
+      }
+      if (showAlert) {
+        alert("تم حفظ بيانات " + date + " بنجاح");
+      }
+    })
+    .catch(() => {
+      if (date === currentDate) {
+        setCurrentStatus("تعذر الحفظ على الخادم الآن، لكن البيانات محفوظة محليًا.", true);
+      }
+      if (showAlert) {
+        alert("تعذر الحفظ على الخادم الآن، لكن البيانات محفوظة محليًا.");
+      }
+    })
+    .finally(() => {
+      savingDates[date] = false;
+      if (pendingImmediateSaves[date]) {
+        delete pendingImmediateSaves[date];
+        saveDate(date, false);
+      }
+    });
+}
+
+function requestImmediateSave(date, rowId) {
+  clearTimeout(saveTimers[date]);
+  const row = findRow(date, rowId);
+  if (!row) return Promise.resolve();
+  return saveRows(date, [row], false);
+}
+
+function acquireRowLock(date, rowId) {
+  const rowRef = db.ref("daily/" + date + "/rows/" + rowId + "/lock");
+  const now = Date.now();
+
+  return rowRef.transaction(currentLock => {
+    if (!currentLock || !currentLock.expiresAt || currentLock.expiresAt < now || currentLock.userId === getUserId()) {
+      return {
+        userId: getUserId(),
+        userName: getUserLabel(),
+        expiresAt: now + LOCK_DURATION_MS
+      };
+    }
+    return;
+  }, undefined, false).then(result => {
+    if (!result.committed) {
+      const owner = result.snapshot && result.snapshot.val() ? result.snapshot.val().userName || "مستخدم آخر" : "مستخدم آخر";
+      throw new Error("السطر قيد التعديل بواسطة " + owner);
+    }
+
+    activeLocks[rowId] = { date, rowId };
+    startLockRenewal(date, rowId);
+  });
+}
+
+function startLockRenewal(date, rowId) {
+  stopLockRenewal(rowId);
+  lockIntervals[rowId] = setInterval(() => {
+    const lockRef = db.ref("daily/" + date + "/rows/" + rowId + "/lock");
+    lockRef.transaction(lock => {
+      if (!lock) return lock;
+      if (lock.userId !== getUserId()) return lock;
+      return {
+        userId: getUserId(),
+        userName: getUserLabel(),
+        expiresAt: Date.now() + LOCK_DURATION_MS
+      };
+    }, undefined, false);
+  }, LOCK_RENEW_MS);
+}
+
+function stopLockRenewal(rowId) {
+  if (lockIntervals[rowId]) {
+    clearInterval(lockIntervals[rowId]);
+    delete lockIntervals[rowId];
+  }
+}
+
+function releaseRowLock(date, rowId) {
+  stopLockRenewal(rowId);
+  delete activeLocks[rowId];
+
+  return db.ref("daily/" + date + "/rows/" + rowId + "/lock").transaction(lock => {
+    if (lock && lock.userId === getUserId()) {
+      return null;
+    }
+    return lock;
+  }, undefined, false).catch(() => {});
 }
 
 function handleInput(event) {
   const input = event.target;
-
-  if (!input.matches('input[data-date][data-field]')) {
-    return;
-  }
+  if (!input.matches('input[data-date][data-field]')) return;
 
   const date = input.dataset.date;
-  const index = Number(input.dataset.index);
+  const rowId = input.dataset.rowId;
   const field = input.dataset.field;
 
   ensureDateRows(date);
-  if (!dailyData[date][index]) {
-    dailyData[date][index] = getEmptyRow();
-  }
+  const row = findRow(date, rowId);
+  if (!row) return;
 
-  dailyData[date][index][field] = input.value;
+  row[field] = input.value;
   saveDraft(date);
   scheduleAutoSave(date);
 }
 
 function handleCellCommit(event) {
   const input = event.target;
-
-  if (!input.matches('input[data-date][data-field]')) {
-    return;
-  }
+  if (!input.matches('input[data-date][data-field]')) return;
 
   const date = input.dataset.date;
-  const index = Number(input.dataset.index);
+  const rowId = input.dataset.rowId;
   const field = input.dataset.field;
 
   ensureDateRows(date);
-  if (!dailyData[date][index]) {
-    dailyData[date][index] = getEmptyRow();
-  }
+  const row = findRow(date, rowId);
+  if (!row) return;
 
-  dailyData[date][index][field] = input.value;
+  row[field] = input.value;
   saveDraft(date);
-  requestImmediateSave(date);
+  requestImmediateSave(date, rowId).finally(() => {
+    releaseRowLock(date, rowId);
+  });
+}
+
+function handleCellFocus(event) {
+  const input = event.target;
+  if (!input.matches('input[data-date][data-field]')) return;
+
+  const date = input.dataset.date;
+  const rowId = input.dataset.rowId;
+
+  acquireRowLock(date, rowId).catch(error => {
+    input.blur();
+    setCurrentStatus(error.message || "تعذر قفل السطر الآن.", true);
+  });
+}
+
+function handleCellBlur(event) {
+  const input = event.target;
+  if (!input.matches('input[data-date][data-field]')) return;
+
+  const date = input.dataset.date;
+  const rowId = input.dataset.rowId;
+  setTimeout(() => {
+    if (document.activeElement && document.activeElement.dataset && document.activeElement.dataset.rowId === rowId) {
+      return;
+    }
+    releaseRowLock(date, rowId);
+  }, 50);
 }
 
 function normalizeSnapshotData(snapshotValue) {
@@ -785,8 +1092,15 @@ function normalizeSnapshotData(snapshotValue) {
   }
 
   Object.keys(snapshotValue).forEach(date => {
-    if (Array.isArray(snapshotValue[date]) && snapshotValue[date].length) {
-      normalized[date] = snapshotValue[date];
+    const dateNode = snapshotValue[date];
+
+    if (Array.isArray(dateNode)) {
+      normalized[date] = dateNode.map((row, index) => normalizeRow(row, index));
+      return;
+    }
+
+    if (dateNode && dateNode.rows && typeof dateNode.rows === "object") {
+      normalized[date] = Object.keys(dateNode.rows).map((rowId, index) => normalizeRow({ ...dateNode.rows[rowId], id: rowId }, index));
     }
   });
 
@@ -794,7 +1108,7 @@ function normalizeSnapshotData(snapshotValue) {
 }
 
 function renderPrintableRows(date) {
-  return ensureDateRows(date).map(row => `
+  return sortRows(ensureDateRows(date)).map(row => `
     <tr>
       <td>${escapeHtml(date)}</td>
       <td>${escapeHtml(row.containerCount)}</td>
@@ -805,6 +1119,8 @@ function renderPrintableRows(date) {
       <td>${escapeHtml(row.type)}</td>
       <td>${escapeHtml(row.client)}</td>
       <td>${escapeHtml(row.notes)}</td>
+      <td>${escapeHtml(row.updatedBy || "-")}</td>
+      <td>${escapeHtml(formatTimestamp(row.updatedAt))}</td>
     </tr>
   `).join("");
 }
@@ -812,66 +1128,55 @@ function renderPrintableRows(date) {
 function printDate(date) {
   syncDateFromDom(date);
 
-  const printWindow = window.open("", "_blank", "width=1200,height=800");
-  if (!printWindow) {
-    alert("تعذر فتح نافذة الطباعة. تأكد من السماح بالنوافذ المنبثقة.");
-    return;
+  const oldFrame = document.getElementById("printFrame");
+  if (oldFrame) {
+    oldFrame.remove();
   }
 
-  printWindow.document.write(`
+  const iframe = document.createElement("iframe");
+  iframe.id = "printFrame";
+  iframe.style.position = "fixed";
+  iframe.style.left = "-9999px";
+  iframe.style.width = "0";
+  iframe.style.height = "0";
+  iframe.style.border = "0";
+  document.body.appendChild(iframe);
+
+  const doc = iframe.contentWindow.document;
+  doc.open();
+  doc.write(`
     <!DOCTYPE html>
     <html lang="ar" dir="rtl">
     <head>
       <meta charset="UTF-8">
+      <base href="${window.location.href}">
       <title>طباعة جدول ${escapeHtml(date)}</title>
       <style>
-        @page {
-          size: A4 landscape;
-          margin: 10mm;
-        }
-        * {
-          box-sizing: border-box;
-        }
-        html, body {
-          width: 100%;
-        }
-        body {
-          margin: 0;
-          font-family: Tahoma, "Segoe UI", Arial, sans-serif;
-          color: #1f2937;
-        }
-        h1, p {
-          margin: 0 0 12px;
-          text-align: center;
-        }
-        table {
-          width: 100%;
-          border-collapse: collapse;
-          margin-top: 18px;
-          table-layout: fixed;
-        }
-        th, td {
-          border: 1px solid #b9c6d3;
-          padding: 6px 4px;
-          text-align: center;
-          font-size: 11px;
-          word-break: break-word;
-        }
-        th {
-          background: #2f89d9;
-          color: #fff;
-        }
-        @media print {
-          body {
-            print-color-adjust: exact;
-            -webkit-print-color-adjust: exact;
-          }
-        }
+        @page { size: A4 landscape; margin: 10mm; }
+        * { box-sizing: border-box; }
+        body { margin: 0; font-family: Tahoma, "Segoe UI", Arial, sans-serif; color: #1f2937; }
+        .print-header { display: flex; align-items: center; justify-content: space-between; gap: 12px; margin-bottom: 14px; padding-bottom: 10px; border-bottom: 2px solid #223547; }
+        .print-brand { display: flex; align-items: center; gap: 10px; }
+        .print-brand img { width: 54px; height: 54px; object-fit: contain; }
+        .print-brand-text h1 { margin: 0 0 4px; font-size: 22px; color: #223547; text-align: right; }
+        .print-brand-text p { margin: 0; font-size: 13px; color: #4b5563; text-align: right; }
+        .print-date { font-size: 14px; font-weight: 700; color: #223547; text-align: left; }
+        table { width: 100%; border-collapse: collapse; margin-top: 12px; table-layout: fixed; }
+        th, td { border: 1px solid #b9c6d3; padding: 6px 4px; text-align: center; font-size: 10px; word-break: break-word; }
+        th { background: #ffffff !important; color: #000000 !important; font-weight: 700; white-space: normal; line-height: 1.3; }
       </style>
     </head>
     <body>
-      <h1>بيان الشغل اليومي</h1>
-      <p>${escapeHtml(formatArabicDate(date))}</p>
+      <div class="print-header">
+        <div class="print-brand">
+          <img src="${escapeHtml(companyLogo)}" alt="شعار الشركة">
+          <div class="print-brand-text">
+            <h1>بيان الشغل اليومي</h1>
+            <p>${escapeHtml(companyName)}</p>
+          </div>
+        </div>
+        <div class="print-date">${escapeHtml(formatArabicDate(date))}</div>
+      </div>
       <table>
         <thead>
           <tr>
@@ -884,6 +1189,8 @@ function printDate(date) {
             <th>نوع</th>
             <th>العميل</th>
             <th>ملاحظات</th>
+            <th>آخر تعديل بواسطة</th>
+            <th>وقت آخر تعديل</th>
           </tr>
         </thead>
         <tbody>${renderPrintableRows(date)}</tbody>
@@ -891,22 +1198,21 @@ function printDate(date) {
     </body>
     </html>
   `);
+  doc.close();
 
-  printWindow.document.close();
-  printWindow.focus();
-  printWindow.print();
+  iframe.onload = function() {
+    iframe.contentWindow.focus();
+    iframe.contentWindow.print();
+    setTimeout(() => {
+      if (iframe.parentNode) iframe.remove();
+    }, 1200);
+  };
 }
 
-function mergeLocalDrafts() {
-  const allDates = new Set([...Object.keys(dailyData), currentDate, today]);
-
+function mergeLocalDraftsFallback() {
   Object.keys(localStorage).forEach(key => {
-    if (key.startsWith("dailyDraft-")) {
-      allDates.add(key.replace("dailyDraft-", ""));
-    }
-  });
-
-  allDates.forEach(date => {
+    if (!key.startsWith("dailyDraft-")) return;
+    const date = key.replace("dailyDraft-", "");
     const draft = readDraft(date);
     if (Array.isArray(draft) && draft.length) {
       dailyData[date] = draft;
@@ -915,16 +1221,30 @@ function mergeLocalDrafts() {
 }
 
 function loadAllData() {
-  db.ref("daily").once("value", snap => {
-    dailyData = normalizeSnapshotData(snap.val());
-    mergeLocalDrafts();
-    initializeCollapsedDates();
+  db.ref("daily").on("value", snap => {
+    const serverData = normalizeSnapshotData(snap.val());
+    const editingDate = getActiveEditingDate();
+
+    if (editingDate) {
+      Object.keys(serverData).forEach(date => {
+        if (date !== editingDate) {
+          dailyData[date] = serverData[date];
+        }
+      });
+      ensureDateRows(currentDate);
+      renderAll();
+      setCurrentStatus("تم استقبال تحديثات جديدة، وسيبقى السطر الجاري تعديله كما هو.");
+      return;
+    }
+
+    dailyData = serverData;
     ensureDateRows(currentDate);
+    initializeCollapsedDates();
     renderAll();
-    setCurrentStatus("تم تحميل البيانات ويمكنك التعديل على أي تاريخ.");
-  }).catch(() => {
+    setCurrentStatus("تم تحميل البيانات وتحديثها مباشرة.");
+  }, () => {
     dailyData = {};
-    mergeLocalDrafts();
+    mergeLocalDraftsFallback();
     initializeCollapsedDates();
     ensureDateRows(currentDate);
     renderAll();
@@ -964,67 +1284,54 @@ function syncDateFromDom(date) {
 
 function addRow(date) {
   syncDateFromDom(date);
-  dailyData[date].push(getEmptyRow());
+  dailyData[date].push(createRow({ order: Date.now() + Math.random() }));
   saveDraft(date);
   renderAll();
-  scheduleAutoSave(date);
-
-  if (date === currentDate) {
-    setCurrentStatus("تمت إضافة سطر جديد والبيانات الحالية محفوظة تلقائيًا.");
-  }
+  setCurrentStatus("تمت إضافة سطر جديد.");
 }
 
-function deleteRow(date, index) {
-  syncDateFromDom(date);
-  dailyData[date].splice(index, 1);
+function deleteRow(date, rowId) {
+  const row = findRow(date, rowId);
+  if (row && isRowLockedByOther(row)) {
+    setCurrentStatus("لا يمكن حذف هذا السطر لأنه مقفول بواسطة مستخدم آخر.", true);
+    return;
+  }
 
+  syncDateFromDom(date);
+  dailyData[date] = (dailyData[date] || []).filter(item => item.id !== rowId);
   if (!dailyData[date].length) {
-    dailyData[date] = [getEmptyRow()];
+    dailyData[date] = [createRow()];
   }
 
   saveDraft(date);
   renderAll();
-  scheduleAutoSave(date);
+
+  db.ref("daily/" + date + "/rows/" + rowId).remove()
+    .then(() => setCurrentStatus("تم حذف السطر."))
+    .catch(() => setCurrentStatus("تعذر حذف السطر من الخادم الآن، لكن التعديل محفوظ محليًا.", true));
+}
+
+function deleteDay(date) {
+  if (!window.confirm("هل أنت متأكد من حذف يوم " + date + " بالكامل؟")) return;
+
+  db.ref("daily/" + date).remove()
+    .then(() => {
+      delete dailyData[date];
+      localStorage.removeItem(getStorageKey(date));
+      if (currentDate === date) {
+        currentDate = today;
+        datePicker.value = currentDate;
+      }
+      ensureDateRows(currentDate);
+      renderAll();
+      setCurrentStatus("تم حذف اليوم " + date + " بالكامل.");
+    })
+    .catch(() => setCurrentStatus("تعذر حذف اليوم الآن.", true));
 }
 
 function saveDate(date, showAlert = false) {
-  updateDateRowsFromDom(date);
-  clearTimeout(saveTimers[date]);
-
-  if (savingDates[date]) {
-    return Promise.resolve();
-  }
-
-  savingDates[date] = true;
-  if (date === currentDate) {
-    setCurrentStatus("جارٍ حفظ بيانات " + date + "...");
-  }
-
-  return db.ref("daily/" + date).set(ensureDateRows(date))
-    .then(() => {
-      saveDraft(date);
-      if (date === currentDate) {
-        setCurrentStatus("تم الحفظ تلقائيًا في " + new Date().toLocaleTimeString("ar-EG", { hour: "2-digit", minute: "2-digit" }));
-      }
-      if (showAlert) {
-        alert("تم حفظ بيانات " + date + " بنجاح");
-      }
-    })
-    .catch(() => {
-      if (date === currentDate) {
-        setCurrentStatus("تعذر الحفظ على الخادم الآن، لكن البيانات محفوظة محليًا.", true);
-      }
-      if (showAlert) {
-        alert("تعذر الحفظ على الخادم الآن، لكن البيانات محفوظة محليًا.");
-      }
-    })
-    .finally(() => {
-      savingDates[date] = false;
-      if (pendingImmediateSaves[date]) {
-        delete pendingImmediateSaves[date];
-        saveDate(date, false);
-      }
-    });
+  syncDateFromDom(date);
+  return saveRows(date, ensureDateRows(date), showAlert);
 }
 
 async function saveVisibleDatesBeforeLeave() {
@@ -1049,8 +1356,17 @@ async function goBack() {
 
 document.addEventListener("input", handleInput);
 document.addEventListener("change", handleCellCommit);
+document.addEventListener("focusin", handleCellFocus);
+document.addEventListener("focusout", handleCellBlur);
 
 window.addEventListener("beforeunload", () => {
+  Object.keys(activeLocks).forEach(rowId => {
+    const lockInfo = activeLocks[rowId];
+    if (lockInfo) {
+      releaseRowLock(lockInfo.date, rowId);
+    }
+  });
+
   getSortedDates().forEach(date => {
     updateDateRowsFromDom(date);
     saveDraft(date);
