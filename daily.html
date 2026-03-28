@@ -1586,7 +1586,7 @@ function saveDate(date, showAlert = false) {
 
 function printDate(date) {
   syncDateFromDom(date);
-  printArea.innerHTML = `
+  const printMarkup = `
     <h1 class="print-title">بيان الشغل اليومي</h1>
     <div class="print-date">${escapeHtml(formatArabicDate(date))}</div>
     <table>
@@ -1605,16 +1605,16 @@ function printDate(date) {
           <th>وقت آخر تعديل</th>
         </tr>
       </thead>
-      <tbody>${renderPrintableRows(date)}</tbody>
-    </table>
+        <tbody>${renderPrintableRows(date)}</tbody>
+      </table>
   `;
 
-  document.body.classList.add("print-mode");
+  document.body.className = "print-mode";
+  document.body.innerHTML = `<div id="printArea">${printMarkup}</div>`;
 
   const cleanupPrintMode = () => {
-    document.body.classList.remove("print-mode");
-    printArea.innerHTML = "";
     window.removeEventListener("afterprint", cleanupPrintMode);
+    window.location.reload();
   };
 
   window.addEventListener("afterprint", cleanupPrintMode);
