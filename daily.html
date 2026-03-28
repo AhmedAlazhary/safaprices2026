@@ -876,6 +876,48 @@ function saveSharedOptionForField(field, value) {
   return db.ref("sharedLists/" + listId + "/" + optionKey).set(normalized).catch(() => {});
 }
 
+function getBrokenSharedOptionKeys(listId, rawMap) {
+  if (!rawMap || typeof rawMap !== "object") {
+    return [];
+  }
+
+  const defaults = new Set((DEFAULT_LIST_OPTIONS[listId] || []).map(item => normalizeOptionValue(item).toLocaleLowerCase("ar")));
+  const entries = Object.entries(rawMap)
+    .map(([key, value]) => [key, normalizeOptionValue(value)])
+    .filter(([, value]) => value);
+
+  return entries
+    .filter(([, value]) => {
+      const normalized = value.toLocaleLowerCase("ar");
+      if (defaults.has(normalized)) {
+        return false;
+      }
+
+      return entries.some(([, otherValue]) => {
+        const otherNormalized = otherValue.toLocaleLowerCase("ar");
+        return otherNormalized !== normalized && otherNormalized.startsWith(normalized) && otherNormalized.length > normalized.length;
+      });
+    })
+    .map(([key]) => key);
+}
+
+function cleanupBrokenSharedLists(raw) {
+  const updates = {};
+
+  Object.keys(DEFAULT_LIST_OPTIONS).forEach(listId => {
+    const brokenKeys = getBrokenSharedOptionKeys(listId, raw[listId]);
+    brokenKeys.forEach(key => {
+      updates[listId + "/" + key] = null;
+    });
+  });
+
+  if (!Object.keys(updates).length) {
+    return;
+  }
+
+  db.ref("sharedLists").update(updates).catch(() => {});
+}
+
 function setCurrentStatus(message, isError = false) {
   currentSaveStatus.textContent = message;
   currentSaveStatus.style.color = isError ? "#c0392b" : "#697586";
@@ -1288,7 +1330,6 @@ function handleInput(event) {
     row[field] = input.value;
     markDateDirty(date);
     saveDraft(date);
-    saveSharedOptionForField(field, input.value);
     scheduleAutoSave(date);
   }).catch(error => {
     setCurrentStatus(error.message || "تعذر تعديل هذا السطر الآن.", true);
@@ -1538,6 +1579,7 @@ function loadSharedLists() {
 
     sharedListOptions = nextOptions;
     renderAllSharedDatalists();
+    cleanupBrokenSharedLists(raw);
   }, () => {
     sharedListOptions = {};
     renderAllSharedDatalists();
