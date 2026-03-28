@@ -642,6 +642,7 @@ let currentDate = today;
 let currentSummaryMonth = today.slice(0, 7);
 let archiveSearchTerm = "";
 let dailyData = {};
+let dirtyDates = {};
 let saveTimers = {};
 let savingDates = {};
 let pendingImmediateSaves = {};
@@ -738,6 +739,18 @@ function readDraft(date) {
 
 function saveDraft(date) {
   localStorage.setItem(getStorageKey(date), JSON.stringify(ensureDateRows(date)));
+}
+
+function clearDraft(date) {
+  localStorage.removeItem(getStorageKey(date));
+}
+
+function markDateDirty(date) {
+  dirtyDates[date] = true;
+}
+
+function clearDateDirty(date) {
+  delete dirtyDates[date];
 }
 
 function setCurrentStatus(message, isError = false) {
@@ -1007,8 +1020,12 @@ function buildRowPayload(row) {
   };
 }
 
-function saveRows(date, rows, showAlert = false) {
+function saveRows(date, rows, showAlert = false, forceSave = false) {
   clearTimeout(saveTimers[date]);
+
+  if (!forceSave && !dirtyDates[date]) {
+    return Promise.resolve();
+  }
 
   if (savingDates[date]) {
     pendingImmediateSaves[date] = true;
@@ -1027,7 +1044,8 @@ function saveRows(date, rows, showAlert = false) {
 
   return db.ref("daily/" + date + "/rows").update(updates)
     .then(() => {
-      saveDraft(date);
+      clearDateDirty(date);
+      clearDraft(date);
       if (date === currentDate) {
         setCurrentStatus("تم الحفظ تلقائيًا في " + new Date().toLocaleTimeString("ar-EG", { hour: "2-digit", minute: "2-digit" }));
       }
@@ -1056,7 +1074,7 @@ function requestImmediateSave(date, rowId) {
   clearTimeout(saveTimers[date]);
   const row = findRow(date, rowId);
   if (!row) return Promise.resolve();
-  return saveRows(date, [row], false);
+  return saveRows(date, [row], false, true);
 }
 
 function acquireRowLock(date, rowId) {
@@ -1145,6 +1163,7 @@ function handleInput(event) {
 
   ensureRowLock(date, rowId).then(() => {
     row[field] = input.value;
+    markDateDirty(date);
     saveDraft(date);
     scheduleAutoSave(date);
   }).catch(error => {
@@ -1168,6 +1187,7 @@ function handleCellCommit(event) {
 
   ensureRowLock(date, rowId).then(() => {
     row[field] = input.value;
+    markDateDirty(date);
     saveDraft(date);
     return requestImmediateSave(date, rowId);
   }).catch(error => {
@@ -1393,6 +1413,11 @@ function loadAllData() {
 
     if (editingInfo) {
       dailyData = mergeServerDataPreservingEditing(serverData, editingInfo);
+      Object.keys(serverData).forEach(date => {
+        if (!dirtyDates[date]) {
+          clearDraft(date);
+        }
+      });
       ensureDateRows(currentDate);
       renderArchive();
       updateMonthSummary();
@@ -1401,6 +1426,11 @@ function loadAllData() {
     }
 
     dailyData = serverData;
+    Object.keys(serverData).forEach(date => {
+      if (!dirtyDates[date]) {
+        clearDraft(date);
+      }
+    });
     ensureDateRows(currentDate);
     initializeCollapsedDates();
     renderAll();
@@ -1448,6 +1478,7 @@ function syncDateFromDom(date) {
 function addRow(date) {
   syncDateFromDom(date);
   dailyData[date].push(createRow({ order: Date.now() + Math.random() }));
+  markDateDirty(date);
   saveDraft(date);
   renderAll();
   setCurrentStatus("تمت إضافة سطر جديد.");
@@ -1466,6 +1497,7 @@ function deleteRow(date, rowId) {
     dailyData[date] = [createRow()];
   }
 
+  markDateDirty(date);
   saveDraft(date);
   renderAll();
 
@@ -1480,7 +1512,8 @@ function deleteDay(date) {
   db.ref("daily/" + date).remove()
     .then(() => {
       delete dailyData[date];
-      localStorage.removeItem(getStorageKey(date));
+      clearDateDirty(date);
+      clearDraft(date);
       if (currentDate === date) {
         currentDate = today;
         datePicker.value = currentDate;
@@ -1494,7 +1527,7 @@ function deleteDay(date) {
 
 function saveDate(date, showAlert = false) {
   syncDateFromDom(date);
-  return saveRows(date, ensureDateRows(date), showAlert);
+  return saveRows(date, ensureDateRows(date), showAlert, showAlert);
 }
 
 async function saveVisibleDatesBeforeLeave() {
