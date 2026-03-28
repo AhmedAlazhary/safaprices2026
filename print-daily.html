@@ -22,6 +22,10 @@ body {
   background: #fff;
 }
 
+body.printing {
+  padding: 0;
+}
+
 .print-shell {
   max-width: 100%;
 }
@@ -95,8 +99,37 @@ button {
 }
 
 @media print {
+  html, body {
+    width: 100%;
+    margin: 0 !important;
+    padding: 0 !important;
+    background: #fff !important;
+  }
+
+  body * {
+    visibility: hidden !important;
+  }
+
+  #printShell,
+  #printShell * {
+    visibility: visible !important;
+  }
+
+  #printShell {
+    position: absolute;
+    inset: 0;
+    width: 100%;
+    padding: 8mm;
+    background: #fff;
+  }
+
   .actions {
     display: none !important;
+    visibility: hidden !important;
+  }
+
+  table {
+    width: 100% !important;
   }
 }
 </style>
@@ -198,6 +231,7 @@ function renderPrintPage(date, rows) {
   `;
 
   setTimeout(() => {
+    document.body.classList.add("printing");
     window.print();
   }, 250);
 }
@@ -211,6 +245,7 @@ function goBack() {
 }
 
 window.addEventListener("afterprint", () => {
+  document.body.classList.remove("printing");
   setTimeout(goBack, 150);
 });
 
