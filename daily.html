@@ -1022,6 +1022,19 @@ function releaseRowLock(date, rowId) {
   }, undefined, false).catch(() => {});
 }
 
+function ensureRowLock(date, rowId) {
+  if (activeLocks[rowId]) {
+    return Promise.resolve();
+  }
+
+  const row = findRow(date, rowId);
+  if (row && isRowLockedByOther(row)) {
+    return Promise.reject(new Error(getRowLockLabel(row)));
+  }
+
+  return acquireRowLock(date, rowId);
+}
+
 function handleInput(event) {
   const input = event.target;
   if (!input.matches('input[data-date][data-field]')) return;
@@ -1034,9 +1047,15 @@ function handleInput(event) {
   const row = findRow(date, rowId);
   if (!row) return;
 
-  row[field] = input.value;
-  saveDraft(date);
-  scheduleAutoSave(date);
+  ensureRowLock(date, rowId).then(() => {
+    row[field] = input.value;
+    saveDraft(date);
+    scheduleAutoSave(date);
+  }).catch(error => {
+    setCurrentStatus(error.message || "تعذر تعديل هذا السطر الآن.", true);
+    renderAll();
+    input.blur();
+  });
 }
 
 function handleCellCommit(event) {
@@ -1051,10 +1070,17 @@ function handleCellCommit(event) {
   const row = findRow(date, rowId);
   if (!row) return;
 
-  row[field] = input.value;
-  saveDraft(date);
-  requestImmediateSave(date, rowId).finally(() => {
-    releaseRowLock(date, rowId);
+  ensureRowLock(date, rowId).then(() => {
+    row[field] = input.value;
+    saveDraft(date);
+    return requestImmediateSave(date, rowId);
+  }).catch(error => {
+    setCurrentStatus(error.message || "تعذر حفظ هذا السطر الآن.", true);
+    renderAll();
+  }).finally(() => {
+    if (activeLocks[rowId]) {
+      releaseRowLock(date, rowId);
+    }
   });
 }
 
@@ -1356,7 +1382,6 @@ async function goBack() {
 
 document.addEventListener("input", handleInput);
 document.addEventListener("change", handleCellCommit);
-document.addEventListener("focusin", handleCellFocus);
 document.addEventListener("focusout", handleCellBlur);
 
 window.addEventListener("beforeunload", () => {
