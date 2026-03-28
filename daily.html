@@ -417,6 +417,30 @@ tr:last-child td {
   box-shadow: var(--shadow);
 }
 
+.changes-list {
+  display: grid;
+  gap: 10px;
+}
+
+.change-item {
+  padding: 12px 14px;
+  border-radius: 14px;
+  background: var(--surface-soft);
+  border: 1px solid var(--border);
+}
+
+.change-main {
+  font-weight: 700;
+  color: var(--primary);
+  margin-bottom: 4px;
+}
+
+.change-meta {
+  color: var(--muted);
+  font-size: 0.88rem;
+  line-height: 1.5;
+}
+
 .selected-badge {
   display: inline-flex;
   align-items: center;
@@ -582,6 +606,7 @@ tr:last-child td {
   </div>
 
   <div class="header-actions">
+    <button class="ghost-btn" onclick="openSharedLists()">إدارة القوائم</button>
     <button class="ghost-btn" onclick="goBack()">رجوع</button>
     <button class="ghost-btn" onclick="logout()">تسجيل خروج</button>
   </div>
@@ -602,6 +627,12 @@ tr:last-child td {
         <div class="field">
           <label for="summaryMonthPicker">اختيار الشهر</label>
           <input type="month" id="summaryMonthPicker">
+        </div>
+        <div class="table-actions">
+          <button class="save-btn" onclick="exportCurrentDate()">تصدير اليوم</button>
+          <button class="save-btn" onclick="exportSelectedMonth()">تصدير الشهر</button>
+          <button class="save-btn" onclick="exportCurrentDateExcel()">Excel اليوم</button>
+          <button class="save-btn" onclick="exportSelectedMonthExcel()">Excel الشهر</button>
         </div>
       </div>
     </div>
@@ -660,11 +691,21 @@ tr:last-child td {
     </div>
     <div id="archiveContainer" class="archive-grid"></div>
   </section>
+
+  <section class="panel">
+    <div class="section-header">
+      <h2 class="section-title">سجل التغييرات</h2>
+      <div class="selected-badge">يعرض آخر ما تم تعديله داخل الصفحة</div>
+    </div>
+    <div id="changeLogContainer" class="changes-list">
+      <div class="empty-state">جارٍ تحميل سجل التغييرات...</div>
+    </div>
+  </section>
 </div>
-<div id="printArea"></div>
 <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-app-compat.js"></script>
 <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-auth-compat.js"></script>
 <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-database-compat.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/xlsx/dist/xlsx.full.min.js"></script>
 
 <script>
 const firebaseConfig = {
@@ -681,20 +722,19 @@ firebase.initializeApp(firebaseConfig);
 
 const db = firebase.database();
 const today = new Date().toISOString().split("T")[0];
-const companyName = "مكتب الصفا";
 const LOCK_DURATION_MS = 20000;
 const LOCK_RENEW_MS = 8000;
 
 const datePicker = document.getElementById("datePicker");
 const currentTableBody = document.getElementById("currentTableBody");
 const archiveContainer = document.getElementById("archiveContainer");
+const changeLogContainer = document.getElementById("changeLogContainer");
 const currentDateTitle = document.getElementById("currentDateTitle");
 const currentSaveStatus = document.getElementById("currentSaveStatus");
 const monthContainerTotal = document.getElementById("monthContainerTotal");
 const monthRangeLabel = document.getElementById("monthRangeLabel");
 const summaryMonthPicker = document.getElementById("summaryMonthPicker");
 const archiveSearchInput = document.getElementById("archiveSearchInput");
-const printArea = document.getElementById("printArea");
 
 const DEFAULT_LIST_OPTIONS = {
   sizes: ["20", "40", "2*20"],
@@ -714,6 +754,17 @@ const FIELD_TO_LIST_ID = {
   client: "clients"
 };
 
+const FIELD_LABELS = {
+  containerCount: "عدد الحاويات",
+  size: "الحجم",
+  place: "المكان",
+  move: "مكان النقلة",
+  agency: "التوكيل",
+  type: "النوع",
+  client: "العميل",
+  notes: "ملاحظات"
+};
+
 let currentUser = null;
 let currentDate = today;
 let currentSummaryMonth = today.slice(0, 7);
@@ -723,10 +774,10 @@ let dirtyDates = {};
 let saveTimers = {};
 let savingDates = {};
 let pendingImmediateSaves = {};
-let collapsedDates = {};
 let activeLocks = {};
 let lockIntervals = {};
 let sharedListOptions = {};
+let changeLogEntries = [];
 
 datePicker.value = today;
 summaryMonthPicker.value = currentSummaryMonth;
@@ -738,6 +789,7 @@ firebase.auth().onAuthStateChanged(user => {
   }
 });
 
+// Data model helpers
 function getUserId() {
   return currentUser ? currentUser.uid : "anonymous";
 }
@@ -764,6 +816,7 @@ function createRow(overrides = {}) {
     client: overrides.client || "",
     notes: overrides.notes || "",
     updatedAt: overrides.updatedAt || null,
+    baseUpdatedAt: overrides.baseUpdatedAt !== undefined ? overrides.baseUpdatedAt : (overrides.updatedAt || null),
     updatedBy: overrides.updatedBy || "",
     lock: overrides.lock || null
   };
@@ -782,6 +835,7 @@ function normalizeRow(row, index = 0) {
     client: row && row.client ? row.client : "",
     notes: row && row.notes ? row.notes : "",
     updatedAt: row && row.updatedAt ? row.updatedAt : null,
+    baseUpdatedAt: row && row.baseUpdatedAt !== undefined ? row.baseUpdatedAt : (row && row.updatedAt ? row.updatedAt : null),
     updatedBy: row && row.updatedBy ? row.updatedBy : "",
     lock: row && row.lock ? row.lock : null
   });
@@ -831,6 +885,7 @@ function clearDateDirty(date) {
   delete dirtyDates[date];
 }
 
+// Shared list helpers
 function normalizeOptionValue(value) {
   return String(value || "").trim();
 }
@@ -911,6 +966,13 @@ function cleanupBrokenSharedLists(raw) {
     });
   });
 
+  const moveEntries = raw.moves && typeof raw.moves === "object" ? Object.entries(raw.moves) : [];
+  moveEntries.forEach(([key, value]) => {
+    if (normalizeOptionValue(value) === "ال") {
+      updates["moves/" + key] = null;
+    }
+  });
+
   if (!Object.keys(updates).length) {
     return;
   }
@@ -918,6 +980,7 @@ function cleanupBrokenSharedLists(raw) {
   db.ref("sharedLists").update(updates).catch(() => {});
 }
 
+// Rendering helpers
 function setCurrentStatus(message, isError = false) {
   currentSaveStatus.textContent = message;
   currentSaveStatus.style.color = isError ? "#c0392b" : "#697586";
@@ -950,6 +1013,34 @@ function formatTimestamp(ts) {
     hour: "2-digit",
     minute: "2-digit"
   });
+}
+
+function logChange(action, details = {}) {
+  const entry = {
+    action,
+    user: getUserLabel(),
+    createdAt: firebase.database.ServerValue.TIMESTAMP,
+    ...details
+  };
+
+  return db.ref("changeLog").push(entry).catch(() => {});
+}
+
+function renderChangeLog() {
+  if (!changeLogEntries.length) {
+    changeLogContainer.innerHTML = '<div class="empty-state">لا توجد تغييرات مسجلة حتى الآن.</div>';
+    return;
+  }
+
+  changeLogContainer.innerHTML = changeLogEntries.map(entry => `
+    <div class="change-item">
+      <div class="change-main">${escapeHtml(entry.message || "تم تعديل البيانات")}</div>
+      <div class="change-meta">
+        بواسطة: ${escapeHtml(entry.user || "-")}<br>
+        الوقت: ${escapeHtml(formatTimestamp(entry.createdAt))}
+      </div>
+    </div>
+  `).join("");
 }
 
 function isRowLockedByOther(row) {
@@ -1118,8 +1209,7 @@ function renderAll() {
   renderArchive();
 }
 
-function toggleArchiveDay() {}
-
+// Editing and sync helpers
 function openArchiveDate(date) {
   if (!date) return;
   focusDate(date);
@@ -1151,14 +1241,6 @@ function updateDateRowsFromDom(date) {
   saveDraft(date);
 }
 
-function getActiveEditingDate() {
-  const el = document.activeElement;
-  if (el && el.matches('input[data-date][data-field]')) {
-    return el.dataset.date;
-  }
-  return null;
-}
-
 function scheduleAutoSave(date) {
   clearTimeout(saveTimers[date]);
   if (date === currentDate) {
@@ -1185,6 +1267,31 @@ function buildRowPayload(row) {
   };
 }
 
+function saveSingleRow(date, row) {
+  const rowRef = db.ref("daily/" + date + "/rows/" + row.id);
+  const localBaseUpdatedAt = row.baseUpdatedAt || null;
+  let conflictDetected = false;
+
+  return rowRef.transaction(currentRow => {
+    if (
+      currentRow &&
+      currentRow.updatedAt &&
+      localBaseUpdatedAt &&
+      Number(currentRow.updatedAt) !== Number(localBaseUpdatedAt)
+    ) {
+      conflictDetected = true;
+      return;
+    }
+
+    return buildRowPayload(row);
+  }, undefined, false).then(result => {
+    if (!result.committed || conflictDetected) {
+      return { ok: false, rowId: row.id };
+    }
+    return { ok: true, rowId: row.id };
+  }).catch(() => ({ ok: false, rowId: row.id }));
+}
+
 function saveRows(date, rows, showAlert = false, forceSave = false) {
   clearTimeout(saveTimers[date]);
 
@@ -1202,13 +1309,13 @@ function saveRows(date, rows, showAlert = false, forceSave = false) {
     setCurrentStatus("جارٍ حفظ بيانات " + date + "...");
   }
 
-  const updates = {};
-  sortRows(rows).forEach(row => {
-    updates[row.id] = buildRowPayload(row);
-  });
+  return Promise.all(sortRows(rows).map(row => saveSingleRow(date, row)))
+    .then(results => {
+      const conflicts = results.filter(result => !result.ok);
+      if (conflicts.length) {
+        throw new Error("conflict");
+      }
 
-  return db.ref("daily/" + date + "/rows").update(updates)
-    .then(() => {
       clearDateDirty(date);
       clearDraft(date);
       if (date === currentDate) {
@@ -1218,12 +1325,22 @@ function saveRows(date, rows, showAlert = false, forceSave = false) {
         alert("تم حفظ بيانات " + date + " بنجاح");
       }
     })
-    .catch(() => {
+    .catch(error => {
+      const isConflict = error && error.message === "conflict";
       if (date === currentDate) {
-        setCurrentStatus("تعذر الحفظ على الخادم الآن، لكن البيانات محفوظة محليًا.", true);
+        setCurrentStatus(
+          isConflict
+            ? "حدث تعارض لأن السطر تغيّر عند مستخدم آخر. تم الاحتفاظ بتعديلك محليًا حتى تراجع آخر نسخة."
+            : "تعذر الحفظ على الخادم الآن، لكن البيانات محفوظة محليًا.",
+          true
+        );
       }
       if (showAlert) {
-        alert("تعذر الحفظ على الخادم الآن، لكن البيانات محفوظة محليًا.");
+        alert(
+          isConflict
+            ? "حدث تعارض لأن السطر تغيّر عند مستخدم آخر. راجع البيانات ثم أعد الحفظ."
+            : "تعذر الحفظ على الخادم الآن، لكن البيانات محفوظة محليًا."
+        );
       }
     })
     .finally(() => {
@@ -1349,13 +1466,24 @@ function handleCellCommit(event) {
   ensureDateRows(date);
   const row = findRow(date, rowId);
   if (!row) return;
+  const previousValue = row[field] || "";
+  const nextValue = input.value;
 
   ensureRowLock(date, rowId).then(() => {
-    row[field] = input.value;
+    row[field] = nextValue;
     markDateDirty(date);
     saveDraft(date);
-    saveSharedOptionForField(field, input.value);
-    return requestImmediateSave(date, rowId);
+    saveSharedOptionForField(field, nextValue);
+    return requestImmediateSave(date, rowId).then(() => {
+      if (normalizeOptionValue(previousValue) !== normalizeOptionValue(nextValue)) {
+        return logChange("row_update", {
+          date,
+          rowId,
+          field,
+          message: `تم تعديل ${FIELD_LABELS[field] || field} في ${date} من "${previousValue || "-"}" إلى "${nextValue || "-"}"`
+        });
+      }
+    });
   }).catch(error => {
     setCurrentStatus(error.message || "تعذر حفظ هذا السطر الآن.", true);
     renderAll();
@@ -1363,19 +1491,6 @@ function handleCellCommit(event) {
     if (activeLocks[rowId]) {
       releaseRowLock(date, rowId);
     }
-  });
-}
-
-function handleCellFocus(event) {
-  const input = event.target;
-  if (!input.matches('input[data-date][data-field]')) return;
-
-  const date = input.dataset.date;
-  const rowId = input.dataset.rowId;
-
-  acquireRowLock(date, rowId).catch(error => {
-    input.blur();
-    setCurrentStatus(error.message || "تعذر قفل السطر الآن.", true);
   });
 }
 
@@ -1475,83 +1590,21 @@ function renderPrintableRows(date) {
   `).join("");
 }
 
-function printDate(date) {
-  syncDateFromDom(date);
+function refreshBaseUpdatedAtFromServer(serverData) {
+  Object.keys(serverData).forEach(date => {
+    const localRows = dailyData[date] || [];
+    const serverMap = new Map((serverData[date] || []).map(row => [row.id, row]));
 
-  const oldFrame = document.getElementById("printFrame");
-  if (oldFrame) {
-    oldFrame.remove();
-  }
-
-  const iframe = document.createElement("iframe");
-  iframe.id = "printFrame";
-  iframe.style.position = "fixed";
-  iframe.style.left = "-9999px";
-  iframe.style.width = "0";
-  iframe.style.height = "0";
-  iframe.style.border = "0";
-  document.body.appendChild(iframe);
-
-  const doc = iframe.contentWindow.document;
-  doc.open();
-  doc.write(`
-    <!DOCTYPE html>
-    <html lang="ar" dir="rtl">
-    <head>
-      <meta charset="UTF-8">
-      <title>طباعة جدول ${escapeHtml(date)}</title>
-      <style>
-        @page { size: A4 landscape; margin: 10mm; }
-        * { box-sizing: border-box; }
-        body { margin: 0; font-family: Tahoma, "Segoe UI", Arial, sans-serif; color: #1f2937; }
-        .print-title { margin: 0 0 6px; font-size: 20px; font-weight: 700; color: #223547; text-align: center; }
-        .print-date { margin-bottom: 10px; font-size: 14px; font-weight: 700; color: #223547; text-align: right; }
-        table { width: 100%; border-collapse: collapse; margin-top: 12px; table-layout: fixed; }
-        th, td { border: 1px solid #b9c6d3; padding: 6px 4px; text-align: center; font-size: 10px; word-break: break-word; }
-        th { background: #ffffff !important; color: #000000 !important; font-weight: 700; white-space: normal; line-height: 1.3; }
-      </style>
-    </head>
-    <body>
-      <div class="print-header">
-        <div class="print-brand">
-          <img src="${escapeHtml(companyLogo)}" alt="شعار الشركة">
-          <div class="print-brand-text">
-            <h1>بيان الشغل اليومي</h1>
-            <p>${escapeHtml(companyName)}</p>
-          </div>
-        </div>
-        <div class="print-date">${escapeHtml(formatArabicDate(date))}</div>
-      </div>
-      <table>
-        <thead>
-          <tr>
-            <th>التاريخ</th>
-            <th>عدد الحاويات</th>
-            <th>الحجم</th>
-            <th>المكان</th>
-            <th>مكان النقلة</th>
-            <th>التوكيل</th>
-            <th>نوع</th>
-            <th>العميل</th>
-            <th>ملاحظات</th>
-            <th>آخر تعديل بواسطة</th>
-            <th>وقت آخر تعديل</th>
-          </tr>
-        </thead>
-        <tbody>${renderPrintableRows(date)}</tbody>
-      </table>
-    </body>
-    </html>
-  `);
-  doc.close();
-
-  iframe.onload = function() {
-    iframe.contentWindow.focus();
-    iframe.contentWindow.print();
-    setTimeout(() => {
-      if (iframe.parentNode) iframe.remove();
-    }, 1200);
-  };
+    localRows.forEach(row => {
+      const serverRow = serverMap.get(row.id);
+      if (serverRow) {
+        row.baseUpdatedAt = serverRow.updatedAt || null;
+        row.updatedAt = serverRow.updatedAt || row.updatedAt;
+        row.updatedBy = serverRow.updatedBy || row.updatedBy;
+        row.lock = serverRow.lock || null;
+      }
+    });
+  });
 }
 
 function mergeLocalDraftsFallback() {
@@ -1586,6 +1639,19 @@ function loadSharedLists() {
   });
 }
 
+function loadChangeLog() {
+  db.ref("changeLog").limitToLast(40).on("value", snap => {
+    const raw = snap.val() || {};
+    changeLogEntries = Object.keys(raw)
+      .map(key => ({ id: key, ...raw[key] }))
+      .sort((a, b) => Number(b.createdAt || 0) - Number(a.createdAt || 0));
+    renderChangeLog();
+  }, () => {
+    changeLogEntries = [];
+    renderChangeLog();
+  });
+}
+
 function loadAllData() {
   db.ref("daily").on("value", snap => {
     const serverData = normalizeSnapshotData(snap.val());
@@ -1593,6 +1659,7 @@ function loadAllData() {
 
     if (editingInfo) {
       dailyData = mergeServerDataPreservingEditing(serverData, editingInfo);
+      refreshBaseUpdatedAtFromServer(serverData);
       Object.keys(serverData).forEach(date => {
         if (!dirtyDates[date]) {
           clearDraft(date);
@@ -1606,31 +1673,21 @@ function loadAllData() {
     }
 
     dailyData = serverData;
+    refreshBaseUpdatedAtFromServer(serverData);
     Object.keys(serverData).forEach(date => {
       if (!dirtyDates[date]) {
         clearDraft(date);
       }
     });
     ensureDateRows(currentDate);
-    initializeCollapsedDates();
     renderAll();
     setCurrentStatus("تم تحميل البيانات وتحديثها مباشرة.");
   }, () => {
     dailyData = {};
     mergeLocalDraftsFallback();
-    initializeCollapsedDates();
     ensureDateRows(currentDate);
     renderAll();
     setCurrentStatus("تعذر تحميل البيانات من الخادم، تم فتح النسخ المحلية المتاحة.", true);
-  });
-}
-
-function initializeCollapsedDates() {
-  const isMobile = window.innerWidth <= 768;
-  getSortedDates().forEach(date => {
-    if (date !== currentDate && collapsedDates[date] === undefined) {
-      collapsedDates[date] = isMobile;
-    }
   });
 }
 
@@ -1638,7 +1695,6 @@ function focusDate(date) {
   updateDateRowsFromDom(currentDate);
   currentDate = date;
   datePicker.value = date;
-  collapsedDates[date] = false;
   renderAll();
   setCurrentStatus("تم فتح تاريخ " + date);
   window.scrollTo({ top: 0, behavior: "smooth" });
@@ -1657,11 +1713,17 @@ function syncDateFromDom(date) {
 
 function addRow(date) {
   syncDateFromDom(date);
-  dailyData[date].push(createRow({ order: Date.now() + Math.random() }));
+  const newRow = createRow({ order: Date.now() + Math.random() });
+  dailyData[date].push(newRow);
   markDateDirty(date);
   saveDraft(date);
   renderAll();
   setCurrentStatus("تمت إضافة سطر جديد.");
+  logChange("row_add", {
+    date,
+    rowId: newRow.id,
+    message: `تمت إضافة سطر جديد في ${date}`
+  });
 }
 
 function deleteRow(date, rowId) {
@@ -1682,7 +1744,14 @@ function deleteRow(date, rowId) {
   renderAll();
 
   db.ref("daily/" + date + "/rows/" + rowId).remove()
-    .then(() => setCurrentStatus("تم حذف السطر."))
+    .then(() => {
+      setCurrentStatus("تم حذف السطر.");
+      return logChange("row_delete", {
+        date,
+        rowId,
+        message: `تم حذف سطر من ${date}`
+      });
+    })
     .catch(() => setCurrentStatus("تعذر حذف السطر من الخادم الآن، لكن التعديل محفوظ محليًا.", true));
 }
 
@@ -1701,6 +1770,10 @@ function deleteDay(date) {
       ensureDateRows(currentDate);
       renderAll();
       setCurrentStatus("تم حذف اليوم " + date + " بالكامل.");
+      return logChange("day_delete", {
+        date,
+        message: `تم حذف يوم ${date} بالكامل`
+      });
     })
     .catch(() => setCurrentStatus("تعذر حذف اليوم الآن.", true));
 }
@@ -1710,45 +1783,192 @@ function saveDate(date, showAlert = false) {
   return saveRows(date, ensureDateRows(date), showAlert, showAlert);
 }
 
-function printDate(date) {
+async function printDate(date) {
   syncDateFromDom(date);
-  const printMarkup = `
-    <h1 class="print-title">بيان الشغل اليومي</h1>
-    <div class="print-date">${escapeHtml(formatArabicDate(date))}</div>
-    <table>
-      <thead>
-        <tr>
-          <th>التاريخ</th>
-          <th>عدد الحاويات</th>
-          <th>الحجم</th>
-          <th>المكان</th>
-          <th>مكان النقلة</th>
-          <th>التوكيل</th>
-          <th>نوع</th>
-          <th>العميل</th>
-          <th>ملاحظات</th>
-        </tr>
-      </thead>
-        <tbody>${renderPrintableRows(date)}</tbody>
-      </table>
-  `;
+  await saveDate(date, false);
+  window.location.href = "print-daily.html?date=" + encodeURIComponent(date);
+}
 
-  document.body.className = "print-mode";
-  document.body.innerHTML = `<div id="printArea">${printMarkup}</div>`;
+function legacyDownloadJsonFile(filename, data) {
+  const blob = new Blob([JSON.stringify(data, null, 2)], { type: "application/json;charset=utf-8" });
+  const url = URL.createObjectURL(blob);
+  const link = document.createElement("a");
+  link.href = url;
+  link.download = filename;
+  document.body.appendChild(link);
+  link.click();
+  link.remove();
+  URL.revokeObjectURL(url);
+}
 
-  const cleanupPrintMode = () => {
-    window.removeEventListener("afterprint", cleanupPrintMode);
-    window.location.reload();
+function legacyExportCurrentDateJson() {
+  syncDateFromDom(currentDate);
+  legacyDownloadJsonFile(
+    "daily-" + currentDate + ".json",
+    {
+      date: currentDate,
+      exportedAt: new Date().toISOString(),
+      rows: sortRows(ensureDateRows(currentDate))
+    }
+  );
+  setCurrentStatus("تم تصدير بيانات اليوم الحالي.");
+}
+
+function legacyExportSelectedMonthJson() {
+  const monthKey = currentSummaryMonth || getMonthKey(currentDate);
+  const dates = getSortedDates().filter(date => getMonthKey(date) === monthKey);
+
+  const payload = {
+    month: monthKey,
+    exportedAt: new Date().toISOString(),
+    totalContainers: calculateMonthContainerTotal(monthKey),
+    dates: dates.map(date => ({
+      date,
+      rows: sortRows(ensureDateRows(date))
+    }))
   };
 
-  window.addEventListener("afterprint", cleanupPrintMode);
-  window.print();
+  legacyDownloadJsonFile("daily-month-" + monthKey + ".json", payload);
+  setCurrentStatus("تم تصدير بيانات الشهر " + monthKey + ".");
+}
 
-  setTimeout(() => {
-    if (document.body.classList.contains("print-mode")) {
-      cleanupPrintMode();
+function formatCsvCell(value) {
+  const normalized = String(value ?? "").replace(/\r?\n/g, " ").trim();
+  return `"${normalized.replace(/"/g, '""')}"`;
+}
+
+function buildCsvContent(headers, rows) {
+  const lines = [
+    headers.map(formatCsvCell).join(","),
+    ...rows.map(row => row.map(formatCsvCell).join(","))
+  ];
+  return "\uFEFF" + lines.join("\r\n");
+}
+
+function downloadCsvFile(filename, headers, rows) {
+  const blob = new Blob([buildCsvContent(headers, rows)], { type: "text/csv;charset=utf-8;" });
+  const url = URL.createObjectURL(blob);
+  const link = document.createElement("a");
+  link.href = url;
+  link.download = filename;
+  document.body.appendChild(link);
+  link.click();
+  link.remove();
+  URL.revokeObjectURL(url);
+}
+
+function getExportRow(date, row) {
+  return [
+    date,
+    row.containerCount || "",
+    row.size || "",
+    row.place || "",
+    row.move || "",
+    row.agency || "",
+    row.type || "",
+    row.client || "",
+    row.notes || "",
+    row.updatedBy || "",
+    formatTimestamp(row.updatedAt)
+  ];
+}
+
+function exportCurrentDate() {
+  syncDateFromDom(currentDate);
+  const rows = sortRows(ensureDateRows(currentDate)).map(row => getExportRow(currentDate, row));
+  downloadCsvFile(
+    "daily-" + currentDate + ".csv",
+    ["التاريخ", "عدد الحاويات", "الحجم", "المكان", "مكان النقلة", "التوكيل", "النوع", "العميل", "ملاحظات", "آخر تعديل بواسطة", "وقت آخر تعديل"],
+    rows
+  );
+  setCurrentStatus("تم تصدير بيانات اليوم الحالي بصيغة CSV.");
+}
+
+function exportSelectedMonth() {
+  const monthKey = currentSummaryMonth || getMonthKey(currentDate);
+  const dates = getSortedDates().filter(date => getMonthKey(date) === monthKey);
+  const rows = [];
+
+  dates.forEach(date => {
+    sortRows(ensureDateRows(date)).forEach(row => {
+      rows.push(getExportRow(date, row));
+    });
+  });
+
+  downloadCsvFile(
+    "daily-month-" + monthKey + ".csv",
+    ["التاريخ", "عدد الحاويات", "الحجم", "المكان", "مكان النقلة", "التوكيل", "النوع", "العميل", "ملاحظات", "آخر تعديل بواسطة", "وقت آخر تعديل"],
+    rows
+  );
+  setCurrentStatus("تم تصدير بيانات الشهر " + monthKey + " بصيغة CSV.");
+}
+
+function ensureExcelReady() {
+  if (typeof XLSX === "undefined") {
+    setCurrentStatus("تعذر تحميل مكتبة Excel الآن. جرّب مرة أخرى بعد التأكد من الاتصال بالإنترنت.", true);
+    return false;
+  }
+  return true;
+}
+
+function buildExcelRows(rows) {
+  return rows.map(row => ({
+    "التاريخ": row[0],
+    "عدد الحاويات": row[1],
+    "الحجم": row[2],
+    "المكان": row[3],
+    "مكان النقلة": row[4],
+    "التوكيل": row[5],
+    "النوع": row[6],
+    "العميل": row[7],
+    "ملاحظات": row[8],
+    "آخر تعديل بواسطة": row[9],
+    "وقت آخر تعديل": row[10]
+  }));
+}
+
+function writeExcelFile(filename, sheets) {
+  if (!ensureExcelReady()) return;
+
+  const workbook = XLSX.utils.book_new();
+  sheets.forEach(sheet => {
+    const worksheet = XLSX.utils.json_to_sheet(sheet.rows);
+    XLSX.utils.book_append_sheet(workbook, worksheet, sheet.name.slice(0, 31));
+  });
+
+  XLSX.writeFile(workbook, filename, { compression: true });
+}
+
+function exportCurrentDateExcel() {
+  syncDateFromDom(currentDate);
+  const rows = sortRows(ensureDateRows(currentDate)).map(row => getExportRow(currentDate, row));
+  writeExcelFile("daily-" + currentDate + ".xlsx", [
+    {
+      name: currentDate,
+      rows: buildExcelRows(rows)
     }
-  }, 1500);
+  ]);
+  setCurrentStatus("تم تصدير بيانات اليوم الحالي بصيغة Excel.");
+}
+
+function exportSelectedMonthExcel() {
+  const monthKey = currentSummaryMonth || getMonthKey(currentDate);
+  const dates = getSortedDates().filter(date => getMonthKey(date) === monthKey);
+  const allRows = [];
+
+  dates.forEach(date => {
+    sortRows(ensureDateRows(date)).forEach(row => {
+      allRows.push(getExportRow(date, row));
+    });
+  });
+
+  writeExcelFile("daily-month-" + monthKey + ".xlsx", [
+    {
+      name: monthKey,
+      rows: buildExcelRows(allRows)
+    }
+  ]);
+  setCurrentStatus("تم تصدير بيانات الشهر " + monthKey + " بصيغة Excel.");
 }
 
 async function saveVisibleDatesBeforeLeave() {
@@ -1769,6 +1989,11 @@ async function logout() {
 async function goBack() {
   await saveVisibleDatesBeforeLeave();
   window.location = "dashboard.html";
+}
+
+async function openSharedLists() {
+  await saveVisibleDatesBeforeLeave();
+  window.location = "shared-lists.html";
 }
 
 document.addEventListener("input", handleInput);
@@ -1799,6 +2024,7 @@ window.addEventListener("beforeunload", () => {
 
 renderAllSharedDatalists();
 loadSharedLists();
+loadChangeLog();
 loadAllData();
 </script>
 <datalist id="sizes"></datalist>
