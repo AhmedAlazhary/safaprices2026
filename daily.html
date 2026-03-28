@@ -62,7 +62,8 @@ header h1 {
 
 .header-actions,
 .toolbar-actions,
-.card-actions {
+.card-actions,
+.table-actions {
   display: flex;
   gap: 10px;
   flex-wrap: wrap;
@@ -98,6 +99,11 @@ button:active {
 
 .save-btn {
   background: var(--accent);
+  color: #fff;
+}
+
+.print-btn {
+  background: #f39c12;
   color: #fff;
 }
 
@@ -196,6 +202,11 @@ input:focus {
   border-radius: 16px;
   background: var(--surface-soft);
   -webkit-overflow-scrolling: touch;
+}
+
+.table-actions {
+  margin-top: 14px;
+  justify-content: flex-start;
 }
 
 table {
@@ -317,13 +328,15 @@ tr:last-child td {
   .brand,
   .header-actions,
   .toolbar-fields,
-  .toolbar-actions {
+  .toolbar-actions,
+  .table-actions {
     width: 100%;
   }
 
   .header-actions button,
   .toolbar-actions button,
-  .card-actions button {
+  .card-actions button,
+  .table-actions button {
     flex: 1 1 140px;
   }
 
@@ -394,7 +407,8 @@ tr:last-child td {
   }
 
   .card-actions,
-  .toolbar-actions {
+  .toolbar-actions,
+  .table-actions {
     gap: 8px;
   }
 
@@ -449,8 +463,6 @@ tr:last-child td {
 
       <div class="toolbar-actions">
         <button class="save-btn" onclick="openSelectedDate()">عرض التاريخ</button>
-        <button class="add-btn" onclick="addRow(currentDate)">إضافة سطر للتاريخ الحالي</button>
-        <button class="save-btn" onclick="saveDate(currentDate, true)">حفظ التاريخ الحالي</button>
       </div>
     </div>
 
@@ -472,6 +484,12 @@ tr:last-child td {
         </thead>
         <tbody id="currentTableBody"></tbody>
       </table>
+    </div>
+
+    <div class="table-actions">
+      <button class="add-btn" onclick="addRow(currentDate)">إضافة سطر للتاريخ الحالي</button>
+      <button class="save-btn" onclick="saveDate(currentDate, true)">حفظ التاريخ الحالي</button>
+      <button class="print-btn" onclick="printDate(currentDate)">طباعة الجدول الحالي</button>
     </div>
   </section>
 
@@ -513,6 +531,7 @@ let currentDate = today;
 let dailyData = {};
 let saveTimers = {};
 let savingDates = {};
+let pendingImmediateSaves = {};
 let collapsedDates = {};
 
 datePicker.value = today;
@@ -630,12 +649,6 @@ function renderArchive() {
             <h3 class="card-title">جدول ${date}</h3>
             <div class="card-date">${formatArabicDate(date)}</div>
           </div>
-          <div class="card-actions">
-            <button class="toggle-btn" onclick="toggleArchiveDay('${date}')">${isCollapsed ? "فتح اليوم" : "طي اليوم"}</button>
-            <button class="save-btn" onclick="focusDate('${date}')">فتح هذا التاريخ</button>
-            <button class="add-btn" onclick="addRow('${date}')">إضافة سطر</button>
-            <button class="save-btn" onclick="saveDate('${date}', true)">حفظ</button>
-          </div>
         </div>
 
         <div class="table-wrap">
@@ -656,6 +669,14 @@ function renderArchive() {
             </thead>
             <tbody>${renderRows(rows, date, "archive")}</tbody>
           </table>
+        </div>
+
+        <div class="card-actions table-actions">
+          <button class="toggle-btn" onclick="toggleArchiveDay('${date}')">${isCollapsed ? "فتح اليوم" : "طي اليوم"}</button>
+          <button class="save-btn" onclick="focusDate('${date}')">فتح هذا التاريخ</button>
+          <button class="add-btn" onclick="addRow('${date}')">إضافة سطر</button>
+          <button class="save-btn" onclick="saveDate('${date}', true)">حفظ</button>
+          <button class="print-btn" onclick="printDate('${date}')">طباعة الجدول</button>
         </div>
       </article>
     `;
@@ -704,6 +725,17 @@ function scheduleAutoSave(date) {
   saveTimers[date] = setTimeout(() => saveDate(date, false), 700);
 }
 
+function requestImmediateSave(date) {
+  clearTimeout(saveTimers[date]);
+
+  if (savingDates[date]) {
+    pendingImmediateSaves[date] = true;
+    return Promise.resolve();
+  }
+
+  return saveDate(date, false);
+}
+
 function handleInput(event) {
   const input = event.target;
 
@@ -725,6 +757,27 @@ function handleInput(event) {
   scheduleAutoSave(date);
 }
 
+function handleCellCommit(event) {
+  const input = event.target;
+
+  if (!input.matches('input[data-date][data-field]')) {
+    return;
+  }
+
+  const date = input.dataset.date;
+  const index = Number(input.dataset.index);
+  const field = input.dataset.field;
+
+  ensureDateRows(date);
+  if (!dailyData[date][index]) {
+    dailyData[date][index] = getEmptyRow();
+  }
+
+  dailyData[date][index][field] = input.value;
+  saveDraft(date);
+  requestImmediateSave(date);
+}
+
 function normalizeSnapshotData(snapshotValue) {
   const normalized = {};
   if (!snapshotValue || typeof snapshotValue !== "object") {
@@ -738,6 +791,110 @@ function normalizeSnapshotData(snapshotValue) {
   });
 
   return normalized;
+}
+
+function renderPrintableRows(date) {
+  return ensureDateRows(date).map(row => `
+    <tr>
+      <td>${escapeHtml(date)}</td>
+      <td>${escapeHtml(row.containerCount)}</td>
+      <td>${escapeHtml(row.size)}</td>
+      <td>${escapeHtml(row.place)}</td>
+      <td>${escapeHtml(row.move)}</td>
+      <td>${escapeHtml(row.agency)}</td>
+      <td>${escapeHtml(row.type)}</td>
+      <td>${escapeHtml(row.client)}</td>
+      <td>${escapeHtml(row.notes)}</td>
+    </tr>
+  `).join("");
+}
+
+function printDate(date) {
+  syncDateFromDom(date);
+
+  const printWindow = window.open("", "_blank", "width=1200,height=800");
+  if (!printWindow) {
+    alert("تعذر فتح نافذة الطباعة. تأكد من السماح بالنوافذ المنبثقة.");
+    return;
+  }
+
+  printWindow.document.write(`
+    <!DOCTYPE html>
+    <html lang="ar" dir="rtl">
+    <head>
+      <meta charset="UTF-8">
+      <title>طباعة جدول ${escapeHtml(date)}</title>
+      <style>
+        @page {
+          size: A4 landscape;
+          margin: 10mm;
+        }
+        * {
+          box-sizing: border-box;
+        }
+        html, body {
+          width: 100%;
+        }
+        body {
+          margin: 0;
+          font-family: Tahoma, "Segoe UI", Arial, sans-serif;
+          color: #1f2937;
+        }
+        h1, p {
+          margin: 0 0 12px;
+          text-align: center;
+        }
+        table {
+          width: 100%;
+          border-collapse: collapse;
+          margin-top: 18px;
+          table-layout: fixed;
+        }
+        th, td {
+          border: 1px solid #b9c6d3;
+          padding: 6px 4px;
+          text-align: center;
+          font-size: 11px;
+          word-break: break-word;
+        }
+        th {
+          background: #2f89d9;
+          color: #fff;
+        }
+        @media print {
+          body {
+            print-color-adjust: exact;
+            -webkit-print-color-adjust: exact;
+          }
+        }
+      </style>
+    </head>
+    <body>
+      <h1>بيان الشغل اليومي</h1>
+      <p>${escapeHtml(formatArabicDate(date))}</p>
+      <table>
+        <thead>
+          <tr>
+            <th>التاريخ</th>
+            <th>عدد الحاويات</th>
+            <th>الحجم</th>
+            <th>المكان</th>
+            <th>مكان النقلة</th>
+            <th>التوكيل</th>
+            <th>نوع</th>
+            <th>العميل</th>
+            <th>ملاحظات</th>
+          </tr>
+        </thead>
+        <tbody>${renderPrintableRows(date)}</tbody>
+      </table>
+    </body>
+    </html>
+  `);
+
+  printWindow.document.close();
+  printWindow.focus();
+  printWindow.print();
 }
 
 function mergeLocalDrafts() {
@@ -863,6 +1020,10 @@ function saveDate(date, showAlert = false) {
     })
     .finally(() => {
       savingDates[date] = false;
+      if (pendingImmediateSaves[date]) {
+        delete pendingImmediateSaves[date];
+        saveDate(date, false);
+      }
     });
 }
 
@@ -887,6 +1048,7 @@ async function goBack() {
 }
 
 document.addEventListener("input", handleInput);
+document.addEventListener("change", handleCellCommit);
 
 window.addEventListener("beforeunload", () => {
   getSortedDates().forEach(date => {
