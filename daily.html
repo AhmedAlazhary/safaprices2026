@@ -185,6 +185,11 @@ button:active {
   margin-top: 4px;
 }
 
+.summary-card .field {
+  min-width: 180px;
+  margin-top: 10px;
+}
+
 .toolbar {
   display: flex;
   justify-content: space-between;
@@ -317,6 +322,53 @@ tr:last-child td {
 .archive-grid {
   display: grid;
   gap: 16px;
+  grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+}
+
+.archive-month-card {
+  padding: 18px;
+  border-radius: 18px;
+  background: var(--surface);
+  box-shadow: var(--shadow);
+}
+
+.archive-month-head {
+  display: flex;
+  justify-content: space-between;
+  align-items: start;
+  gap: 12px;
+  flex-wrap: wrap;
+  margin-bottom: 12px;
+}
+
+.archive-month-title {
+  margin: 0;
+  color: var(--primary);
+  font-size: 1.05rem;
+}
+
+.archive-month-stats {
+  display: flex;
+  gap: 8px;
+  flex-wrap: wrap;
+}
+
+.archive-stat {
+  padding: 6px 10px;
+  border-radius: 999px;
+  background: var(--accent-soft);
+  color: var(--accent);
+  font-size: 0.84rem;
+  font-weight: 700;
+}
+
+.archive-month-card select {
+  width: 100%;
+  padding: 10px 12px;
+  border-radius: 10px;
+  border: 1px solid #ccd8e4;
+  background: #fff;
+  font-size: 0.94rem;
 }
 
 .day-card {
@@ -489,6 +541,10 @@ tr:last-child td {
         <span class="summary-label">إجمالي الحاويات خلال الشهر</span>
         <span id="monthContainerTotal" class="summary-value">0</span>
         <span id="monthRangeLabel" class="summary-note">يتم الحساب حسب التاريخ المفتوح</span>
+        <div class="field">
+          <label for="summaryMonthPicker">اختيار الشهر</label>
+          <input type="month" id="summaryMonthPicker">
+        </div>
       </div>
     </div>
 
@@ -537,8 +593,12 @@ tr:last-child td {
 
   <section>
     <div class="section-header">
-      <h2 class="section-title">الأرشيف اليومي</h2>
-      <div class="selected-badge">يعرض كل يوم في جدول منفصل ويمكن تعديله</div>
+      <h2 class="section-title">الأرشيف الشهري</h2>
+      <div class="selected-badge">اختر الشهر ثم اليوم لعرضه في الجدول الرئيسي فقط</div>
+    </div>
+    <div class="field" style="margin-bottom: 14px;">
+      <label for="archiveSearchInput">بحث سريع عن يوم داخل الأرشيف</label>
+      <input type="search" id="archiveSearchInput" placeholder="اكتب التاريخ أو اسم اليوم أو الشهر">
     </div>
     <div id="archiveContainer" class="archive-grid"></div>
   </section>
@@ -574,9 +634,13 @@ const currentDateTitle = document.getElementById("currentDateTitle");
 const currentSaveStatus = document.getElementById("currentSaveStatus");
 const monthContainerTotal = document.getElementById("monthContainerTotal");
 const monthRangeLabel = document.getElementById("monthRangeLabel");
+const summaryMonthPicker = document.getElementById("summaryMonthPicker");
+const archiveSearchInput = document.getElementById("archiveSearchInput");
 
 let currentUser = null;
 let currentDate = today;
+let currentSummaryMonth = today.slice(0, 7);
+let archiveSearchTerm = "";
 let dailyData = {};
 let saveTimers = {};
 let savingDates = {};
@@ -586,6 +650,7 @@ let activeLocks = {};
 let lockIntervals = {};
 
 datePicker.value = today;
+summaryMonthPicker.value = currentSummaryMonth;
 
 firebase.auth().onAuthStateChanged(user => {
   currentUser = user;
@@ -759,8 +824,18 @@ function renderRows(rows, date, scope) {
   }).join("");
 }
 
-function updateMonthSummary() {
-  const monthKey = currentDate.slice(0, 7);
+function getMonthKey(date) {
+  return date.slice(0, 7);
+}
+
+function formatArabicMonth(monthKey) {
+  return new Date(monthKey + "-01T00:00:00").toLocaleDateString("ar-EG", {
+    year: "numeric",
+    month: "long"
+  });
+}
+
+function calculateMonthContainerTotal(monthKey) {
   let total = 0;
 
   Object.keys(dailyData).forEach(date => {
@@ -770,14 +845,38 @@ function updateMonthSummary() {
     });
   });
 
-  monthContainerTotal.textContent = String(total);
-  monthRangeLabel.textContent = "إجمالي شهر " + formatArabicDate(monthKey + "-01").replace(/^\S+\s/, "");
+  return total;
+}
+
+function getArchiveMonthKeys() {
+  const months = new Set(
+    getSortedDates()
+      .filter(date => date !== currentDate)
+      .map(date => getMonthKey(date))
+  );
+
+  const currentMonth = today.slice(0, 7);
+  return Array.from(months).sort((a, b) => {
+    if (a === currentMonth && b !== currentMonth) return -1;
+    if (b === currentMonth && a !== currentMonth) return 1;
+    return b.localeCompare(a);
+  });
+}
+
+function updateMonthSummary() {
+  const monthKey = currentSummaryMonth || getMonthKey(currentDate);
+  monthContainerTotal.textContent = String(calculateMonthContainerTotal(monthKey));
+  monthRangeLabel.textContent = "إجمالي شهر " + formatArabicMonth(monthKey);
 }
 
 function renderCurrentDate() {
   const rows = ensureDateRows(currentDate);
   currentDateTitle.textContent = "بيان التاريخ: " + currentDate;
   currentTableBody.innerHTML = renderRows(rows, currentDate, "current");
+  if (!summaryMonthPicker.value) {
+    currentSummaryMonth = getMonthKey(currentDate);
+    summaryMonthPicker.value = currentSummaryMonth;
+  }
   updateMonthSummary();
 }
 
@@ -786,59 +885,54 @@ function getSortedDates() {
 }
 
 function renderArchive() {
-  const dates = getSortedDates().filter(date => date !== currentDate);
+  const months = getArchiveMonthKeys();
 
-  if (!dates.length) {
-    archiveContainer.innerHTML = '<div class="empty-state">لا توجد أيام أخرى في الأرشيف حاليًا. بيانات التاريخ المفتوح تظهر في الجدول العلوي.</div>';
+  if (!months.length) {
+    archiveContainer.innerHTML = '<div class="empty-state">لا توجد أشهر محفوظة في الأرشيف حاليًا. كل البيانات المعروضة تخص التاريخ المفتوح فقط.</div>';
     return;
   }
 
-  archiveContainer.innerHTML = dates.map(date => {
-    const rows = ensureDateRows(date);
-    const isCollapsed = Boolean(collapsedDates[date]);
+  archiveContainer.innerHTML = months.map(monthKey => {
+    const dates = getSortedDates().filter(date => {
+      if (date === currentDate || getMonthKey(date) !== monthKey) return false;
+      if (!archiveSearchTerm) return true;
+
+      const label = `${date} ${formatArabicDate(date)} ${formatArabicMonth(monthKey)}`.toLowerCase();
+      return label.includes(archiveSearchTerm);
+    });
+
+    if (!dates.length) {
+      return "";
+    }
+
+    const total = calculateMonthContainerTotal(monthKey);
 
     return `
-      <article class="day-card ${isCollapsed ? "collapsed" : ""}">
-        <div class="card-head">
-          <div class="card-meta">
-            <h3 class="card-title">جدول ${date}</h3>
-            <div class="card-date">${formatArabicDate(date)}</div>
+      <article class="archive-month-card">
+        <div class="archive-month-head">
+          <div>
+            <h3 class="archive-month-title">أرشيف ${formatArabicMonth(monthKey)}</h3>
+            <div class="card-date">كل الأيام محفوظة داخل هذا الشهر وتُعرض عند الاختيار فقط</div>
+          </div>
+          <div class="archive-month-stats">
+            <span class="archive-stat">إجمالي الحاويات: ${total}</span>
+            <span class="archive-stat">عدد الأيام: ${dates.length}</span>
           </div>
         </div>
-
-        <div class="table-wrap">
-          <table>
-            <thead>
-              <tr>
-                <th>التاريخ</th>
-                <th>عدد الحاويات</th>
-                <th>الحجم</th>
-                <th>المكان</th>
-                <th>مكان النقلة</th>
-                <th>التوكيل</th>
-                <th>نوع</th>
-                <th>العميل</th>
-                <th>ملاحظات</th>
-                <th>آخر تعديل بواسطة</th>
-                <th>وقت آخر تعديل</th>
-                <th>حذف</th>
-              </tr>
-            </thead>
-            <tbody>${renderRows(rows, date, "archive")}</tbody>
-          </table>
-        </div>
-
-        <div class="card-actions table-actions">
-          <button class="toggle-btn" onclick="toggleArchiveDay('${date}')">${isCollapsed ? "فتح اليوم" : "طي اليوم"}</button>
-          <button class="save-btn" onclick="focusDate('${date}')">فتح هذا التاريخ</button>
-          <button class="add-btn" onclick="addRow('${date}')">إضافة سطر</button>
-          <button class="save-btn" onclick="saveDate('${date}', true)">حفظ</button>
-          <button class="print-btn" onclick="printDate('${date}')">طباعة الجدول</button>
-          <button class="delete-day-btn" onclick="deleteDay('${date}')">حذف اليوم</button>
+        <div class="field">
+          <label for="archiveMonth-${monthKey}">اختر يومًا من هذا الشهر</label>
+          <select id="archiveMonth-${monthKey}" onchange="openArchiveDate(this.value)">
+            <option value="">اختر اليوم</option>
+            ${dates.map(date => `<option value="${date}">${date} - ${escapeHtml(formatArabicDate(date))}</option>`).join("")}
+          </select>
         </div>
       </article>
     `;
   }).join("");
+
+  if (!archiveContainer.innerHTML.trim()) {
+    archiveContainer.innerHTML = '<div class="empty-state">لا توجد نتائج مطابقة للبحث داخل الأرشيف.</div>';
+  }
 }
 
 function renderAll() {
@@ -846,9 +940,11 @@ function renderAll() {
   renderArchive();
 }
 
-function toggleArchiveDay(date) {
-  collapsedDates[date] = !collapsedDates[date];
-  renderArchive();
+function toggleArchiveDay() {}
+
+function openArchiveDate(date) {
+  if (!date) return;
+  focusDate(date);
 }
 
 function findRow(date, rowId) {
@@ -1133,6 +1229,50 @@ function normalizeSnapshotData(snapshotValue) {
   return normalized;
 }
 
+function getActiveEditingInfo() {
+  const el = document.activeElement;
+  if (el && el.matches('input[data-date][data-field]')) {
+    return {
+      date: el.dataset.date,
+      rowId: el.dataset.rowId,
+      field: el.dataset.field
+    };
+  }
+  return null;
+}
+
+function mergeServerDataPreservingEditing(serverData, editingInfo) {
+  const merged = { ...dailyData };
+
+  Object.keys(serverData).forEach(date => {
+    if (!editingInfo || date !== editingInfo.date) {
+      merged[date] = serverData[date];
+      return;
+    }
+
+    const localRows = dailyData[date] || [];
+    const localMap = new Map(localRows.map(row => [row.id, row]));
+    const serverRows = serverData[date] || [];
+
+    const combined = serverRows.map(serverRow => {
+      if (serverRow.id === editingInfo.rowId && localMap.has(serverRow.id)) {
+        return localMap.get(serverRow.id);
+      }
+      return serverRow;
+    });
+
+    localRows.forEach(localRow => {
+      if (!combined.some(row => row.id === localRow.id)) {
+        combined.push(localRow);
+      }
+    });
+
+    merged[date] = sortRows(combined);
+  });
+
+  return merged;
+}
+
 function renderPrintableRows(date) {
   return sortRows(ensureDateRows(date)).map(row => `
     <tr>
@@ -1249,17 +1389,14 @@ function mergeLocalDraftsFallback() {
 function loadAllData() {
   db.ref("daily").on("value", snap => {
     const serverData = normalizeSnapshotData(snap.val());
-    const editingDate = getActiveEditingDate();
+    const editingInfo = getActiveEditingInfo();
 
-    if (editingDate) {
-      Object.keys(serverData).forEach(date => {
-        if (date !== editingDate) {
-          dailyData[date] = serverData[date];
-        }
-      });
+    if (editingInfo) {
+      dailyData = mergeServerDataPreservingEditing(serverData, editingInfo);
       ensureDateRows(currentDate);
-      renderAll();
-      setCurrentStatus("تم استقبال تحديثات جديدة، وسيبقى السطر الجاري تعديله كما هو.");
+      renderArchive();
+      updateMonthSummary();
+      setCurrentStatus("تم استقبال تحديثات جديدة بدون المساس بالخلية الجاري تعديلها.");
       return;
     }
 
@@ -1383,6 +1520,14 @@ async function goBack() {
 document.addEventListener("input", handleInput);
 document.addEventListener("change", handleCellCommit);
 document.addEventListener("focusout", handleCellBlur);
+summaryMonthPicker.addEventListener("change", event => {
+  currentSummaryMonth = event.target.value || getMonthKey(currentDate);
+  updateMonthSummary();
+});
+archiveSearchInput.addEventListener("input", event => {
+  archiveSearchTerm = (event.target.value || "").trim().toLowerCase();
+  renderArchive();
+});
 
 window.addEventListener("beforeunload", () => {
   Object.keys(activeLocks).forEach(rowId => {
