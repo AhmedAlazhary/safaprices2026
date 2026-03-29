@@ -1,0 +1,53 @@
+rules_version = '2';
+service cloud.firestore {
+  match /databases/{database}/documents {
+    function signedIn() {
+      return request.auth != null;
+    }
+
+    function isAdmin() {
+      return signedIn() && request.auth.token.admin == true;
+    }
+
+    function isManager() {
+      return isAdmin() || (signedIn() && request.auth.token.manager == true);
+    }
+
+    function isMechanic() {
+      return isManager() || (signedIn() && request.auth.token.mechanic == true);
+    }
+
+    function unchangedFinancialFields() {
+      return request.resource.data.purchasePrice == resource.data.purchasePrice
+        && request.resource.data.sellingPrice == resource.data.sellingPrice
+        && request.resource.data.capitalLocked == resource.data.capitalLocked;
+    }
+
+    match /Staff/{userId} {
+      allow read: if signedIn();
+      allow create, update, delete: if isAdmin();
+    }
+
+    match /Inventory/{itemId} {
+      allow read: if signedIn();
+      allow create, delete: if isManager();
+      allow update: if isManager()
+        || (isMechanic() && unchangedFinancialFields());
+    }
+
+    match /JobOrders/{jobOrderId} {
+      allow read: if signedIn();
+      allow create: if isMechanic();
+      allow update: if isMechanic();
+      allow delete: if isManager();
+    }
+
+    match /Expenses/{expenseId} {
+      allow read: if isManager();
+      allow create: if isMechanic()
+        && request.resource.data.workerId is string
+        && request.resource.data.amount is number;
+      allow update, delete: if isManager();
+    }
+  }
+}
