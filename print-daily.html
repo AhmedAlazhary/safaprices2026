@@ -246,8 +246,42 @@ function goBack() {
 
 window.addEventListener("afterprint", () => {
   document.body.classList.remove("printing");
-  setTimeout(goBack, 150);
 });
+
+function renderPrintPage(date, rows) {
+  printShell.innerHTML = `
+    <h1 class="print-title">بيان الشغل اليومي</h1>
+    <div class="print-date">${formatArabicDate(date)}</div>
+    <div class="status" style="padding: 0 0 14px; font-size: 0.92rem;">اضغط زر طباعة بالأسفل لفتح نافذة الطباعة يدويًا.</div>
+    <table>
+      <thead>
+        <tr>
+          <th>التاريخ</th>
+          <th>عدد الحاويات</th>
+          <th>الحجم</th>
+          <th>المكان</th>
+          <th>مكان النقلة</th>
+          <th>التوكيل</th>
+          <th>نوع</th>
+          <th>العميل</th>
+          <th>ملاحظات</th>
+        </tr>
+      </thead>
+      <tbody>${renderRows(date, rows)}</tbody>
+    </table>
+    <div class="actions">
+      <button class="print-btn" onclick="triggerPrint()">طباعة</button>
+      <button class="back-btn" onclick="goBack()">رجوع</button>
+    </div>
+  `;
+}
+
+function triggerPrint() {
+  document.body.classList.add("printing");
+  setTimeout(() => {
+    window.print();
+  }, 80);
+}
 
 firebase.auth().onAuthStateChanged(user => {
   if (!user) {
