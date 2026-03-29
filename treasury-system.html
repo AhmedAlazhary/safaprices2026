@@ -298,6 +298,7 @@ button {
 
 <div class="container">
   <section class="panel">
+    <div class="info" style="margin-bottom:10px;">الخلايا الرقمية تدعم الصيغ مثل: <code>=100+50*2</code> أو <code>=(200-20)/3</code></div>
     <div class="tabs">
       <button class="tab-btn active" data-tab="transport">بيان النقلات</button>
       <button class="tab-btn" data-tab="archive">أرشيف البوالص</button>
@@ -309,10 +310,15 @@ button {
 
     <section id="transport" class="section active">
       <div class="toolbar">
+        <input type="date" id="transportDate" onchange="onTransportDateChange()">
         <input type="text" id="transportSearch" placeholder="بحث بالعميل أو المكان..." oninput="renderTransport()">
+        <button class="add-btn" onclick="closeTransportDate()">إغلاق اليوم</button>
+        <button class="add-btn" onclick="reopenTransportDate()">فتح اليوم</button>
         <button class="add-btn" onclick="addTransportRow()">إضافة صف</button>
+        <button class="add-btn" onclick="refreshCustomersFromTransport()">ترحيل الإيصالات لحسابات العملاء</button>
         <button class="save-btn" onclick="saveTransport()">حفظ بيان النقلات</button>
         <span class="info" id="transportInfo"></span>
+        <span class="info" id="transportLockInfo"></span>
       </div>
       <div class="table-wrap">
         <table>
@@ -342,6 +348,11 @@ button {
           <option value="بوالص ش 2">بوالص ش 2</option>
           <option value="بوالص ش 12">بوالص ش 12</option>
         </select>
+        <select id="archiveFilter">
+          <option value="غير مصروفة">عرض غير المصروفة فقط</option>
+          <option value="تم الصرف">عرض تم الصرف فقط</option>
+          <option value="الكل">عرض الكل</option>
+        </select>
         <button class="add-btn" onclick="addArchiveRow()">إضافة بوليصة</button>
         <button class="save-btn" onclick="saveArchive()">حفظ الأرشيف</button>
         <span class="info" id="archiveInfo"></span>
@@ -357,7 +368,7 @@ button {
               <th>رقم البوليصة</th>
               <th>قيمة العهدة</th>
               <th>ملاحظات</th>
-              <th>حذف</th>
+              <th>إجراء</th>
             </tr>
           </thead>
           <tbody id="archiveBody"></tbody>
@@ -400,6 +411,20 @@ button {
     </section>
 
     <section id="budget" class="section">
+      <div class="card">
+        <div><strong>مؤشرات تلقائية من بيانات التشغيل</strong></div>
+        <div class="table-wrap" style="margin-top:8px;">
+          <table style="min-width:640px;">
+            <thead>
+              <tr>
+                <th>المؤشر</th>
+                <th>القيمة</th>
+              </tr>
+            </thead>
+            <tbody id="budgetMetricsBody"></tbody>
+          </table>
+        </div>
+      </div>
       <div class="grid-two">
         <div class="field">
           <label for="budgetNotes">ملاحظات الميزانية</label>
@@ -411,6 +436,7 @@ button {
         </div>
       </div>
       <div class="toolbar">
+        <button class="add-btn" onclick="renderBudgetMetrics()">تحديث المؤشرات</button>
         <button class="save-btn" onclick="saveBudget()">حفظ الميزانية</button>
         <span class="info" id="budgetInfo"></span>
       </div>
@@ -430,8 +456,25 @@ button {
         </div>
       </div>
       <div class="toolbar">
+        <button class="add-btn" onclick="buildReportFromData()">تحديث الملخص تلقائيًا</button>
         <button class="save-btn" onclick="saveReport()">حفظ التقرير</button>
         <span class="info" id="reportInfo"></span>
+      </div>
+      <div class="card">
+        <div><strong>سجل الحركات (آخر العمليات)</strong></div>
+        <div class="table-wrap" style="margin-top:8px;">
+          <table style="min-width:860px;">
+            <thead>
+              <tr>
+                <th>الوقت</th>
+                <th>المستخدم</th>
+                <th>الإجراء</th>
+                <th>التفاصيل</th>
+              </tr>
+            </thead>
+            <tbody id="auditBody"></tbody>
+          </table>
+        </div>
       </div>
     </section>
   </section>
@@ -456,11 +499,14 @@ const db = firebase.database();
 
 const state = {
   transportRows: [],
+  currentTransportDate: "",
+  closedDates: {},
   archiveRows: {
     "بوالص ش 1": [],
     "بوالص ش 2": [],
     "بوالص ش 12": []
   },
+  archiveFilter: "غير مصروفة",
   financeRows: {
     bankCash: [],
     pledges: [],
@@ -470,7 +516,8 @@ const state = {
   },
   customerRows: [],
   budget: { notes: "", adjustments: "" },
-  report: { summary: "", alerts: "" }
+  report: { summary: "", alerts: "" },
+  auditLogs: []
 };
 
 const financeLabels = {
@@ -510,6 +557,27 @@ document.querySelectorAll(".subtab-btn").forEach(btn => {
 });
 
 document.getElementById("archiveSheet").addEventListener("change", renderArchive);
+document.getElementById("archiveFilter").addEventListener("change", () => {
+  state.archiveFilter = document.getElementById("archiveFilter").value;
+  renderArchive();
+});
+document.getElementById("transportDate").value = state.currentTransportDate;
+
+// Allow Excel-like formulas in editable cells: =10+20, =(100-5)*2, etc.
+document.addEventListener("keydown", event => {
+  const target = event.target;
+  if (target && target.matches('td[contenteditable="true"]') && event.key === "Enter") {
+    event.preventDefault();
+    target.blur();
+  }
+});
+
+document.addEventListener("focusout", event => {
+  const target = event.target;
+  if (target && target.matches('td[contenteditable="true"]')) {
+    applyFormulaIfNeeded(target);
+  }
+});
 
 function transportTemplateRow() {
   return {
@@ -551,16 +619,24 @@ function loadAllData() {
     const data = snapshot.val() || {};
 
     state.transportRows = Array.isArray(data.transportRows) ? data.transportRows : [];
+    state.closedDates = data.closedDates || {};
     state.archiveRows = data.archiveRows || state.archiveRows;
     state.financeRows = data.financeRows || state.financeRows;
     state.customerRows = Array.isArray(data.customerRows) ? data.customerRows : [];
     state.budget = data.budget || state.budget;
     state.report = data.report || state.report;
+    state.auditLogs = data.auditLogs
+      ? Object.keys(data.auditLogs).map(key => ({ id: key, ...data.auditLogs[key] }))
+      : [];
+    document.getElementById("archiveFilter").value = state.archiveFilter;
+    document.getElementById("transportDate").value = state.currentTransportDate;
 
     renderTransport();
     renderArchive();
     renderAllFinanceSubsections();
     renderCustomers();
+    renderBudgetMetrics();
+    renderAuditLogs();
     document.getElementById("budgetNotes").value = state.budget.notes || "";
     document.getElementById("budgetAdjustments").value = state.budget.adjustments || "";
     document.getElementById("reportSummary").value = state.report.summary || "";
@@ -568,30 +644,189 @@ function loadAllData() {
   });
 }
 
+function normalizeDate(value) {
+  return (value || "").trim();
+}
+
+function normalizeExpressionInput(text) {
+  const arabicDigits = "٠١٢٣٤٥٦٧٨٩";
+  const englishDigits = "0123456789";
+  let result = (text || "").trim();
+
+  for (let i = 0; i < arabicDigits.length; i++) {
+    result = result.replace(new RegExp(arabicDigits[i], "g"), englishDigits[i]);
+  }
+
+  result = result
+    .replace(/،/g, ",")
+    .replace(/×/g, "*")
+    .replace(/÷/g, "/")
+    .replace(/−/g, "-")
+    .replace(/,/g, "");
+
+  return result;
+}
+
+function evaluateMathFormula(rawFormula) {
+  const formula = normalizeExpressionInput(rawFormula).trim();
+  if (!formula.startsWith("=")) {
+    return { ok: false, value: null, error: "NOT_FORMULA" };
+  }
+
+  const expression = formula.slice(1).trim();
+  if (!expression) {
+    return { ok: false, value: null, error: "EMPTY_FORMULA" };
+  }
+
+  // Security: only allow numbers, operators, spaces, decimal points and parentheses.
+  if (!/^[0-9+\-*/().\s]+$/.test(expression)) {
+    return { ok: false, value: null, error: "INVALID_CHARS" };
+  }
+
+  try {
+    const value = Function(`"use strict"; return (${expression});`)();
+    if (typeof value !== "number" || !Number.isFinite(value)) {
+      return { ok: false, value: null, error: "INVALID_RESULT" };
+    }
+    return { ok: true, value };
+  } catch (error) {
+    return { ok: false, value: null, error: "EVAL_ERROR" };
+  }
+}
+
+function applyFormulaIfNeeded(cell) {
+  const raw = (cell.innerText || "").trim();
+  if (!raw.startsWith("=")) return;
+
+  const result = evaluateMathFormula(raw);
+  if (result.ok) {
+    cell.innerText = String(result.value);
+  } else {
+    alert("صيغة غير صحيحة. استخدم مثال: =100+50*2");
+  }
+}
+
+function readNumericFromCellText(text) {
+  const raw = (text || "").trim();
+  if (!raw) return 0;
+
+  if (raw.startsWith("=")) {
+    const result = evaluateMathFormula(raw);
+    return result.ok ? result.value : 0;
+  }
+
+  const normalized = normalizeExpressionInput(raw);
+  const value = Number(normalized);
+  return Number.isFinite(value) ? value : 0;
+}
+
+function selectedTransportDate() {
+  return document.getElementById("transportDate").value || state.currentTransportDate || "";
+}
+
+function isDateClosed(dateValue) {
+  const d = normalizeDate(dateValue);
+  return Boolean(d && state.closedDates[d]);
+}
+
+function onTransportDateChange() {
+  state.currentTransportDate = selectedTransportDate();
+  renderTransport();
+}
+
+function closeTransportDate() {
+  const dateValue = selectedTransportDate();
+  if (!dateValue) {
+    alert("اختر تاريخًا أولًا لإغلاق اليوم");
+    return;
+  }
+  state.closedDates[dateValue] = true;
+  db.ref("treasurySystem/closedDates").set(state.closedDates).then(() => {
+    logAction("إغلاق يوم", `تم إغلاق تاريخ ${dateValue}`);
+    renderTransport();
+  });
+}
+
+function reopenTransportDate() {
+  const dateValue = selectedTransportDate();
+  if (!dateValue) {
+    alert("اختر تاريخًا أولًا لفتح اليوم");
+    return;
+  }
+  delete state.closedDates[dateValue];
+  db.ref("treasurySystem/closedDates").set(state.closedDates).then(() => {
+    logAction("فتح يوم", `تم فتح تاريخ ${dateValue}`);
+    renderTransport();
+  });
+}
+
+function renderAuditLogs() {
+  const tbody = document.getElementById("auditBody");
+  if (!tbody) return;
+  const rows = [...state.auditLogs]
+    .sort((a, b) => Number(b.timestamp || 0) - Number(a.timestamp || 0))
+    .slice(0, 120);
+
+  tbody.innerHTML = rows.map(row => `
+    <tr>
+      <td>${row.timeText || ""}</td>
+      <td>${row.user || "-"}</td>
+      <td>${row.action || ""}</td>
+      <td>${row.details || ""}</td>
+    </tr>
+  `).join("");
+}
+
+function logAction(action, details) {
+  const user = firebase.auth().currentUser;
+  const payload = {
+    action,
+    details,
+    user: user ? (user.email || user.uid || "unknown") : "unknown",
+    timestamp: Date.now(),
+    timeText: new Date().toLocaleString("ar-EG")
+  };
+  return db.ref("treasurySystem/auditLogs").push(payload).then(() => {
+    state.auditLogs.unshift(payload);
+    renderAuditLogs();
+  });
+}
+
 function renderTransport() {
   const tbody = document.getElementById("transportBody");
   const query = document.getElementById("transportSearch").value.trim().toLowerCase();
+  const dateValue = selectedTransportDate();
+  const dateClosed = isDateClosed(dateValue);
 
   const rows = state.transportRows
     .map((row, index) => ({ row, index }))
-    .filter(item => !query || (item.row.client || "").toLowerCase().includes(query) || (item.row.place || "").toLowerCase().includes(query));
+    .filter(item => {
+      const rowDate = normalizeDate(item.row.date);
+      const dateOk = !dateValue || rowDate === dateValue;
+      const searchOk = !query || (item.row.client || "").toLowerCase().includes(query) || (item.row.place || "").toLowerCase().includes(query);
+      return dateOk && searchOk;
+    });
 
   tbody.innerHTML = rows.map(item => `
     <tr data-index="${item.index}">
-      <td contenteditable="true">${item.row.date || ""}</td>
-      <td contenteditable="true">${item.row.client || ""}</td>
-      <td contenteditable="true">${item.row.place || ""}</td>
-      <td contenteditable="true">${item.row.freight ?? 0}</td>
-      <td contenteditable="true">${item.row.commission ?? 0}</td>
-      <td contenteditable="true">${item.row.expense ?? 0}</td>
-      <td contenteditable="true">${item.row.invoiceNo || ""}</td>
-      <td contenteditable="true">${item.row.receiptTransfer ?? 0}</td>
-      <td contenteditable="true">${item.row.settlementNo || ""}</td>
-      <td><button class="delete-btn" onclick="deleteTransportRow(${item.index})">حذف</button></td>
+      <td contenteditable="${dateClosed ? "false" : "true"}">${item.row.date || ""}</td>
+      <td contenteditable="${dateClosed ? "false" : "true"}">${item.row.client || ""}</td>
+      <td contenteditable="${dateClosed ? "false" : "true"}">${item.row.place || ""}</td>
+      <td contenteditable="${dateClosed ? "false" : "true"}">${item.row.freight ?? 0}</td>
+      <td contenteditable="${dateClosed ? "false" : "true"}">${item.row.commission ?? 0}</td>
+      <td contenteditable="${dateClosed ? "false" : "true"}">${item.row.expense ?? 0}</td>
+      <td contenteditable="${dateClosed ? "false" : "true"}">${item.row.invoiceNo || ""}</td>
+      <td contenteditable="${dateClosed ? "false" : "true"}">${item.row.receiptTransfer ?? 0}</td>
+      <td contenteditable="${dateClosed ? "false" : "true"}">${item.row.settlementNo || ""}</td>
+      <td><button class="delete-btn" onclick="deleteTransportRow(${item.index})" ${dateClosed ? "disabled" : ""}>حذف</button></td>
     </tr>
   `).join("");
 
-  document.getElementById("transportInfo").textContent = `عدد العمليات: ${rows.length}`;
+  const receiptTotal = rows.reduce((sum, item) => sum + (Number(item.row.receiptTransfer) || 0), 0);
+  document.getElementById("transportInfo").textContent = `عدد العمليات: ${rows.length} | إجمالي الإيصالات المرحلة: ${receiptTotal}`;
+  document.getElementById("transportLockInfo").textContent = dateValue
+    ? (dateClosed ? `تاريخ ${dateValue} مغلق ولا يقبل تعديل` : `تاريخ ${dateValue} مفتوح للتعديل`)
+    : "اختر تاريخًا لإدارة يوم محدد";
 }
 
 function syncTransportFromDom() {
@@ -603,11 +838,11 @@ function syncTransportFromDom() {
       date: cells[0].innerText.trim(),
       client: cells[1].innerText.trim(),
       place: cells[2].innerText.trim(),
-      freight: Number(cells[3].innerText) || 0,
-      commission: Number(cells[4].innerText) || 0,
-      expense: Number(cells[5].innerText) || 0,
+      freight: readNumericFromCellText(cells[3].innerText),
+      commission: readNumericFromCellText(cells[4].innerText),
+      expense: readNumericFromCellText(cells[5].innerText),
       invoiceNo: cells[6].innerText.trim(),
-      receiptTransfer: Number(cells[7].innerText) || 0,
+      receiptTransfer: readNumericFromCellText(cells[7].innerText),
       settlementNo: cells[8].innerText.trim()
     };
   });
@@ -618,8 +853,15 @@ function addTransportRow() {
     alert("امسح البحث أولًا قبل الإضافة");
     return;
   }
+  const dateValue = selectedTransportDate();
+  if (dateValue && isDateClosed(dateValue)) {
+    alert("هذا اليوم مغلق. افتحه أولًا إذا أردت التعديل.");
+    return;
+  }
   syncTransportFromDom();
-  state.transportRows.push(transportTemplateRow());
+  const row = transportTemplateRow();
+  row.date = dateValue || new Date().toISOString().split("T")[0];
+  state.transportRows.push(row);
   renderTransport();
 }
 
@@ -628,16 +870,28 @@ function deleteTransportRow(index) {
     alert("امسح البحث أولًا قبل الحذف");
     return;
   }
+  const dateValue = selectedTransportDate();
+  if (dateValue && isDateClosed(dateValue)) {
+    alert("هذا اليوم مغلق ولا يمكن حذف صفوفه.");
+    return;
+  }
   syncTransportFromDom();
   state.transportRows.splice(index, 1);
   renderTransport();
 }
 
 function saveTransport() {
+  const dateValue = selectedTransportDate();
+  if (dateValue && isDateClosed(dateValue)) {
+    alert("هذا اليوم مغلق. لا يمكن الحفظ بعد الإغلاق.");
+    return;
+  }
   syncTransportFromDom();
   db.ref("treasurySystem/transportRows").set(state.transportRows)
     .then(() => {
-      refreshCustomersFromTransport(false);
+      refreshCustomersFromTransport(false, false);
+      renderBudgetMetrics();
+      logAction("حفظ بيان النقلات", `تم حفظ بيانات النقلات${dateValue ? " لتاريخ " + dateValue : ""}`);
       document.getElementById("transportInfo").textContent = "تم حفظ بيان النقلات بنجاح";
     });
 }
@@ -649,36 +903,44 @@ function currentArchiveSheet() {
 function renderArchive() {
   const sheet = currentArchiveSheet();
   const rows = Array.isArray(state.archiveRows[sheet]) ? state.archiveRows[sheet] : [];
+  const filter = state.archiveFilter || "غير مصروفة";
   const tbody = document.getElementById("archiveBody");
 
-  tbody.innerHTML = rows.map((row, index) => `
-    <tr data-index="${index}">
-      <td contenteditable="true">${row.status || "غير مصروفة"}</td>
-      <td contenteditable="true">${row.date || ""}</td>
-      <td contenteditable="true">${row.client || ""}</td>
-      <td contenteditable="true">${row.place || ""}</td>
-      <td contenteditable="true">${row.policyNo || ""}</td>
-      <td contenteditable="true">${row.custodyAmount ?? 0}</td>
-      <td contenteditable="true">${row.notes || ""}</td>
-      <td><button class="delete-btn" onclick="deleteArchiveRow(${index})">حذف</button></td>
+  const viewRows = rows
+    .map((row, index) => ({ row, index }))
+    .filter(item => filter === "الكل" || (item.row.status || "غير مصروفة") === filter);
+
+  tbody.innerHTML = viewRows.map(item => `
+    <tr data-index="${item.index}">
+      <td contenteditable="true">${item.row.status || "غير مصروفة"}</td>
+      <td contenteditable="true">${item.row.date || ""}</td>
+      <td contenteditable="true">${item.row.client || ""}</td>
+      <td contenteditable="true">${item.row.place || ""}</td>
+      <td contenteditable="true">${item.row.policyNo || ""}</td>
+      <td contenteditable="true">${item.row.custodyAmount ?? 0}</td>
+      <td contenteditable="true">${item.row.notes || ""}</td>
+      <td><button class="save-btn" onclick="markArchiveAsSpent(${item.index})">تم الصرف</button></td>
     </tr>
   `).join("");
 
-  document.getElementById("archiveInfo").textContent = `عدد البوالص في ${sheet}: ${rows.length}`;
+  const unsent = rows.filter(r => (r.status || "غير مصروفة") === "غير مصروفة").length;
+  const spent = rows.filter(r => (r.status || "") === "تم الصرف").length;
+  document.getElementById("archiveInfo").textContent = `عدد البوالص في ${sheet}: ${rows.length} | غير المصروفة: ${unsent} | تم الصرف: ${spent}`;
 }
 
 function syncArchiveFromDom() {
   const sheet = currentArchiveSheet();
   const trNodes = document.querySelectorAll("#archiveBody tr[data-index]");
-  state.archiveRows[sheet] = Array.from(trNodes).map(tr => {
+  trNodes.forEach(tr => {
+    const index = Number(tr.dataset.index);
     const cells = tr.children;
-    return {
+    state.archiveRows[sheet][index] = {
       status: cells[0].innerText.trim() || "غير مصروفة",
       date: cells[1].innerText.trim(),
       client: cells[2].innerText.trim(),
       place: cells[3].innerText.trim(),
       policyNo: cells[4].innerText.trim(),
-      custodyAmount: Number(cells[5].innerText) || 0,
+      custodyAmount: readNumericFromCellText(cells[5].innerText),
       notes: cells[6].innerText.trim()
     };
   });
@@ -694,17 +956,26 @@ function addArchiveRow() {
   renderArchive();
 }
 
-function deleteArchiveRow(index) {
+function markArchiveAsSpent(index) {
   syncArchiveFromDom();
   const sheet = currentArchiveSheet();
-  state.archiveRows[sheet].splice(index, 1);
+  if (!state.archiveRows[sheet][index]) return;
+  state.archiveRows[sheet][index].status = "تم الصرف";
+  const policy = state.archiveRows[sheet][index].policyNo || "(بدون رقم)";
   renderArchive();
+  saveArchive(false).then(() => {
+    logAction("صرف بوليصة", `تم صرف البوليصة ${policy} من ${sheet}`);
+  });
 }
 
-function saveArchive() {
+function saveArchive(logIt = true) {
   syncArchiveFromDom();
-  db.ref("treasurySystem/archiveRows").set(state.archiveRows)
+  return db.ref("treasurySystem/archiveRows").set(state.archiveRows)
     .then(() => {
+      renderBudgetMetrics();
+      if (logIt) {
+        logAction("حفظ أرشيف البوالص", `تم حفظ الأرشيف في ${currentArchiveSheet()}`);
+      }
       document.getElementById("archiveInfo").textContent = "تم حفظ أرشيف البوالص بنجاح";
     });
 }
@@ -757,7 +1028,7 @@ function syncFinanceFromDom(sectionKey) {
     return {
       date: cells[0].innerText.trim(),
       statement: cells[1].innerText.trim(),
-      amount: Number(cells[2].innerText) || 0,
+      amount: readNumericFromCellText(cells[2].innerText),
       notes: cells[3].innerText.trim()
     };
   });
@@ -777,10 +1048,14 @@ function deleteFinanceRow(sectionKey, index) {
 
 function saveFinanceSection(sectionKey) {
   syncFinanceFromDom(sectionKey);
-  db.ref(`treasurySystem/financeRows/${sectionKey}`).set(state.financeRows[sectionKey]);
+  db.ref(`treasurySystem/financeRows/${sectionKey}`).set(state.financeRows[sectionKey])
+    .then(() => {
+      renderBudgetMetrics();
+      logAction("حفظ دفتر مالي", `تم حفظ قسم ${financeLabels[sectionKey]}`);
+    });
 }
 
-function refreshCustomersFromTransport(showMessage = true) {
+function refreshCustomersFromTransport(showMessage = true, logIt = true) {
   syncTransportFromDom();
 
   const map = {};
@@ -801,6 +1076,9 @@ function refreshCustomersFromTransport(showMessage = true) {
   db.ref("treasurySystem/customerRows").set(state.customerRows)
     .then(() => {
       renderCustomers();
+      if (logIt) {
+        logAction("ترحيل حسابات العملاء", "تم تحديث حسابات العملاء من إيصالات بيان النقلات");
+      }
       if (showMessage) {
         document.getElementById("customersInfo").textContent = "تم تحديث حسابات العملاء من بيان النقلات";
       }
@@ -818,6 +1096,93 @@ function renderCustomers() {
   document.getElementById("customersInfo").textContent = `عدد العملاء: ${state.customerRows.length}`;
 }
 
+function calculateSystemMetrics() {
+  const transportCount = state.transportRows.length;
+  const transportFreight = state.transportRows.reduce((sum, r) => sum + (Number(r.freight) || 0), 0);
+  const transportCommission = state.transportRows.reduce((sum, r) => sum + (Number(r.commission) || 0), 0);
+  const transportExpense = state.transportRows.reduce((sum, r) => sum + (Number(r.expense) || 0), 0);
+  const receiptsTransferred = state.transportRows.reduce((sum, r) => sum + (Number(r.receiptTransfer) || 0), 0);
+
+  let archiveOpen = 0;
+  let archiveSpent = 0;
+  Object.values(state.archiveRows).forEach(rows => {
+    (rows || []).forEach(row => {
+      if ((row.status || "غير مصروفة") === "تم الصرف") archiveSpent += 1;
+      else archiveOpen += 1;
+    });
+  });
+
+  const financeTotals = {};
+  Object.keys(financeLabels).forEach(key => {
+    financeTotals[key] = (state.financeRows[key] || []).reduce((sum, r) => sum + (Number(r.amount) || 0), 0);
+  });
+
+  const financeGrandTotal = Object.values(financeTotals).reduce((sum, v) => sum + v, 0);
+  const netTransport = transportFreight - transportCommission - transportExpense;
+  const effectiveNet = netTransport + receiptsTransferred - financeGrandTotal;
+
+  return {
+    transportCount,
+    transportFreight,
+    transportCommission,
+    transportExpense,
+    receiptsTransferred,
+    archiveOpen,
+    archiveSpent,
+    financeTotals,
+    financeGrandTotal,
+    netTransport,
+    effectiveNet
+  };
+}
+
+function renderBudgetMetrics() {
+  const m = calculateSystemMetrics();
+  const tbody = document.getElementById("budgetMetricsBody");
+  if (!tbody) return;
+
+  tbody.innerHTML = `
+    <tr><td>عدد عمليات النقل</td><td>${m.transportCount}</td></tr>
+    <tr><td>إجمالي النولون</td><td>${m.transportFreight}</td></tr>
+    <tr><td>إجمالي القومسيون</td><td>${m.transportCommission}</td></tr>
+    <tr><td>إجمالي المصروفات</td><td>${m.transportExpense}</td></tr>
+    <tr><td>إجمالي الإيصالات المرحلة للعملاء</td><td>${m.receiptsTransferred}</td></tr>
+    <tr><td>بوالص غير مصروفة</td><td>${m.archiveOpen}</td></tr>
+    <tr><td>بوالص تم صرفها</td><td>${m.archiveSpent}</td></tr>
+    <tr><td>إجمالي خزينة و بنوك</td><td>${m.financeTotals.bankCash || 0}</td></tr>
+    <tr><td>إجمالي عهد</td><td>${m.financeTotals.pledges || 0}</td></tr>
+    <tr><td>إجمالي نثريات</td><td>${m.financeTotals.petty || 0}</td></tr>
+    <tr><td>إجمالي سلف و مرتبات</td><td>${m.financeTotals.salaryLoans || 0}</td></tr>
+    <tr><td>إجمالي جراج</td><td>${m.financeTotals.garage || 0}</td></tr>
+    <tr><td>صافي عمليات النقل (نولون - قومسيون - مصروف)</td><td>${m.netTransport}</td></tr>
+    <tr><td>إجمالي الحركة المالية الموحدة</td><td>${m.financeGrandTotal}</td></tr>
+    <tr><td>المحصلة التشغيلية التقديرية</td><td>${m.effectiveNet}</td></tr>
+  `;
+}
+
+function buildReportFromData() {
+  const m = calculateSystemMetrics();
+  document.getElementById("reportSummary").value =
+    `ملخص آلي:\n` +
+    `- عدد عمليات النقل: ${m.transportCount}\n` +
+    `- إجمالي النولون: ${m.transportFreight}\n` +
+    `- صافي عمليات النقل: ${m.netTransport}\n` +
+    `- إجمالي الإيصالات المرحلة للعملاء: ${m.receiptsTransferred}\n` +
+    `- إجمالي الدفتر المالي الموحد: ${m.financeGrandTotal}\n` +
+    `- المحصلة التشغيلية التقديرية: ${m.effectiveNet}\n` +
+    `- بوالص غير مصروفة: ${m.archiveOpen}\n` +
+    `- بوالص تم صرفها: ${m.archiveSpent}`;
+
+  document.getElementById("reportAlerts").value =
+    `تنبيهات آلية:\n` +
+    `- راجع البوالص غير المصروفة دوريًا.\n` +
+    `- تأكد من ترحيل الإيصالات من بيان النقلات قبل إغلاق اليوم.\n` +
+    `- راجع فروقات الدفتر المالي الموحد مع الميزانية قبل الاعتماد النهائي.`;
+
+  document.getElementById("reportInfo").textContent = "تم توليد الملخص آليًا من بيانات النظام";
+  logAction("توليد تقرير آلي", "تم توليد التقرير من مؤشرات الميزانية والدفتر المالي");
+}
+
 function saveBudget() {
   state.budget = {
     notes: document.getElementById("budgetNotes").value.trim(),
@@ -825,6 +1190,7 @@ function saveBudget() {
   };
   db.ref("treasurySystem/budget").set(state.budget)
     .then(() => {
+      logAction("حفظ الميزانية", "تم حفظ ملاحظات وتعديلات الميزانية");
       document.getElementById("budgetInfo").textContent = "تم حفظ بيانات الميزانية";
     });
 }
@@ -836,6 +1202,7 @@ function saveReport() {
   };
   db.ref("treasurySystem/report").set(state.report)
     .then(() => {
+      logAction("حفظ التقرير", "تم حفظ التقرير الحالي");
       document.getElementById("reportInfo").textContent = "تم حفظ التقرير";
     });
 }
