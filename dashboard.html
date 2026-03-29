@@ -59,6 +59,7 @@ button:hover {
   <button onclick="goToPrices()">📦 أسعار الحاويات</button>
   <button onclick="goToDaily()">📝 بيان الشغل اليومي</button>
   <button onclick="goToDriversRoles()">🚚 أدوار سواقين المكتب</button>
+  <button onclick="goToTreasurySystem()">🏦 نظام الخزينة والتشغيل</button>
 </div>
 
 <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-app-compat.js"></script>
@@ -91,6 +92,9 @@ function goToDaily(){
 }
 function goToDriversRoles(){
   window.location.href = "drivers-roles-page.html";
+}
+function goToTreasurySystem(){
+  window.location.href = "treasury-system.html";
 }
 
 function logout(){

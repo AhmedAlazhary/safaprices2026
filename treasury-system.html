@@ -1,0 +1,854 @@
+<!DOCTYPE html>
+<html lang="ar" dir="rtl">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>نظام الخزينة والتشغيل</title>
+<style>
+:root {
+  --bg: #eef4f9;
+  --surface: #ffffff;
+  --primary: #1f3347;
+  --accent: #2f89d9;
+  --success: #27ae60;
+  --danger: #e74c3c;
+  --muted: #6b7280;
+  --border: #d8e3ee;
+  --shadow: 0 12px 30px rgba(31, 51, 71, 0.08);
+}
+
+* {
+  box-sizing: border-box;
+}
+
+body {
+  margin: 0;
+  font-family: Arial, sans-serif;
+  background: linear-gradient(180deg, #f5f8fc 0%, var(--bg) 100%);
+  color: #1f2937;
+}
+
+header {
+  background: linear-gradient(135deg, #1b2e40 0%, #2c3e50 100%);
+  color: #fff;
+  padding: 14px 18px;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  flex-wrap: wrap;
+}
+
+.brand {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+
+.brand img {
+  height: 52px;
+}
+
+.brand h1 {
+  margin: 0;
+  font-size: clamp(1.05rem, 2.2vw, 1.4rem);
+}
+
+.header-actions {
+  display: flex;
+  gap: 8px;
+  flex-wrap: wrap;
+}
+
+.container {
+  width: min(1380px, calc(100% - 24px));
+  margin: 16px auto 26px;
+}
+
+.panel {
+  background: var(--surface);
+  border-radius: 18px;
+  box-shadow: var(--shadow);
+  padding: 14px;
+}
+
+.tabs {
+  display: flex;
+  gap: 8px;
+  flex-wrap: wrap;
+  margin-bottom: 14px;
+}
+
+.tab-btn {
+  border: 1px solid var(--border);
+  background: #f4f8fc;
+  color: var(--primary);
+  border-radius: 999px;
+  padding: 8px 12px;
+  cursor: pointer;
+  font-weight: bold;
+}
+
+.tab-btn.active {
+  background: var(--accent);
+  border-color: var(--accent);
+  color: #fff;
+}
+
+.section {
+  display: none;
+}
+
+.section.active {
+  display: block;
+}
+
+.toolbar {
+  display: flex;
+  gap: 10px;
+  flex-wrap: wrap;
+  align-items: center;
+  margin-bottom: 12px;
+}
+
+.toolbar input[type="text"],
+.toolbar input[type="date"],
+.toolbar select {
+  padding: 9px 10px;
+  border: 1px solid #cfd9e4;
+  border-radius: 10px;
+  min-width: 180px;
+}
+
+.info {
+  color: var(--muted);
+  font-size: 0.92rem;
+}
+
+.table-wrap {
+  overflow-x: auto;
+  border: 1px solid var(--border);
+  border-radius: 14px;
+}
+
+table {
+  width: 100%;
+  min-width: 1100px;
+  border-collapse: collapse;
+  background: #fff;
+}
+
+th,
+td {
+  border-bottom: 1px solid var(--border);
+  padding: 8px 6px;
+  text-align: center;
+  white-space: nowrap;
+}
+
+thead th {
+  background: #e9f2fc;
+  color: var(--primary);
+}
+
+tbody tr:hover {
+  background: #f9fcff;
+}
+
+td[contenteditable="true"] {
+  outline: none;
+}
+
+td[contenteditable="true"]:focus {
+  box-shadow: inset 0 0 0 2px rgba(47, 137, 217, 0.2);
+}
+
+.subtabs {
+  display: flex;
+  gap: 8px;
+  flex-wrap: wrap;
+  margin-bottom: 10px;
+}
+
+.subtab-btn {
+  border: 1px solid var(--border);
+  background: #fff;
+  color: var(--primary);
+  border-radius: 10px;
+  padding: 7px 11px;
+  cursor: pointer;
+  font-weight: bold;
+}
+
+.subtab-btn.active {
+  background: #dff0ff;
+  border-color: #9ec9ee;
+}
+
+.subsection {
+  display: none;
+}
+
+.subsection.active {
+  display: block;
+}
+
+button {
+  border: none;
+  border-radius: 10px;
+  padding: 9px 12px;
+  cursor: pointer;
+  font-weight: bold;
+}
+
+.ghost-btn {
+  background: rgba(255, 255, 255, 0.18);
+  color: #fff;
+}
+
+.add-btn {
+  background: var(--accent);
+  color: #fff;
+}
+
+.save-btn {
+  background: var(--success);
+  color: #fff;
+}
+
+.delete-btn {
+  background: var(--danger);
+  color: #fff;
+  padding: 6px 10px;
+}
+
+.card {
+  border: 1px solid var(--border);
+  border-radius: 12px;
+  padding: 12px;
+  margin-bottom: 10px;
+  background: #fcfeff;
+}
+
+.grid-two {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 10px;
+}
+
+.field {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+
+.field label {
+  color: var(--muted);
+  font-size: 0.9rem;
+  font-weight: bold;
+}
+
+.field input,
+.field textarea {
+  border: 1px solid #ccd7e3;
+  border-radius: 10px;
+  padding: 10px;
+  font-family: inherit;
+}
+
+.field textarea {
+  min-height: 120px;
+  resize: vertical;
+}
+
+@media (max-width: 768px) {
+  .container {
+    width: min(100% - 14px, 1200px);
+  }
+
+  .brand,
+  .header-actions,
+  .tabs,
+  .toolbar {
+    width: 100%;
+  }
+
+  .header-actions button,
+  .toolbar button {
+    flex: 1 1 130px;
+  }
+
+  .grid-two {
+    grid-template-columns: 1fr;
+  }
+}
+</style>
+</head>
+<body>
+<header>
+  <div class="brand">
+    <img src="logo.png" alt="logo">
+    <h1>نظام الخزينة والتشغيل</h1>
+  </div>
+  <div class="header-actions">
+    <button class="ghost-btn" onclick="goBack()">رجوع</button>
+    <button class="ghost-btn" onclick="logout()">تسجيل خروج</button>
+  </div>
+</header>
+
+<div class="container">
+  <section class="panel">
+    <div class="tabs">
+      <button class="tab-btn active" data-tab="transport">بيان النقلات</button>
+      <button class="tab-btn" data-tab="archive">أرشيف البوالص</button>
+      <button class="tab-btn" data-tab="finance">الدفتر المالي الموحد</button>
+      <button class="tab-btn" data-tab="customers">حسابات العملاء (محدث تلقائيًا)</button>
+      <button class="tab-btn" data-tab="budget">الميزانية</button>
+      <button class="tab-btn" data-tab="report">التقرير</button>
+    </div>
+
+    <section id="transport" class="section active">
+      <div class="toolbar">
+        <input type="text" id="transportSearch" placeholder="بحث بالعميل أو المكان..." oninput="renderTransport()">
+        <button class="add-btn" onclick="addTransportRow()">إضافة صف</button>
+        <button class="save-btn" onclick="saveTransport()">حفظ بيان النقلات</button>
+        <span class="info" id="transportInfo"></span>
+      </div>
+      <div class="table-wrap">
+        <table>
+          <thead>
+            <tr>
+              <th>التاريخ</th>
+              <th>العميل</th>
+              <th>المكان</th>
+              <th>نولون</th>
+              <th>القومسيون</th>
+              <th>مصروف</th>
+              <th>رقم الفاتورة</th>
+              <th>الإيصالات (ترحيل العميل)</th>
+              <th>رقم التسوية</th>
+              <th>حذف</th>
+            </tr>
+          </thead>
+          <tbody id="transportBody"></tbody>
+        </table>
+      </div>
+    </section>
+
+    <section id="archive" class="section">
+      <div class="toolbar">
+        <select id="archiveSheet">
+          <option value="بوالص ش 1">بوالص ش 1</option>
+          <option value="بوالص ش 2">بوالص ش 2</option>
+          <option value="بوالص ش 12">بوالص ش 12</option>
+        </select>
+        <button class="add-btn" onclick="addArchiveRow()">إضافة بوليصة</button>
+        <button class="save-btn" onclick="saveArchive()">حفظ الأرشيف</button>
+        <span class="info" id="archiveInfo"></span>
+      </div>
+      <div class="table-wrap">
+        <table>
+          <thead>
+            <tr>
+              <th>الحالة</th>
+              <th>التاريخ</th>
+              <th>العميل</th>
+              <th>المكان</th>
+              <th>رقم البوليصة</th>
+              <th>قيمة العهدة</th>
+              <th>ملاحظات</th>
+              <th>حذف</th>
+            </tr>
+          </thead>
+          <tbody id="archiveBody"></tbody>
+        </table>
+      </div>
+    </section>
+
+    <section id="finance" class="section">
+      <div class="subtabs">
+        <button class="subtab-btn active" data-subtab="bankCash">خزينة و بنوك</button>
+        <button class="subtab-btn" data-subtab="pledges">عهد</button>
+        <button class="subtab-btn" data-subtab="petty">نثريات</button>
+        <button class="subtab-btn" data-subtab="salaryLoans">سلف و مرتبات</button>
+        <button class="subtab-btn" data-subtab="garage">جراج</button>
+      </div>
+
+      <div id="bankCash" class="subsection active finance-subsection"></div>
+      <div id="pledges" class="subsection finance-subsection"></div>
+      <div id="petty" class="subsection finance-subsection"></div>
+      <div id="salaryLoans" class="subsection finance-subsection"></div>
+      <div id="garage" class="subsection finance-subsection"></div>
+    </section>
+
+    <section id="customers" class="section">
+      <div class="toolbar">
+        <button class="save-btn" onclick="refreshCustomersFromTransport()">تحديث من بيان النقلات الآن</button>
+        <span class="info" id="customersInfo"></span>
+      </div>
+      <div class="table-wrap">
+        <table>
+          <thead>
+            <tr>
+              <th>العميل</th>
+              <th>إجمالي الإيصالات المرحلة</th>
+            </tr>
+          </thead>
+          <tbody id="customersBody"></tbody>
+        </table>
+      </div>
+    </section>
+
+    <section id="budget" class="section">
+      <div class="grid-two">
+        <div class="field">
+          <label for="budgetNotes">ملاحظات الميزانية</label>
+          <textarea id="budgetNotes" placeholder="اكتب ملاحظات الميزانية..."></textarea>
+        </div>
+        <div class="field">
+          <label for="budgetAdjustments">تعديلات يدوية (للإدخال عند الحاجة)</label>
+          <textarea id="budgetAdjustments" placeholder="أي تعديل يدوي استثنائي..."></textarea>
+        </div>
+      </div>
+      <div class="toolbar">
+        <button class="save-btn" onclick="saveBudget()">حفظ الميزانية</button>
+        <span class="info" id="budgetInfo"></span>
+      </div>
+    </section>
+
+    <section id="report" class="section">
+      <div class="card">
+        <div class="field">
+          <label for="reportSummary">ملخص التقرير</label>
+          <textarea id="reportSummary" placeholder="ملخص تنفيذي للتقرير..."></textarea>
+        </div>
+      </div>
+      <div class="card">
+        <div class="field">
+          <label for="reportAlerts">تنبيهات التقرير</label>
+          <textarea id="reportAlerts" placeholder="تنبيهات أو ملاحظات تحتاج متابعة..."></textarea>
+        </div>
+      </div>
+      <div class="toolbar">
+        <button class="save-btn" onclick="saveReport()">حفظ التقرير</button>
+        <span class="info" id="reportInfo"></span>
+      </div>
+    </section>
+  </section>
+</div>
+
+<script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-app-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-auth-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-database-compat.js"></script>
+<script>
+const firebaseConfig = {
+  apiKey: "AIzaSyARqSgfh78TqFQ2hhZaAtUaVQFqlPuRM3w",
+  authDomain: "trialsafaprices2026.firebaseapp.com",
+  databaseURL: "https://trialsafaprices2026-default-rtdb.firebaseio.com",
+  projectId: "trialsafaprices2026",
+  storageBucket: "trialsafaprices2026.appspot.com",
+  messagingSenderId: "177091434445",
+  appId: "1:177091434445:web:568b6ae3ba270a21d4d684"
+};
+
+firebase.initializeApp(firebaseConfig);
+const db = firebase.database();
+
+const state = {
+  transportRows: [],
+  archiveRows: {
+    "بوالص ش 1": [],
+    "بوالص ش 2": [],
+    "بوالص ش 12": []
+  },
+  financeRows: {
+    bankCash: [],
+    pledges: [],
+    petty: [],
+    salaryLoans: [],
+    garage: []
+  },
+  customerRows: [],
+  budget: { notes: "", adjustments: "" },
+  report: { summary: "", alerts: "" }
+};
+
+const financeLabels = {
+  bankCash: "خزينة و بنوك",
+  pledges: "عهد",
+  petty: "نثريات",
+  salaryLoans: "سلف و مرتبات",
+  garage: "جراج"
+};
+
+firebase.auth().onAuthStateChanged(user => {
+  if (!user) {
+    window.location.href = "index.html";
+    return;
+  }
+  loadAllData();
+});
+
+document.querySelectorAll(".tab-btn").forEach(btn => {
+  btn.addEventListener("click", () => {
+    const tab = btn.dataset.tab;
+    document.querySelectorAll(".tab-btn").forEach(b => b.classList.remove("active"));
+    document.querySelectorAll(".section").forEach(s => s.classList.remove("active"));
+    btn.classList.add("active");
+    document.getElementById(tab).classList.add("active");
+  });
+});
+
+document.querySelectorAll(".subtab-btn").forEach(btn => {
+  btn.addEventListener("click", () => {
+    const subtab = btn.dataset.subtab;
+    document.querySelectorAll(".subtab-btn").forEach(b => b.classList.remove("active"));
+    document.querySelectorAll(".subsection").forEach(s => s.classList.remove("active"));
+    btn.classList.add("active");
+    document.getElementById(subtab).classList.add("active");
+  });
+});
+
+document.getElementById("archiveSheet").addEventListener("change", renderArchive);
+
+function transportTemplateRow() {
+  return {
+    date: "",
+    client: "",
+    place: "",
+    freight: 0,
+    commission: 0,
+    expense: 0,
+    invoiceNo: "",
+    receiptTransfer: 0,
+    settlementNo: ""
+  };
+}
+
+function archiveTemplateRow() {
+  return {
+    status: "غير مصروفة",
+    date: "",
+    client: "",
+    place: "",
+    policyNo: "",
+    custodyAmount: 0,
+    notes: ""
+  };
+}
+
+function financeTemplateRow() {
+  return {
+    date: "",
+    statement: "",
+    amount: 0,
+    notes: ""
+  };
+}
+
+function loadAllData() {
+  db.ref("treasurySystem").once("value", snapshot => {
+    const data = snapshot.val() || {};
+
+    state.transportRows = Array.isArray(data.transportRows) ? data.transportRows : [];
+    state.archiveRows = data.archiveRows || state.archiveRows;
+    state.financeRows = data.financeRows || state.financeRows;
+    state.customerRows = Array.isArray(data.customerRows) ? data.customerRows : [];
+    state.budget = data.budget || state.budget;
+    state.report = data.report || state.report;
+
+    renderTransport();
+    renderArchive();
+    renderAllFinanceSubsections();
+    renderCustomers();
+    document.getElementById("budgetNotes").value = state.budget.notes || "";
+    document.getElementById("budgetAdjustments").value = state.budget.adjustments || "";
+    document.getElementById("reportSummary").value = state.report.summary || "";
+    document.getElementById("reportAlerts").value = state.report.alerts || "";
+  });
+}
+
+function renderTransport() {
+  const tbody = document.getElementById("transportBody");
+  const query = document.getElementById("transportSearch").value.trim().toLowerCase();
+
+  const rows = state.transportRows
+    .map((row, index) => ({ row, index }))
+    .filter(item => !query || (item.row.client || "").toLowerCase().includes(query) || (item.row.place || "").toLowerCase().includes(query));
+
+  tbody.innerHTML = rows.map(item => `
+    <tr data-index="${item.index}">
+      <td contenteditable="true">${item.row.date || ""}</td>
+      <td contenteditable="true">${item.row.client || ""}</td>
+      <td contenteditable="true">${item.row.place || ""}</td>
+      <td contenteditable="true">${item.row.freight ?? 0}</td>
+      <td contenteditable="true">${item.row.commission ?? 0}</td>
+      <td contenteditable="true">${item.row.expense ?? 0}</td>
+      <td contenteditable="true">${item.row.invoiceNo || ""}</td>
+      <td contenteditable="true">${item.row.receiptTransfer ?? 0}</td>
+      <td contenteditable="true">${item.row.settlementNo || ""}</td>
+      <td><button class="delete-btn" onclick="deleteTransportRow(${item.index})">حذف</button></td>
+    </tr>
+  `).join("");
+
+  document.getElementById("transportInfo").textContent = `عدد العمليات: ${rows.length}`;
+}
+
+function syncTransportFromDom() {
+  const trNodes = document.querySelectorAll("#transportBody tr[data-index]");
+  trNodes.forEach(tr => {
+    const index = Number(tr.dataset.index);
+    const cells = tr.children;
+    state.transportRows[index] = {
+      date: cells[0].innerText.trim(),
+      client: cells[1].innerText.trim(),
+      place: cells[2].innerText.trim(),
+      freight: Number(cells[3].innerText) || 0,
+      commission: Number(cells[4].innerText) || 0,
+      expense: Number(cells[5].innerText) || 0,
+      invoiceNo: cells[6].innerText.trim(),
+      receiptTransfer: Number(cells[7].innerText) || 0,
+      settlementNo: cells[8].innerText.trim()
+    };
+  });
+}
+
+function addTransportRow() {
+  if (document.getElementById("transportSearch").value.trim()) {
+    alert("امسح البحث أولًا قبل الإضافة");
+    return;
+  }
+  syncTransportFromDom();
+  state.transportRows.push(transportTemplateRow());
+  renderTransport();
+}
+
+function deleteTransportRow(index) {
+  if (document.getElementById("transportSearch").value.trim()) {
+    alert("امسح البحث أولًا قبل الحذف");
+    return;
+  }
+  syncTransportFromDom();
+  state.transportRows.splice(index, 1);
+  renderTransport();
+}
+
+function saveTransport() {
+  syncTransportFromDom();
+  db.ref("treasurySystem/transportRows").set(state.transportRows)
+    .then(() => {
+      refreshCustomersFromTransport(false);
+      document.getElementById("transportInfo").textContent = "تم حفظ بيان النقلات بنجاح";
+    });
+}
+
+function currentArchiveSheet() {
+  return document.getElementById("archiveSheet").value;
+}
+
+function renderArchive() {
+  const sheet = currentArchiveSheet();
+  const rows = Array.isArray(state.archiveRows[sheet]) ? state.archiveRows[sheet] : [];
+  const tbody = document.getElementById("archiveBody");
+
+  tbody.innerHTML = rows.map((row, index) => `
+    <tr data-index="${index}">
+      <td contenteditable="true">${row.status || "غير مصروفة"}</td>
+      <td contenteditable="true">${row.date || ""}</td>
+      <td contenteditable="true">${row.client || ""}</td>
+      <td contenteditable="true">${row.place || ""}</td>
+      <td contenteditable="true">${row.policyNo || ""}</td>
+      <td contenteditable="true">${row.custodyAmount ?? 0}</td>
+      <td contenteditable="true">${row.notes || ""}</td>
+      <td><button class="delete-btn" onclick="deleteArchiveRow(${index})">حذف</button></td>
+    </tr>
+  `).join("");
+
+  document.getElementById("archiveInfo").textContent = `عدد البوالص في ${sheet}: ${rows.length}`;
+}
+
+function syncArchiveFromDom() {
+  const sheet = currentArchiveSheet();
+  const trNodes = document.querySelectorAll("#archiveBody tr[data-index]");
+  state.archiveRows[sheet] = Array.from(trNodes).map(tr => {
+    const cells = tr.children;
+    return {
+      status: cells[0].innerText.trim() || "غير مصروفة",
+      date: cells[1].innerText.trim(),
+      client: cells[2].innerText.trim(),
+      place: cells[3].innerText.trim(),
+      policyNo: cells[4].innerText.trim(),
+      custodyAmount: Number(cells[5].innerText) || 0,
+      notes: cells[6].innerText.trim()
+    };
+  });
+}
+
+function addArchiveRow() {
+  syncArchiveFromDom();
+  const sheet = currentArchiveSheet();
+  if (!Array.isArray(state.archiveRows[sheet])) {
+    state.archiveRows[sheet] = [];
+  }
+  state.archiveRows[sheet].push(archiveTemplateRow());
+  renderArchive();
+}
+
+function deleteArchiveRow(index) {
+  syncArchiveFromDom();
+  const sheet = currentArchiveSheet();
+  state.archiveRows[sheet].splice(index, 1);
+  renderArchive();
+}
+
+function saveArchive() {
+  syncArchiveFromDom();
+  db.ref("treasurySystem/archiveRows").set(state.archiveRows)
+    .then(() => {
+      document.getElementById("archiveInfo").textContent = "تم حفظ أرشيف البوالص بنجاح";
+    });
+}
+
+function renderAllFinanceSubsections() {
+  Object.keys(financeLabels).forEach(key => renderFinanceSubsection(key));
+}
+
+function renderFinanceSubsection(sectionKey) {
+  const container = document.getElementById(sectionKey);
+  const rows = Array.isArray(state.financeRows[sectionKey]) ? state.financeRows[sectionKey] : [];
+
+  container.innerHTML = `
+    <div class="toolbar">
+      <button class="add-btn" onclick="addFinanceRow('${sectionKey}')">إضافة صف</button>
+      <button class="save-btn" onclick="saveFinanceSection('${sectionKey}')">حفظ ${financeLabels[sectionKey]}</button>
+      <span class="info">عدد الصفوف: ${rows.length}</span>
+    </div>
+    <div class="table-wrap">
+      <table>
+        <thead>
+          <tr>
+            <th>التاريخ</th>
+            <th>البيان</th>
+            <th>المبلغ</th>
+            <th>ملاحظات</th>
+            <th>حذف</th>
+          </tr>
+        </thead>
+        <tbody>
+          ${rows.map((row, index) => `
+            <tr data-index="${index}">
+              <td contenteditable="true">${row.date || ""}</td>
+              <td contenteditable="true">${row.statement || ""}</td>
+              <td contenteditable="true">${row.amount ?? 0}</td>
+              <td contenteditable="true">${row.notes || ""}</td>
+              <td><button class="delete-btn" onclick="deleteFinanceRow('${sectionKey}', ${index})">حذف</button></td>
+            </tr>
+          `).join("")}
+        </tbody>
+      </table>
+    </div>
+  `;
+}
+
+function syncFinanceFromDom(sectionKey) {
+  const trNodes = document.querySelectorAll(`#${sectionKey} tr[data-index]`);
+  state.financeRows[sectionKey] = Array.from(trNodes).map(tr => {
+    const cells = tr.children;
+    return {
+      date: cells[0].innerText.trim(),
+      statement: cells[1].innerText.trim(),
+      amount: Number(cells[2].innerText) || 0,
+      notes: cells[3].innerText.trim()
+    };
+  });
+}
+
+function addFinanceRow(sectionKey) {
+  syncFinanceFromDom(sectionKey);
+  state.financeRows[sectionKey].push(financeTemplateRow());
+  renderFinanceSubsection(sectionKey);
+}
+
+function deleteFinanceRow(sectionKey, index) {
+  syncFinanceFromDom(sectionKey);
+  state.financeRows[sectionKey].splice(index, 1);
+  renderFinanceSubsection(sectionKey);
+}
+
+function saveFinanceSection(sectionKey) {
+  syncFinanceFromDom(sectionKey);
+  db.ref(`treasurySystem/financeRows/${sectionKey}`).set(state.financeRows[sectionKey]);
+}
+
+function refreshCustomersFromTransport(showMessage = true) {
+  syncTransportFromDom();
+
+  const map = {};
+  state.transportRows.forEach(row => {
+    const client = (row.client || "").trim();
+    if (!client) return;
+    if (!map[client]) map[client] = 0;
+    map[client] += Number(row.receiptTransfer) || 0;
+  });
+
+  state.customerRows = Object.keys(map)
+    .sort((a, b) => a.localeCompare(b, "ar"))
+    .map(client => ({
+      client,
+      receiptTransferredTotal: map[client]
+    }));
+
+  db.ref("treasurySystem/customerRows").set(state.customerRows)
+    .then(() => {
+      renderCustomers();
+      if (showMessage) {
+        document.getElementById("customersInfo").textContent = "تم تحديث حسابات العملاء من بيان النقلات";
+      }
+    });
+}
+
+function renderCustomers() {
+  const tbody = document.getElementById("customersBody");
+  tbody.innerHTML = state.customerRows.map(row => `
+    <tr>
+      <td>${row.client}</td>
+      <td>${row.receiptTransferredTotal || 0}</td>
+    </tr>
+  `).join("");
+  document.getElementById("customersInfo").textContent = `عدد العملاء: ${state.customerRows.length}`;
+}
+
+function saveBudget() {
+  state.budget = {
+    notes: document.getElementById("budgetNotes").value.trim(),
+    adjustments: document.getElementById("budgetAdjustments").value.trim()
+  };
+  db.ref("treasurySystem/budget").set(state.budget)
+    .then(() => {
+      document.getElementById("budgetInfo").textContent = "تم حفظ بيانات الميزانية";
+    });
+}
+
+function saveReport() {
+  state.report = {
+    summary: document.getElementById("reportSummary").value.trim(),
+    alerts: document.getElementById("reportAlerts").value.trim()
+  };
+  db.ref("treasurySystem/report").set(state.report)
+    .then(() => {
+      document.getElementById("reportInfo").textContent = "تم حفظ التقرير";
+    });
+}
+
+function goBack() {
+  window.location.href = "dashboard.html";
+}
+
+function logout() {
+  firebase.auth().signOut().then(() => {
+    window.location.href = "index.html";
+  });
+}
+</script>
+</body>
+</html>
