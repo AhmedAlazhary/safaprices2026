@@ -165,10 +165,64 @@ button:active {
 }
 
 .summary-label {
-  display: block;
+  display: flex;
+  align-items: center;
+  gap: 8px;
   color: var(--muted);
   font-size: 0.92rem;
   margin-bottom: 6px;
+}
+
+.toggle-summary-btn {
+  background: none;
+  border: none;
+  padding: 4px;
+  cursor: pointer;
+  color: var(--accent);
+  display: flex;
+  align-items: center;
+  transition: transform 0.2s;
+}
+
+.toggle-summary-btn.active {
+  transform: rotate(180deg);
+}
+
+.extra-summary {
+  display: none;
+  margin-top: 12px;
+  padding-top: 12px;
+  border-top: 1px solid var(--border);
+  gap: 12px;
+}
+
+.extra-summary.show {
+  display: flex;
+  flex-wrap: wrap;
+}
+
+.extra-summary-item {
+  flex: 1;
+  min-width: 140px;
+  background: #fff;
+  padding: 10px;
+  border-radius: 10px;
+  border: 1px solid var(--border);
+  text-align: center;
+}
+
+.extra-summary-label {
+  display: block;
+  font-size: 0.8rem;
+  color: var(--muted);
+  margin-bottom: 4px;
+}
+
+.extra-summary-value {
+  display: block;
+  font-size: 1.1rem;
+  font-weight: 700;
+  color: var(--primary);
 }
 
 .summary-value {
@@ -225,7 +279,7 @@ button:active {
   font-size: 0.95rem;
 }
 
-input {
+input, select {
   width: 100%;
   padding: 9px 10px;
   border-radius: 10px;
@@ -235,13 +289,13 @@ input {
   text-align: center;
 }
 
-input:focus {
+input:focus, select:focus {
   outline: none;
   border-color: var(--accent);
   box-shadow: 0 0 0 3px rgba(47, 137, 217, 0.14);
 }
 
-input[disabled] {
+input[disabled], select[disabled] {
   background: #f5f7fa;
   color: #8b95a7;
   cursor: not-allowed;
@@ -561,7 +615,7 @@ tr:last-child td {
     white-space: nowrap;
   }
 
-  td input {
+  td input, td select {
     min-width: 88px;
     padding: 8px 6px;
     font-size: 0.84rem;
@@ -621,8 +675,27 @@ tr:last-child td {
 
     <div class="summary-cards">
       <div class="summary-card">
-        <span class="summary-label">إجمالي الحاويات خلال الشهر</span>
+        <div class="summary-label">
+          <span>إجمالي الحاويات خلال الشهر</span>
+          <button class="toggle-summary-btn" onclick="toggleExtraSummary()" title="عرض تفاصيل نقلات المكتب والسوق">
+            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
+              <path d="M6 9l6 6 6-6"/>
+            </svg>
+          </button>
+        </div>
         <span id="monthContainerTotal" class="summary-value">0</span>
+        
+        <div id="extraSummary" class="extra-summary">
+          <div class="extra-summary-item">
+            <span class="extra-summary-label">إجمالي نقلات المكتب</span>
+            <span id="officeTotal" class="extra-summary-value">0</span>
+          </div>
+          <div class="extra-summary-item">
+            <span class="extra-summary-label">إجمالي نقلات السوق</span>
+            <span id="marketTotal" class="extra-summary-value">0</span>
+          </div>
+        </div>
+
         <span id="monthRangeLabel" class="summary-note">يتم الحساب حسب التاريخ المفتوح</span>
         <div class="field">
           <label for="summaryMonthPicker">اختيار الشهر</label>
@@ -663,6 +736,9 @@ tr:last-child td {
             <th>نوع</th>
             <th>العميل</th>
             <th>ملاحظات</th>
+            <th>السيارة</th>
+            <th>رقم السيارة</th>
+            <th>اسم السائق</th>
             <th>آخر تعديل بواسطة</th>
             <th>وقت آخر تعديل</th>
             <th>حذف</th>
@@ -762,7 +838,10 @@ const FIELD_LABELS = {
   agency: "التوكيل",
   type: "النوع",
   client: "العميل",
-  notes: "ملاحظات"
+  notes: "ملاحظات",
+  carType: "السيارة",
+  carNumber: "رقم السيارة",
+  driverName: "اسم السائق"
 };
 
 let currentUser = null;
@@ -815,6 +894,9 @@ function createRow(overrides = {}) {
     type: overrides.type || "",
     client: overrides.client || "",
     notes: overrides.notes || "",
+    carType: overrides.carType || "",
+    carNumber: overrides.carNumber || "",
+    driverName: overrides.driverName || "",
     updatedAt: overrides.updatedAt || null,
     baseUpdatedAt: overrides.baseUpdatedAt !== undefined ? overrides.baseUpdatedAt : (overrides.updatedAt || null),
     updatedBy: overrides.updatedBy || "",
@@ -834,6 +916,9 @@ function normalizeRow(row, index = 0) {
     type: row && row.type ? row.type : "",
     client: row && row.client ? row.client : "",
     notes: row && row.notes ? row.notes : "",
+    carType: row && row.carType ? row.carType : "",
+    carNumber: row && row.carNumber ? row.carNumber : "",
+    driverName: row && row.driverName ? row.driverName : "",
     updatedAt: row && row.updatedAt ? row.updatedAt : null,
     baseUpdatedAt: row && row.baseUpdatedAt !== undefined ? row.baseUpdatedAt : (row && row.updatedAt ? row.updatedAt : null),
     updatedBy: row && row.updatedBy ? row.updatedBy : "",
@@ -1085,6 +1170,15 @@ function renderRows(rows, date, scope) {
         <td><input ${disabledAttr} list="types" data-date="${date}" data-row-id="${row.id}" data-field="type" data-scope="${scope}" value="${escapeHtml(row.type)}"></td>
         <td><input ${disabledAttr} list="clients" data-date="${date}" data-row-id="${row.id}" data-field="client" data-scope="${scope}" value="${escapeHtml(row.client)}"></td>
         <td><input ${disabledAttr} data-date="${date}" data-row-id="${row.id}" data-field="notes" data-scope="${scope}" value="${escapeHtml(row.notes)}" placeholder="${locked ? escapeHtml(getRowLockLabel(row)) : "اكتب ملاحظات"}"></td>
+        <td>
+            <select ${disabledAttr} data-date="${date}" data-row-id="${row.id}" data-field="carType" data-scope="${scope}">
+              <option value="">اختر</option>
+              <option value="سوق" ${row.carType === "سوق" ? "selected" : ""}>سوق</option>
+              <option value="مكتب" ${row.carType === "مكتب" ? "selected" : ""}>مكتب</option>
+            </select>
+          </td>
+        <td><input ${disabledAttr} data-date="${date}" data-row-id="${row.id}" data-field="carNumber" data-scope="${scope}" value="${escapeHtml(row.carNumber)}"></td>
+        <td><input ${disabledAttr} data-date="${date}" data-row-id="${row.id}" data-field="driverName" data-scope="${scope}" value="${escapeHtml(row.driverName)}"></td>
         <td>${renderMetaCell(row)}</td>
         <td>${renderTimeCell(row)}</td>
         <td><button class="delete-btn" onclick="deleteRow('${date}', '${row.id}')" ${locked ? "disabled" : ""}>حذف</button></td>
@@ -1104,17 +1198,25 @@ function formatArabicMonth(monthKey) {
   });
 }
 
-function calculateMonthContainerTotal(monthKey) {
+function calculateMonthTotals(monthKey) {
   let total = 0;
+  let officeTotal = 0;
+  let marketTotal = 0;
 
   Object.keys(dailyData).forEach(date => {
     if (!date.startsWith(monthKey)) return;
     (dailyData[date] || []).forEach(row => {
-      total += Number(row.containerCount || 0);
+      const count = Number(row.containerCount || 0);
+      total += count;
+      if (row.carType === "مكتب") {
+        officeTotal += count;
+      } else if (row.carType === "سوق") {
+        marketTotal += count;
+      }
     });
   });
 
-  return total;
+  return { total, officeTotal, marketTotal };
 }
 
 function getArchiveMonthKeys() {
@@ -1134,8 +1236,24 @@ function getArchiveMonthKeys() {
 
 function updateMonthSummary() {
   const monthKey = currentSummaryMonth || getMonthKey(currentDate);
-  monthContainerTotal.textContent = String(calculateMonthContainerTotal(monthKey));
+  const totals = calculateMonthTotals(monthKey);
+  
+  monthContainerTotal.textContent = String(totals.total);
+  const officeEl = document.getElementById("officeTotal");
+  const marketEl = document.getElementById("marketTotal");
+  if (officeEl) officeEl.textContent = String(totals.officeTotal);
+  if (marketEl) marketEl.textContent = String(totals.marketTotal);
+  
   monthRangeLabel.textContent = "إجمالي شهر " + formatArabicMonth(monthKey);
+}
+
+function toggleExtraSummary() {
+  const extra = document.getElementById("extraSummary");
+  const btn = document.querySelector(".toggle-summary-btn");
+  if (extra && btn) {
+    extra.classList.toggle("show");
+    btn.classList.toggle("active");
+  }
 }
 
 function renderCurrentDate() {
@@ -1174,7 +1292,7 @@ function renderArchive() {
       return "";
     }
 
-    const total = calculateMonthContainerTotal(monthKey);
+    const totals = calculateMonthTotals(monthKey);
 
     return `
       <article class="archive-month-card">
@@ -1184,7 +1302,7 @@ function renderArchive() {
             <div class="card-date">كل الأيام محفوظة داخل هذا الشهر وتُعرض عند الاختيار فقط</div>
           </div>
           <div class="archive-month-stats">
-            <span class="archive-stat">إجمالي الحاويات: ${total}</span>
+            <span class="archive-stat">إجمالي الحاويات: ${totals.total}</span>
             <span class="archive-stat">عدد الأيام: ${dates.length}</span>
           </div>
         </div>
@@ -1220,7 +1338,7 @@ function findRow(date, rowId) {
 }
 
 function updateDateRowsFromDom(date) {
-  const inputs = document.querySelectorAll(`input[data-date="${date}"][data-field]`);
+  const inputs = document.querySelectorAll(`input[data-date="${date}"][data-field], select[data-date="${date}"][data-field]`);
   const existingMap = new Map((dailyData[date] || []).map(row => [row.id, row]));
   const rowMap = new Map();
 
@@ -1261,6 +1379,9 @@ function buildRowPayload(row) {
     type: row.type || "",
     client: row.client || "",
     notes: row.notes || "",
+    carType: row.carType || "",
+    carNumber: row.carNumber || "",
+    driverName: row.driverName || "",
     updatedAt: firebase.database.ServerValue.TIMESTAMP,
     updatedBy: getUserLabel(),
     lock: row.lock || null
@@ -1433,7 +1554,7 @@ function ensureRowLock(date, rowId) {
 
 function handleInput(event) {
   const input = event.target;
-  if (!input.matches('input[data-date][data-field]')) return;
+  if (!input.matches('input[data-date][data-field]') && !input.matches('select[data-date][data-field]')) return;
 
   const date = input.dataset.date;
   const rowId = input.dataset.rowId;
@@ -1457,7 +1578,7 @@ function handleInput(event) {
 
 function handleCellCommit(event) {
   const input = event.target;
-  if (!input.matches('input[data-date][data-field]')) return;
+  if (!input.matches('input[data-date][data-field]') && !input.matches('select[data-date][data-field]')) return;
 
   const date = input.dataset.date;
   const rowId = input.dataset.rowId;
@@ -1496,7 +1617,7 @@ function handleCellCommit(event) {
 
 function handleCellBlur(event) {
   const input = event.target;
-  if (!input.matches('input[data-date][data-field]')) return;
+  if (!input.matches('input[data-date][data-field]') && !input.matches('select[data-date][data-field]')) return;
 
   const date = input.dataset.date;
   const rowId = input.dataset.rowId;
@@ -1532,7 +1653,7 @@ function normalizeSnapshotData(snapshotValue) {
 
 function getActiveEditingInfo() {
   const el = document.activeElement;
-  if (el && el.matches('input[data-date][data-field]')) {
+  if (el && (el.matches('input[data-date][data-field]') || el.matches('select[data-date][data-field]'))) {
     return {
       date: el.dataset.date,
       rowId: el.dataset.rowId,
@@ -1817,11 +1938,14 @@ function legacyExportCurrentDateJson() {
 function legacyExportSelectedMonthJson() {
   const monthKey = currentSummaryMonth || getMonthKey(currentDate);
   const dates = getSortedDates().filter(date => getMonthKey(date) === monthKey);
+  const totals = calculateMonthTotals(monthKey);
 
   const payload = {
     month: monthKey,
     exportedAt: new Date().toISOString(),
-    totalContainers: calculateMonthContainerTotal(monthKey),
+    totalContainers: totals.total,
+    officeTotal: totals.officeTotal,
+    marketTotal: totals.marketTotal,
     dates: dates.map(date => ({
       date,
       rows: sortRows(ensureDateRows(date))
@@ -1868,6 +1992,9 @@ function getExportRow(date, row) {
     row.type || "",
     row.client || "",
     row.notes || "",
+    row.carType || "",
+    row.carNumber || "",
+    row.driverName || "",
     row.updatedBy || "",
     formatTimestamp(row.updatedAt)
   ];
@@ -1878,7 +2005,7 @@ function exportCurrentDate() {
   const rows = sortRows(ensureDateRows(currentDate)).map(row => getExportRow(currentDate, row));
   downloadCsvFile(
     "daily-" + currentDate + ".csv",
-    ["التاريخ", "عدد الحاويات", "الحجم", "المكان", "مكان النقلة", "التوكيل", "النوع", "العميل", "ملاحظات", "آخر تعديل بواسطة", "وقت آخر تعديل"],
+    ["التاريخ", "عدد الحاويات", "الحجم", "المكان", "مكان النقلة", "التوكيل", "النوع", "العميل", "ملاحظات", "السيارة", "رقم السيارة", "اسم السائق", "آخر تعديل بواسطة", "وقت آخر تعديل"],
     rows
   );
   setCurrentStatus("تم تصدير بيانات اليوم الحالي بصيغة CSV.");
@@ -1897,7 +2024,7 @@ function exportSelectedMonth() {
 
   downloadCsvFile(
     "daily-month-" + monthKey + ".csv",
-    ["التاريخ", "عدد الحاويات", "الحجم", "المكان", "مكان النقلة", "التوكيل", "النوع", "العميل", "ملاحظات", "آخر تعديل بواسطة", "وقت آخر تعديل"],
+    ["التاريخ", "عدد الحاويات", "الحجم", "المكان", "مكان النقلة", "التوكيل", "النوع", "العميل", "ملاحظات", "السيارة", "رقم السيارة", "اسم السائق", "آخر تعديل بواسطة", "وقت آخر تعديل"],
     rows
   );
   setCurrentStatus("تم تصدير بيانات الشهر " + monthKey + " بصيغة CSV.");
@@ -1922,8 +2049,11 @@ function buildExcelRows(rows) {
     "النوع": row[6],
     "العميل": row[7],
     "ملاحظات": row[8],
-    "آخر تعديل بواسطة": row[9],
-    "وقت آخر تعديل": row[10]
+    "السيارة": row[9],
+    "رقم السيارة": row[10],
+    "اسم السائق": row[11],
+    "آخر تعديل بواسطة": row[12],
+    "وقت آخر تعديل": row[13]
   }));
 }
 

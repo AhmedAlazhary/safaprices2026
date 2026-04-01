@@ -204,38 +204,6 @@ function renderRows(date, rows) {
   `).join("");
 }
 
-function renderPrintPage(date, rows) {
-  printShell.innerHTML = `
-    <h1 class="print-title">بيان الشغل اليومي</h1>
-    <div class="print-date">${formatArabicDate(date)}</div>
-    <table>
-      <thead>
-        <tr>
-          <th>التاريخ</th>
-          <th>عدد الحاويات</th>
-          <th>الحجم</th>
-          <th>المكان</th>
-          <th>مكان النقلة</th>
-          <th>التوكيل</th>
-          <th>نوع</th>
-          <th>العميل</th>
-          <th>ملاحظات</th>
-        </tr>
-      </thead>
-      <tbody>${renderRows(date, rows)}</tbody>
-    </table>
-    <div class="actions">
-      <button class="print-btn" onclick="window.print()">طباعة</button>
-      <button class="back-btn" onclick="goBack()">رجوع</button>
-    </div>
-  `;
-
-  setTimeout(() => {
-    document.body.classList.add("printing");
-    window.print();
-  }, 250);
-}
-
 function goBack() {
   if (document.referrer && document.referrer.includes("daily.html")) {
     window.location.href = "daily.html";
