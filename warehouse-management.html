@@ -695,26 +695,50 @@ function renderTable(branch) {
   `).join('');
 }
 
-// Add new row - make globally accessible (like daily.html)
-window.addRow = async function(branch) {
-  try {
-    const newRow = {
-      date: today,
-      description: '',
-      credit: 0,
-      debit: 0,
-      notes: '',
-      createdAt: firebase.database.ServerValue.TIMESTAMP,
-      updatedAt: firebase.database.ServerValue.TIMESTAMP
-    };
+// Generate row ID (like daily.html)
+function generateRowId() {
+  return db.ref().push().key;
+}
 
-    const newRef = db.ref(`warehouse/${branch}`).push();
-    await newRef.set(newRow);
-    console.log('New row added with ID:', newRef.key);
-  } catch (error) {
-    console.error('Error adding row:', error);
-    alert('حدث خطأ أثناء إضافة الصف الجديد');
+// Create warehouse row (like daily.html)
+function createWarehouseRow(overrides = {}) {
+  return {
+    id: overrides.id || generateRowId(),
+    date: overrides.date || today,
+    description: overrides.description || '',
+    credit: overrides.credit || 0,
+    debit: overrides.debit || 0,
+    notes: overrides.notes || '',
+    createdAt: overrides.createdAt || firebase.database.ServerValue.TIMESTAMP,
+    updatedAt: overrides.updatedAt || firebase.database.ServerValue.TIMESTAMP
+  };
+}
+
+// Add new row - make globally accessible (like daily.html)
+window.addRow = function(branch) {
+  const newRow = createWarehouseRow();
+  
+  // Add to local data first (like daily.html)
+  if (!warehouseData[branch]) {
+    warehouseData[branch] = [];
   }
+  warehouseData[branch].unshift(newRow); // Add to beginning
+  
+  // Save to Firebase
+  db.ref(`warehouse/${branch}/${newRow.id}`).set(newRow)
+    .then(() => {
+      console.log('New row added with ID:', newRow.id);
+      renderTable(branch);
+      calculateTotals();
+      generateDailyReport(branch);
+    })
+    .catch(error => {
+      console.error('Error adding row:', error);
+      alert('حدث خطأ أثناء إضافة الصف الجديد');
+      // Remove from local data if Firebase save failed
+      warehouseData[branch] = warehouseData[branch].filter(row => row.id !== newRow.id);
+      renderTable(branch);
+    });
 };
 
 // Delete row - make globally accessible (like daily.html)
