@@ -332,31 +332,182 @@ header {
 @media (max-width: 768px) {
   .container {
     padding: 12px;
+    width: 100%;
+  }
+  
+  .header-actions {
+    flex-direction: column;
+    gap: 8px;
+    width: 100%;
+  }
+  
+  .header-actions button {
+    width: 100%;
+    font-size: 0.85rem;
+    padding: 8px 12px;
+  }
+  
+  .brand {
+    flex-direction: column;
+    text-align: center;
+    gap: 8px;
+  }
+  
+  .brand img {
+    height: 36px;
+  }
+  
+  .brand h1 {
+    font-size: 1rem;
+    margin: 0;
+  }
+  
+  .totals-section {
+    grid-template-columns: 1fr;
+    gap: 16px;
+  }
+  
+  .total-card {
+    padding: 16px;
+  }
+  
+  .total-amount {
+    font-size: 1.6rem;
   }
   
   .tables-section {
     grid-template-columns: 1fr;
+    gap: 20px;
   }
   
-  .reports-grid {
-    grid-template-columns: 1fr;
+  .table-container {
+    padding: 16px;
+  }
+  
+  .table-header {
+    flex-direction: column;
+    gap: 8px;
+    text-align: center;
+  }
+  
+  .table-title {
+    font-size: 1.1rem;
   }
   
   .excel-table {
-    font-size: 0.85rem;
+    font-size: 0.8rem;
+    overflow-x: auto;
+    display: block;
   }
   
   .excel-table th,
   .excel-table td {
-    padding: 6px 4px;
+    padding: 4px 2px;
+    min-width: 80px;
   }
   
-  .brand h1 {
+  .excel-table input {
+    font-size: 0.75rem;
+    padding: 2px 4px;
+  }
+  
+  .delete-btn {
+    font-size: 0.7rem;
+    padding: 2px 4px;
+  }
+  
+  .add-row-btn {
+    width: 100%;
+    font-size: 0.85rem;
+    padding: 10px;
+  }
+  
+  .reports-section {
+    padding: 16px;
+  }
+  
+  .reports-header {
+    flex-direction: column;
+    gap: 12px;
+    text-align: center;
+  }
+  
+  .reports-title {
     font-size: 1.1rem;
   }
   
+  .reports-grid {
+    grid-template-columns: 1fr;
+    gap: 16px;
+  }
+  
+  .report-card {
+    padding: 16px;
+  }
+  
+  .report-card h4 {
+    font-size: 1rem;
+  }
+  
+  .report-table td {
+    padding: 8px 6px;
+    font-size: 0.85rem;
+  }
+  
+  .btn {
+    font-size: 0.85rem;
+    padding: 8px 12px;
+  }
+}
+
+@media (max-width: 480px) {
+  .container {
+    padding: 8px;
+  }
+  
+  .total-card {
+    padding: 12px;
+  }
+  
   .total-amount {
-    font-size: 1.8rem;
+    font-size: 1.4rem;
+  }
+  
+  .table-container {
+    padding: 12px;
+  }
+  
+  .excel-table {
+    font-size: 0.75rem;
+  }
+  
+  .excel-table th,
+  .excel-table td {
+    padding: 3px 1px;
+    min-width: 70px;
+  }
+  
+  .excel-table input {
+    font-size: 0.7rem;
+    padding: 1px 2px;
+  }
+  
+  .reports-section {
+    padding: 12px;
+  }
+  
+  .report-card {
+    padding: 12px;
+  }
+  
+  .report-table td {
+    padding: 6px 4px;
+    font-size: 0.8rem;
+  }
+  
+  .header-actions button {
+    font-size: 0.8rem;
+    padding: 6px 10px;
   }
 }
 
