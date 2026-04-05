@@ -1,0 +1,366 @@
+<!DOCTYPE html>
+<html lang="ar" dir="rtl">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>طباعة تقارير العهد</title>
+<style>
+@page {
+  size: A4 portrait;
+  margin: 10mm;
+}
+
+* {
+  box-sizing: border-box;
+}
+
+body {
+  margin: 0;
+  padding: 18px;
+  font-family: "Tahoma", "Segoe UI", Arial, sans-serif;
+  color: #1f2937;
+  background: #fff;
+}
+
+body.printing {
+  padding: 0;
+}
+
+.print-shell {
+  max-width: 100%;
+}
+
+.print-title {
+  margin: 0 0 8px;
+  text-align: center;
+  color: #223547;
+  font-size: 22px;
+  font-weight: 700;
+}
+
+.print-date {
+  margin: 0 0 20px;
+  text-align: center;
+  color: #223547;
+  font-size: 14px;
+  font-weight: 700;
+}
+
+.reports-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(400px, 1fr));
+  gap: 30px;
+  margin-bottom: 20px;
+}
+
+.report-card {
+  background: linear-gradient(180deg, #ffffff 0%, #fafbff 100%);
+  border: 1px solid #d5e1ec;
+  border-radius: 12px;
+  padding: 20px;
+}
+
+.report-card h4 {
+  color: #1f3347;
+  margin-bottom: 16px;
+  font-size: 1.1rem;
+  text-align: center;
+  font-weight: 700;
+}
+
+.report-table {
+  width: 100%;
+  border-collapse: collapse;
+}
+
+.report-table td {
+  padding: 10px 12px;
+  border-bottom: 1px solid #eee;
+  font-size: 0.95rem;
+}
+
+.report-table td:first-child {
+  font-weight: 600;
+  color: #667789;
+  width: 60%;
+}
+
+.report-table td:last-child {
+  text-align: center;
+  font-weight: 700;
+  font-size: 1.05rem;
+}
+
+.report-table .highlight-red {
+  background: #ffebee;
+  color: #e74c3c;
+  font-weight: 700;
+  border: 1px solid #ef5350;
+  border-radius: 4px;
+}
+
+.actions {
+  display: flex;
+  justify-content: center;
+  gap: 10px;
+  margin-top: 18px;
+}
+
+button {
+  border: none;
+  border-radius: 10px;
+  padding: 10px 14px;
+  cursor: pointer;
+  font-size: 0.95rem;
+  font-weight: 700;
+  color: #fff;
+}
+
+.print-btn {
+  background: #2f89d9;
+}
+
+.back-btn {
+  background: #223547;
+}
+
+.status {
+  text-align: center;
+  color: #697586;
+  padding: 30px 0;
+}
+
+@media print {
+  html, body {
+    width: 100%;
+    margin: 0 !important;
+    padding: 0 !important;
+    background: #fff !important;
+  }
+
+  body * {
+    visibility: hidden !important;
+  }
+
+  #printShell,
+  #printShell * {
+    visibility: visible !important;
+  }
+
+  #printShell {
+    position: absolute;
+    inset: 0;
+    width: 100%;
+    padding: 8mm;
+    background: #fff;
+  }
+
+  .actions {
+    display: none !important;
+    visibility: hidden !important;
+  }
+
+  .report-table {
+    width: 100% !important;
+  }
+
+  .reports-grid {
+    gap: 20px;
+  }
+}
+</style>
+</head>
+<body>
+<div class="print-shell" id="printShell">
+  <div class="status" id="statusMessage">جارٍ تحميل بيانات الطباعة...</div>
+</div>
+
+<script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-app-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-auth-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-database-compat.js"></script>
+
+const firebaseConfig = {
+  apiKey: "AIzaSyARqSgfh78TqFQ2hhZaAtUaVQFqlPuRM3w",
+  authDomain: "trialsafaprices2026.firebaseapp.com",
+  databaseURL: "https://trialsafaprices2026-default-rtdb.firebaseio.com",
+  projectId: "trialsafaprices2026",
+  storageBucket: "trialsafaprices2026.appspot.com",
+  messagingSenderId: "177091434445",
+  appId: "1:177091434445:web:568b6ae3ba270a21d4d684"
+};
+
+firebase.initializeApp(firebaseConfig);
+
+const db = firebase.database();
+const auth = firebase.auth();
+
+const printShell = document.getElementById("printShell");
+
+let today = new Date().toISOString().split('T')[0];
+
+function formatArabicDate(date) {
+  return new Date(date + "T00:00:00").toLocaleDateString("ar-EG", {
+    weekday: "long",
+    year: "numeric",
+    month: "long",
+    day: "numeric"
+  });
+}
+
+function goBack() {
+  if (document.referrer && document.referrer.includes("warehouse-management.html")) {
+    window.location.href = "warehouse-management.html";
+    return;
+  }
+  window.location.href = "warehouse-management.html";
+}
+
+window.addEventListener("afterprint", () => {
+  document.body.classList.remove("printing");
+});
+
+function generateDailyReport(data, branch) {
+  const todayData = data.filter(row => row.date === today);
+  
+  // Calculate previous day's custody
+  const previousData = data.filter(row => row.date !== today);
+  const previousTotal = previousData.reduce((sum, row) => 
+    sum + (parseFloat(row.credit) || 0) - (parseFloat(row.debit) || 0), 0
+  );
+
+  // Today's calculations
+  const todayCredit = todayData.reduce((sum, row) => sum + (parseFloat(row.credit) || 0), 0);
+  const todayDebit = todayData.reduce((sum, row) => sum + (parseFloat(row.debit) || 0), 0);
+  const clearanceItems = todayData.filter(row => parseFloat(row.debit) > 0).length;
+  const afterClearance = previousTotal - todayDebit;
+  const finalTotal = afterClearance + todayCredit;
+
+  return {
+    previous: previousTotal.toFixed(2),
+    clearanceItems: clearanceItems,
+    dailyClearance: todayDebit.toFixed(2),
+    afterClearance: afterClearance.toFixed(2),
+    todayCustody: todayCredit.toFixed(2),
+    finalTotal: finalTotal.toFixed(2)
+  };
+}
+
+function renderPrintPage(alexandriaData, dekkelaData) {
+  const alexReport = generateDailyReport(alexandriaData, 'alexandria');
+  const dekkelaReport = generateDailyReport(dekkelaData, 'dekkela');
+
+  printShell.innerHTML = `
+    <h1 class="print-title">تقارير العهد اليومية</h1>
+    <div class="print-date">${formatArabicDate(today)}</div>
+    <div class="status" style="padding: 0 0 14px; font-size: 0.92rem;">اضغط زر طباعة بالأسفل لفتح نافذة الطباعة يدويًا.</div>
+    
+    <div class="reports-grid">
+      <!-- Alexandria Report -->
+      <div class="report-card">
+        <h4>تقرير يومي - الإسكندرية</h4>
+        <table class="report-table">
+          <tr>
+            <td>عهدة سابقة</td>
+            <td>${alexReport.previous}</td>
+          </tr>
+          <tr>
+            <td>بنود التصفية</td>
+            <td>${alexReport.clearanceItems}</td>
+          </tr>
+          <tr>
+            <td>إجمالي التصفية اليومية</td>
+            <td class="highlight-red">${alexReport.dailyClearance}</td>
+          </tr>
+          <tr>
+            <td>العهدة بعد التصفية</td>
+            <td class="highlight-red">${alexReport.afterClearance}</td>
+          </tr>
+          <tr>
+            <td>عهدة اليوم</td>
+            <td>${alexReport.todayCustody}</td>
+          </tr>
+          <tr>
+            <td><strong>إجمالي العهدة النهائي</strong></td>
+            <td class="highlight-red">${alexReport.finalTotal}</td>
+          </tr>
+        </table>
+      </div>
+
+      <!-- Dekkela Report -->
+      <div class="report-card">
+        <h4>تقرير يومي - الدخيلة</h4>
+        <table class="report-table">
+          <tr>
+            <td>عهدة سابقة</td>
+            <td>${dekkelaReport.previous}</td>
+          </tr>
+          <tr>
+            <td>بنود التصفية</td>
+            <td>${dekkelaReport.clearanceItems}</td>
+          </tr>
+          <tr>
+            <td>إجمالي التصفية اليومية</td>
+            <td class="highlight-red">${dekkelaReport.dailyClearance}</td>
+          </tr>
+          <tr>
+            <td>العهدة بعد التصفية</td>
+            <td class="highlight-red">${dekkelaReport.afterClearance}</td>
+          </tr>
+          <tr>
+            <td>عهدة اليوم</td>
+            <td>${dekkelaReport.todayCustody}</td>
+          </tr>
+          <tr>
+            <td><strong>إجمالي العهدة النهائي</strong></td>
+            <td class="highlight-red">${dekkelaReport.finalTotal}</td>
+          </tr>
+        </table>
+      </div>
+    </div>
+    
+    <div class="actions">
+      <button class="print-btn" onclick="triggerPrint()">طباعة</button>
+      <button class="back-btn" onclick="goBack()">رجوع</button>
+    </div>
+  `;
+}
+
+function triggerPrint() {
+  document.body.classList.add("printing");
+  setTimeout(() => {
+    window.print();
+  }, 80);
+}
+
+onAuthStateChanged(auth, async user => {
+  if (!user) {
+    window.location.href = 'index.html';
+    return;
+  }
+
+  try {
+    // Get Alexandria data (like daily.html)
+    const alexSnapshot = await db.ref('warehouse/alexandria').once('value');
+    const alexRaw = alexSnapshot.val() || {};
+    const alexandriaData = Object.keys(alexRaw).map(key => ({
+      id: key,
+      ...alexRaw[key]
+    }));
+
+    // Get Dekkela data (like daily.html)
+    const dekkelaSnapshot = await db.ref('warehouse/dekkela').once('value');
+    const dekkelaRaw = dekkelaSnapshot.val() || {};
+    const dekkelaData = Object.keys(dekkelaRaw).map(key => ({
+      id: key,
+      ...dekkelaRaw[key]
+    }));
+
+    renderPrintPage(alexandriaData, dekkelaData);
+  } catch (error) {
+    console.error('Error loading print data:', error);
+    printShell.innerHTML = '<div class="status">تعذر تحميل بيانات الطباعة الآن.</div>';
+  }
+});
+</script>
+</body>
+</html>

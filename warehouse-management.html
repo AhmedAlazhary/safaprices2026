@@ -470,13 +470,18 @@ header {
         <button class="add-row-btn" onclick="addRow('dekkela')">+ إضافة صف جديد</button>
       </div>
     </div>
+    <button class="btn btn-primary" onclick="toggleReports()" style="margin: 20px auto; display: block; width: fit-content;">عرض / طباعة التقارير اليومية</button>
   </section>
 
   <!-- Daily Reports Section -->
-  <section class="reports-section">
+  <section class="reports-section" id="reportsSection" style="display: none;">
     <div class="reports-header">
       <h2 class="reports-title">التقارير اليومية</h2>
-      <div style="color: var(--muted); font-size: 0.9rem;">تاريخ اليوم: <span id="todayDate"></span></div>
+      <div style="display: flex; gap: 12px; align-items: center;">
+        <div style="color: var(--muted); font-size: 0.9rem;">تاريخ اليوم: <span id="todayDate"></span></div>
+        <button class="btn btn-primary" onclick="toggleReports()">إخفاء التقارير</button>
+        <button class="btn print-btn" onclick="printReports()">طباعة التقارير</button>
+      </div>
     </div>
     
     <div class="reports-grid">
@@ -545,41 +550,24 @@ header {
   </section>
 </div>
 
-<script type="module">
-import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-app.js";
-import {
-  getAuth,
-  onAuthStateChanged,
-  signOut
-} from "https://www.gstatic.com/firebasejs/10.12.2/firebase-auth.js";
-import {
-  getFirestore,
-  collection,
-  doc,
-  addDoc,
-  updateDoc,
-  deleteDoc,
-  getDoc,
-  getDocs,
-  onSnapshot,
-  query,
-  orderBy,
-  where,
-  Timestamp
-} from "https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore.js";
+<script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-app-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-auth-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-database-compat.js"></script>
 
 const firebaseConfig = {
   apiKey: "AIzaSyARqSgfh78TqFQ2hhZaAtUaVQFqlPuRM3w",
   authDomain: "trialsafaprices2026.firebaseapp.com",
+  databaseURL: "https://trialsafaprices2026-default-rtdb.firebaseio.com",
   projectId: "trialsafaprices2026",
   storageBucket: "trialsafaprices2026.appspot.com",
   messagingSenderId: "177091434445",
   appId: "1:177091434445:web:568b6ae3ba270a21d4d684"
 };
 
-const app = initializeApp(firebaseConfig);
-const auth = getAuth(app);
-const firestore = getFirestore(app);
+firebase.initializeApp(firebaseConfig);
+
+const db = firebase.database();
+const auth = firebase.auth();
 
 // Global state
 let warehouseData = {
@@ -587,11 +575,13 @@ let warehouseData = {
   dekkela: []
 };
 
+let currentUser = null;
 let today = new Date().toISOString().split('T')[0];
 document.getElementById('todayDate').textContent = formatDateArabic(new Date());
 
 // Authentication check
-onAuthStateChanged(auth, user => {
+auth.onAuthStateChanged(user => {
+  currentUser = user;
   if (!user) {
     window.location.href = 'index.html';
     return;
@@ -600,7 +590,7 @@ onAuthStateChanged(auth, user => {
 });
 
 document.getElementById('logoutBtn').addEventListener('click', async () => {
-  await signOut(auth);
+  await auth.signOut();
   window.location.href = 'index.html';
 });
 
@@ -610,14 +600,14 @@ function initializeWarehouse() {
   setupEventListeners();
 }
 
-// Setup real-time listeners
+// Setup real-time listeners (like daily.html)
 function setupRealtimeListeners() {
   // Listen to Alexandria warehouse data
-  const alexQuery = query(collection(firestore, 'WarehouseAlexandria'), orderBy('createdAt', 'desc'));
-  onSnapshot(alexQuery, snapshot => {
-    warehouseData.alexandria = snapshot.docs.map(doc => ({
-      id: doc.id,
-      ...doc.data()
+  db.ref('warehouse/alexandria').on('value', snapshot => {
+    const raw = snapshot.val() || {};
+    warehouseData.alexandria = Object.keys(raw).map(key => ({
+      id: key,
+      ...raw[key]
     }));
     renderTable('alexandria');
     calculateTotals();
@@ -625,11 +615,11 @@ function setupRealtimeListeners() {
   });
 
   // Listen to Dekkela warehouse data
-  const dekkelaQuery = query(collection(firestore, 'WarehouseDekkela'), orderBy('createdAt', 'desc'));
-  onSnapshot(dekkelaQuery, snapshot => {
-    warehouseData.dekkela = snapshot.docs.map(doc => ({
-      id: doc.id,
-      ...doc.data()
+  db.ref('warehouse/dekkela').on('value', snapshot => {
+    const raw = snapshot.val() || {};
+    warehouseData.dekkela = Object.keys(raw).map(key => ({
+      id: key,
+      ...raw[key]
     }));
     renderTable('dekkela');
     calculateTotals();
@@ -705,45 +695,44 @@ function renderTable(branch) {
   `).join('');
 }
 
-// Add new row
-async function addRow(branch) {
+// Add new row - make globally accessible (like daily.html)
+window.addRow = async function(branch) {
   try {
-    const collectionName = branch === 'alexandria' ? 'WarehouseAlexandria' : 'WarehouseDekkela';
     const newRow = {
       date: today,
       description: '',
       credit: 0,
       debit: 0,
       notes: '',
-      createdAt: Timestamp.now(),
-      updatedAt: Timestamp.now()
+      createdAt: firebase.database.ServerValue.TIMESTAMP,
+      updatedAt: firebase.database.ServerValue.TIMESTAMP
     };
 
-    const docRef = await addDoc(collection(firestore, collectionName), newRow);
-    console.log('New row added with ID:', docRef.id);
+    const newRef = db.ref(`warehouse/${branch}`).push();
+    await newRef.set(newRow);
+    console.log('New row added with ID:', newRef.key);
   } catch (error) {
     console.error('Error adding row:', error);
     alert('حدث خطأ أثناء إضافة الصف الجديد');
   }
-}
+};
 
-// Delete row
-async function deleteRow(branch, rowId) {
+// Delete row - make globally accessible (like daily.html)
+window.deleteRow = async function(branch, rowId) {
   if (!confirm('هل أنت متأكد من حذف هذا الصف؟')) {
     return;
   }
 
   try {
-    const collectionName = branch === 'alexandria' ? 'WarehouseAlexandria' : 'WarehouseDekkela';
-    await deleteDoc(doc(firestore, collectionName, rowId));
+    await db.ref(`warehouse/${branch}/${rowId}`).remove();
     console.log('Row deleted successfully');
   } catch (error) {
     console.error('Error deleting row:', error);
     alert('حدث خطأ أثناء حذف الصف');
   }
-}
+};
 
-// Auto-save handler
+// Auto-save handler (like daily.html)
 async function handleAutoSave(event) {
   const input = event.target;
   if (!input.dataset.id || !input.dataset.field) return;
@@ -757,20 +746,20 @@ async function handleAutoSave(event) {
     value = parseFloat(value) || 0;
   }
 
-  // Determine collection based on table
-  let collectionName;
+  // Determine branch based on table
+  let branch;
   if (input.closest('#alexandriaTable')) {
-    collectionName = 'WarehouseAlexandria';
+    branch = 'alexandria';
   } else if (input.closest('#dekkelaTable')) {
-    collectionName = 'WarehouseDekkela';
+    branch = 'dekkela';
   } else {
     return;
   }
 
   try {
-    await updateDoc(doc(firestore, collectionName, rowId), {
+    await db.ref(`warehouse/${branch}/${rowId}`).update({
       [field]: value,
-      updatedAt: Timestamp.now()
+      updatedAt: firebase.database.ServerValue.TIMESTAMP
     });
     console.log(`Auto-saved ${field} for row ${rowId}`);
   } catch (error) {
@@ -835,6 +824,21 @@ function formatDateArabic(date) {
   };
   return date.toLocaleDateString('ar-EG', options);
 }
+
+// Toggle reports visibility
+window.toggleReports = function() {
+  const reportsSection = document.getElementById('reportsSection');
+  if (reportsSection.style.display === 'none') {
+    reportsSection.style.display = 'block';
+  } else {
+    reportsSection.style.display = 'none';
+  }
+};
+
+// Print reports function
+window.printReports = function() {
+  window.location.href = 'print-warehouse.html';
+};
 </script>
 </body>
 </html>
