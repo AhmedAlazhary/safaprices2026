@@ -705,6 +705,7 @@ header {
 <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-auth-compat.js"></script>
 <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-database-compat.js"></script>
 
+<script>
 const firebaseConfig = {
   apiKey: "AIzaSyARqSgfh78TqFQ2hhZaAtUaVQFqlPuRM3w",
   authDomain: "trialsafaprices2026.firebaseapp.com",
@@ -782,6 +783,10 @@ function setupRealtimeListeners() {
 function setupEventListeners() {
   // Auto-save on blur for all inputs
   document.addEventListener('blur', handleAutoSave, true);
+  
+  // Make sure addRow is globally accessible
+  window.addRow = addRow;
+  window.deleteRow = deleteRow;
 }
 
 // Render table data
@@ -817,7 +822,7 @@ function renderTable(branch) {
                placeholder="0.00" 
                step="0.01" 
                min="0"
-               value="${row.credit || ''}" 
+               value="${row.credit || 0}" 
                data-field="credit" 
                data-id="${row.id}">
       </td>
@@ -827,7 +832,7 @@ function renderTable(branch) {
                placeholder="0.00" 
                step="0.01" 
                min="0"
-               value="${row.debit || ''}" 
+               value="${row.debit || 0}" 
                data-field="debit" 
                data-id="${row.id}">
       </td>
@@ -866,7 +871,7 @@ function createWarehouseRow(overrides = {}) {
 }
 
 // Add new row - make globally accessible (like daily.html)
-window.addRow = function(branch) {
+function addRow(branch) {
   const newRow = createWarehouseRow();
   
   // Add to local data first (like daily.html)
@@ -890,7 +895,10 @@ window.addRow = function(branch) {
       warehouseData[branch] = warehouseData[branch].filter(row => row.id !== newRow.id);
       renderTable(branch);
     });
-};
+}
+
+// Make addRow globally accessible
+window.addRow = addRow;
 
 // Delete row - make globally accessible (like daily.html)
 window.deleteRow = async function(branch, rowId) {
@@ -908,7 +916,7 @@ window.deleteRow = async function(branch, rowId) {
 };
 
 // Auto-save handler (like daily.html)
-async function handleAutoSave(event) {
+function handleAutoSave(event) {
   const input = event.target;
   if (!input.dataset.id || !input.dataset.field) return;
 
@@ -932,7 +940,7 @@ async function handleAutoSave(event) {
   }
 
   try {
-    await db.ref(`warehouse/${branch}/${rowId}`).update({
+    db.ref(`warehouse/${branch}/${rowId}`).update({
       [field]: value,
       updatedAt: firebase.database.ServerValue.TIMESTAMP
     });
