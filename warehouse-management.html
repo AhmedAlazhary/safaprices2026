@@ -628,10 +628,11 @@ header {
   <section class="reports-section" id="reportsSection" style="display: none;">
     <div class="reports-header">
       <h2 class="reports-title">التقارير اليومية</h2>
-      <div style="display: flex; gap: 12px; align-items: center;">
+      <div style="display: flex; gap: 12px; align-items: center; flex-wrap: wrap;">
         <div style="color: var(--muted); font-size: 0.9rem;">تاريخ اليوم: <span id="todayDate"></span></div>
         <button class="btn btn-primary" onclick="toggleReports()">إخفاء التقارير</button>
         <button class="btn print-btn" onclick="printReports()">طباعة التقارير</button>
+        <button class="btn" style="background: #28a745; color: white;" onclick="exportAsImage()">📸 تصدير كصورة</button>
       </div>
     </div>
     
@@ -1102,6 +1103,65 @@ window.toggleReports = function() {
 // Print reports function
 window.printReports = function() {
   window.location.href = 'print-warehouse.html';
+};
+
+// Export as image function
+window.exportAsImage = function() {
+  // Show reports section if hidden
+  const reportsSection = document.getElementById('reportsSection');
+  const wasHidden = reportsSection.style.display === 'none';
+  if (wasHidden) {
+    reportsSection.style.display = 'block';
+  }
+
+  // Use html2canvas library to capture the reports section
+  const script = document.createElement('script');
+  script.src = 'https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js';
+  script.onload = function() {
+    html2canvas(reportsSection, {
+      backgroundColor: '#ffffff',
+      scale: 2, // Higher quality
+      logging: false,
+      useCORS: true
+    }).then(canvas => {
+      // Convert canvas to blob and download
+      canvas.toBlob(function(blob) {
+        const url = URL.createObjectURL(blob);
+        const a = document.createElement('a');
+        a.href = url;
+        a.download = `تقرير-العهد-${new Date().toISOString().split('T')[0]}.png`;
+        document.body.appendChild(a);
+        a.click();
+        document.body.removeChild(a);
+        URL.revokeObjectURL(url);
+        
+        // Hide reports section again if it was hidden
+        if (wasHidden) {
+          reportsSection.style.display = 'none';
+        }
+        
+        // Show success message
+        alert('✅ تم تصدير التقرير كصورة بنجاح!\n\nيمكنك الآن مشاركة الصورة في واتساب أو أي تطبيق آخر.');
+      }, 'image/png', 0.95);
+    }).catch(error => {
+      console.error('Error exporting image:', error);
+      alert('❌ حدث خطأ أثناء تصدير الصورة. يرجى المحاولة مرة أخرى.');
+      
+      // Hide reports section again if it was hidden
+      if (wasHidden) {
+        reportsSection.style.display = 'none';
+      }
+    });
+  };
+  script.onerror = function() {
+    alert('❌ تعذر تحميل مكتبة التصدير. يرجى التحقق من اتصال الإنترنت.');
+    
+    // Hide reports section again if it was hidden
+    if (wasHidden) {
+      reportsSection.style.display = 'none';
+    }
+  };
+  document.head.appendChild(script);
 };
 </script>
 </body>
