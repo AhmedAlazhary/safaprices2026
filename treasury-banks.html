@@ -1,0 +1,1068 @@
+<!DOCTYPE html>
+<html lang="ar" dir="rtl">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>الخزينة والبنوك - مكتب الصفا</title>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
+    <style>
+        :root {
+            --primary: #2c3e50;
+            --secondary: #3498db;
+            --success: #27ae60;
+            --danger: #e74c3c;
+            --warning: #f39c12;
+            --info: #17a2b8;
+            --light: #ecf0f1;
+            --dark: #2c3e50;
+            --muted: #6c757d;
+            --border: #dee2e6;
+            --shadow: 0 2px 10px rgba(0,0,0,0.1);
+            --transition: all 0.3s ease;
+        }
+
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            min-height: 100vh;
+            color: var(--dark);
+        }
+
+        /* Header */
+        header {
+            background: var(--primary);
+            color: white;
+            padding: 1rem 2rem;
+            box-shadow: var(--shadow);
+            position: sticky;
+            top: 0;
+            z-index: 1000;
+        }
+
+        .header-content {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            max-width: 1400px;
+            margin: 0 auto;
+        }
+
+        .brand {
+            display: flex;
+            align-items: center;
+            gap: 1rem;
+        }
+
+        .brand img {
+            height: 40px;
+            border-radius: 8px;
+        }
+
+        .brand h1 {
+            font-size: 1.5rem;
+            font-weight: 700;
+        }
+
+        .header-actions {
+            display: flex;
+            gap: 1rem;
+            align-items: center;
+        }
+
+        .btn {
+            padding: 0.5rem 1rem;
+            border: none;
+            border-radius: 6px;
+            cursor: pointer;
+            font-size: 0.9rem;
+            font-weight: 600;
+            transition: var(--transition);
+            text-decoration: none;
+            display: inline-flex;
+            align-items: center;
+            gap: 0.5rem;
+        }
+
+        .btn-primary {
+            background: var(--secondary);
+            color: white;
+        }
+
+        .btn-primary:hover {
+            background: #2980b9;
+            transform: translateY(-1px);
+        }
+
+        .btn-success {
+            background: var(--success);
+            color: white;
+        }
+
+        .btn-danger {
+            background: var(--danger);
+            color: white;
+        }
+
+        .btn-warning {
+            background: var(--warning);
+            color: white;
+        }
+
+        .btn-ghost {
+            background: transparent;
+            color: white;
+            border: 1px solid white;
+        }
+
+        .btn-ghost:hover {
+            background: white;
+            color: var(--primary);
+        }
+
+        /* Main Container */
+        .container {
+            max-width: 1400px;
+            margin: 2rem auto;
+            padding: 0 1rem;
+        }
+
+        /* Summary Cards */
+        .summary-section {
+            margin-bottom: 2rem;
+        }
+
+        .summary-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+            gap: 1.5rem;
+            margin-bottom: 2rem;
+        }
+
+        .summary-card {
+            background: white;
+            border-radius: 12px;
+            padding: 1.5rem;
+            box-shadow: var(--shadow);
+            border-left: 4px solid var(--secondary);
+            transition: var(--transition);
+        }
+
+        .summary-card:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 4px 20px rgba(0,0,0,0.15);
+        }
+
+        .summary-card.positive {
+            border-left-color: var(--success);
+        }
+
+        .summary-card.negative {
+            border-left-color: var(--danger);
+        }
+
+        .summary-title {
+            font-size: 0.9rem;
+            color: var(--muted);
+            margin-bottom: 0.5rem;
+            font-weight: 600;
+        }
+
+        .summary-amount {
+            font-size: 1.8rem;
+            font-weight: 700;
+            color: var(--primary);
+            margin-bottom: 0.5rem;
+        }
+
+        .summary-details {
+            display: flex;
+            justify-content: space-between;
+            font-size: 0.8rem;
+            color: var(--muted);
+        }
+
+        /* Tabs */
+        .tabs-container {
+            background: white;
+            border-radius: 12px;
+            box-shadow: var(--shadow);
+            overflow: hidden;
+        }
+
+        .tabs-header {
+            display: flex;
+            background: var(--light);
+            border-bottom: 2px solid var(--border);
+            overflow-x: auto;
+        }
+
+        .tab-button {
+            padding: 1rem 1.5rem;
+            background: transparent;
+            border: none;
+            cursor: pointer;
+            font-size: 0.9rem;
+            font-weight: 600;
+            color: var(--muted);
+            transition: var(--transition);
+            white-space: nowrap;
+            border-bottom: 3px solid transparent;
+        }
+
+        .tab-button:hover {
+            background: rgba(255,255,255,0.5);
+            color: var(--primary);
+        }
+
+        .tab-button.active {
+            background: white;
+            color: var(--primary);
+            border-bottom-color: var(--secondary);
+        }
+
+        .tab-content {
+            padding: 2rem;
+            display: none;
+        }
+
+        .tab-content.active {
+            display: block;
+        }
+
+        /* Table */
+        .table-container {
+            margin-bottom: 2rem;
+        }
+
+        .table-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 1.5rem;
+            flex-wrap: wrap;
+            gap: 1rem;
+        }
+
+        .table-title {
+            font-size: 1.2rem;
+            font-weight: 700;
+            color: var(--primary);
+        }
+
+        .table-actions {
+            display: flex;
+            gap: 0.5rem;
+            flex-wrap: wrap;
+        }
+
+        .data-table {
+            width: 100%;
+            border-collapse: collapse;
+            background: white;
+            border-radius: 8px;
+            overflow: hidden;
+            box-shadow: 0 1px 3px rgba(0,0,0,0.1);
+        }
+
+        .data-table th {
+            background: var(--primary);
+            color: white;
+            padding: 1rem;
+            text-align: right;
+            font-weight: 600;
+            font-size: 0.9rem;
+        }
+
+        .data-table td {
+            padding: 0.75rem 1rem;
+            border-bottom: 1px solid var(--border);
+            vertical-align: middle;
+        }
+
+        .data-table tr:hover {
+            background: rgba(0,0,0,0.02);
+        }
+
+        .data-table input {
+            width: 100%;
+            padding: 0.5rem;
+            border: 1px solid var(--border);
+            border-radius: 4px;
+            font-size: 0.9rem;
+            transition: var(--transition);
+        }
+
+        .data-table input:focus {
+            outline: none;
+            border-color: var(--secondary);
+            box-shadow: 0 0 0 3px rgba(52, 152, 219, 0.1);
+        }
+
+        .income-input {
+            color: var(--success);
+            font-weight: 600;
+        }
+
+        .expense-input {
+            color: var(--danger);
+            font-weight: 600;
+        }
+
+        /* File Upload */
+        .file-upload {
+            position: relative;
+            display: inline-block;
+        }
+
+        .file-upload input[type="file"] {
+            position: absolute;
+            opacity: 0;
+            width: 100%;
+            height: 100%;
+            cursor: pointer;
+        }
+
+        .file-upload-label {
+            display: inline-flex;
+            align-items: center;
+            gap: 0.5rem;
+            padding: 0.5rem 1rem;
+            background: var(--info);
+            color: white;
+            border-radius: 4px;
+            cursor: pointer;
+            font-size: 0.8rem;
+            transition: var(--transition);
+        }
+
+        .file-upload-label:hover {
+            background: #138496;
+        }
+
+        /* Transfer Modal */
+        .modal {
+            display: none;
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: rgba(0,0,0,0.5);
+            z-index: 2000;
+            align-items: center;
+            justify-content: center;
+        }
+
+        .modal.active {
+            display: flex;
+        }
+
+        .modal-content {
+            background: white;
+            border-radius: 12px;
+            padding: 2rem;
+            max-width: 500px;
+            width: 90%;
+            max-height: 90vh;
+            overflow-y: auto;
+        }
+
+        .modal-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 1.5rem;
+        }
+
+        .modal-title {
+            font-size: 1.3rem;
+            font-weight: 700;
+            color: var(--primary);
+        }
+
+        .modal-close {
+            background: none;
+            border: none;
+            font-size: 1.5rem;
+            cursor: pointer;
+            color: var(--muted);
+        }
+
+        .form-group {
+            margin-bottom: 1rem;
+        }
+
+        .form-label {
+            display: block;
+            margin-bottom: 0.5rem;
+            font-weight: 600;
+            color: var(--primary);
+        }
+
+        .form-control {
+            width: 100%;
+            padding: 0.75rem;
+            border: 1px solid var(--border);
+            border-radius: 6px;
+            font-size: 0.9rem;
+        }
+
+        .form-control:focus {
+            outline: none;
+            border-color: var(--secondary);
+            box-shadow: 0 0 0 3px rgba(52, 152, 219, 0.1);
+        }
+
+        /* Loading */
+        .loading {
+            text-align: center;
+            padding: 3rem;
+            color: var(--muted);
+        }
+
+        .spinner {
+            border: 3px solid var(--light);
+            border-top: 3px solid var(--secondary);
+            border-radius: 50%;
+            width: 40px;
+            height: 40px;
+            animation: spin 1s linear infinite;
+            margin: 0 auto 1rem;
+        }
+
+        @keyframes spin {
+            0% { transform: rotate(0deg); }
+            100% { transform: rotate(360deg); }
+        }
+
+        /* Responsive */
+        @media (max-width: 768px) {
+            .header-content {
+                flex-direction: column;
+                gap: 1rem;
+                text-align: center;
+            }
+
+            .summary-grid {
+                grid-template-columns: 1fr;
+            }
+
+            .tabs-header {
+                flex-direction: column;
+            }
+
+            .tab-button {
+                border-bottom: 1px solid var(--border);
+                border-right: none;
+            }
+
+            .table-header {
+                flex-direction: column;
+                align-items: stretch;
+            }
+
+            .data-table {
+                font-size: 0.8rem;
+            }
+
+            .data-table th,
+            .data-table td {
+                padding: 0.5rem;
+            }
+        }
+    </style>
+</head>
+<body>
+<header>
+    <div class="header-content">
+        <div class="brand">
+            <img src="logo.png" alt="logo">
+            <h1>الخزينة والبنوك</h1>
+        </div>
+        <div class="header-actions">
+            <button class="btn btn-primary" onclick="openTransferModal()">
+                <i class="fas fa-exchange-alt"></i>
+                تحويل مالي
+            </button>
+            <button class="btn btn-success" onclick="exportData()">
+                <i class="fas fa-download"></i>
+                تصدير Excel
+            </button>
+            <button class="btn btn-ghost" onclick="goBack()">
+                <i class="fas fa-arrow-left"></i>
+                العودة
+            </button>
+            <button class="btn btn-danger" onclick="logout()">
+                <i class="fas fa-sign-out-alt"></i>
+                خروج
+            </button>
+        </div>
+    </div>
+</header>
+
+<div class="container">
+    <!-- Summary Cards Section -->
+    <section class="summary-section">
+        <div class="summary-grid" id="summaryGrid">
+            <!-- Summary cards will be generated dynamically -->
+        </div>
+    </section>
+
+    <!-- Tabs Section -->
+    <div class="tabs-container">
+        <div class="tabs-header" id="tabsHeader">
+            <!-- Tabs will be generated dynamically -->
+        </div>
+
+        <!-- Tab Contents -->
+        <div id="tabContents">
+            <!-- Tab contents will be generated dynamically -->
+        </div>
+    </div>
+</div>
+
+<!-- Transfer Modal -->
+<div class="modal" id="transferModal">
+    <div class="modal-content">
+        <div class="modal-header">
+            <h3 class="modal-title">تحويل مالي</h3>
+            <button class="modal-close" onclick="closeTransferModal()">&times;</button>
+        </div>
+        <form id="transferForm">
+            <div class="form-group">
+                <label class="form-label">من حساب</label>
+                <select class="form-control" id="fromAccount" required>
+                    <option value="">اختر الحساب المصدر</option>
+                </select>
+            </div>
+            <div class="form-group">
+                <label class="form-label">إلى حساب</label>
+                <select class="form-control" id="toAccount" required>
+                    <option value="">اختر الحساب المستهدف</option>
+                </select>
+            </div>
+            <div class="form-group">
+                <label class="form-label">المبلغ</label>
+                <input type="number" class="form-control" id="transferAmount" step="0.01" min="0.01" required>
+            </div>
+            <div class="form-group">
+                <label class="form-label">البيان</label>
+                <input type="text" class="form-control" id="transferDescription" required>
+            </div>
+            <div class="form-group">
+                <label class="form-label">التاريخ</label>
+                <input type="date" class="form-control" id="transferDate" required>
+            </div>
+            <div style="display: flex; gap: 1rem; justify-content: flex-end;">
+                <button type="button" class="btn btn-ghost" onclick="closeTransferModal()">إلغاء</button>
+                <button type="submit" class="btn btn-primary">تنفيذ التحويل</button>
+            </div>
+        </form>
+    </div>
+</div>
+
+<!-- Firebase Scripts -->
+<script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-app-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-auth-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-database-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-storage-compat.js"></script>
+
+<script>
+// Firebase Configuration
+const firebaseConfig = {
+  apiKey: "AIzaSyARqSgfh78TqFQ2hhZaAtUaVQFqlPuRM3w",
+  authDomain: "trialsafaprices2026.firebaseapp.com",
+  databaseURL: "https://trialsafaprices2026-default-rtdb.firebaseio.com",
+  projectId: "trialsafaprices2026",
+  storageBucket: "trialsafaprices2026.appspot.com",
+  messagingSenderId: "177091434445",
+  appId: "1:177091434445:web:568b6ae3ba270a21d4d684"
+};
+
+firebase.initializeApp(firebaseConfig);
+
+const db = firebase.database();
+const auth = firebase.auth();
+const storage = firebase.storage();
+
+// Treasury Accounts Configuration
+const TREASURY_ACCOUNTS = [
+  { id: 'cash', name: 'الخزينة', icon: 'fa-money-bill-wave' },
+  { id: 'cib_visa_personal', name: 'حساب CIB فيزا (شخصي جديد)', icon: 'fa-credit-card' },
+  { id: 'cash_omar', name: 'نقدي مع عمر', icon: 'fa-hand-holding-usd' },
+  { id: 'cash_haj', name: 'نقدي مع الحاج', icon: 'fa-hand-holding-usd' },
+  { id: 'cib_company', name: 'حساب الشركة المصري (CIB)', icon: 'fa-building' },
+  { id: 'checks', name: 'شيكات', icon: 'fa-file-invoice-dollar' },
+  { id: 'visa_ahly_omar', name: 'فيزا البنك الأهلي / عمر', icon: 'fa-credit-card' },
+  { id: 'visa_misr_omar', name: 'فيزا بنك مصر / عمر', icon: 'fa-credit-card' },
+  { id: 'visa_cbe_company', name: 'فيزا بنك التجاري وفا (شركة)', icon: 'fa-credit-card' },
+  { id: 'visa_cbe_personal', name: 'فيزا بنك التجاري وفا (شخصي / انستا)', icon: 'fa-credit-card' },
+  { id: 'cib_electronic', name: 'حساب المدفوعات الإلكترونية (CIB)', icon: 'fa-mobile-alt' },
+  { id: 'nbk_personal', name: 'شخصي NBK', icon: 'fa-university' },
+  { id: 'nbk_company', name: 'شركة NBK', icon: 'fa-university' }
+];
+
+// Global State
+let currentUser = null;
+let treasuryData = {};
+let currentTab = 'cash';
+let today = new Date().toISOString().split('T')[0];
+
+// Initialize Application
+auth.onAuthStateChanged(user => {
+  currentUser = user;
+  if (!user) {
+    window.location.href = 'index.html';
+    return;
+  }
+  
+  // Check user permissions
+  checkUserPermissions(user);
+  initializeTreasury();
+});
+
+// Check User Permissions
+function checkUserPermissions(user) {
+  // Here you can check user role from Firebase
+  // For now, we'll assume all authenticated users have access
+  console.log('User authenticated:', user.email);
+}
+
+// Initialize Treasury System
+function initializeTreasury() {
+  setupTabs();
+  setupSummaryCards();
+  setupEventListeners();
+  loadTreasuryData();
+}
+
+// Setup Tabs
+function setupTabs() {
+  const tabsHeader = document.getElementById('tabsHeader');
+  const tabContents = document.getElementById('tabContents');
+  
+  // Generate tab buttons
+  tabsHeader.innerHTML = TREASURY_ACCOUNTS.map(account => `
+    <button class="tab-button ${account.id === currentTab ? 'active' : ''}" 
+            onclick="switchTab('${account.id}')">
+      <i class="fas ${account.icon}"></i>
+      ${account.name}
+    </button>
+  `).join('');
+  
+  // Generate tab contents
+  tabContents.innerHTML = TREASURY_ACCOUNTS.map(account => `
+    <div class="tab-content ${account.id === currentTab ? 'active' : ''}" id="tab-${account.id}">
+      <div class="table-container">
+        <div class="table-header">
+          <h3 class="table-title">${account.name}</h3>
+          <div class="table-actions">
+            <button class="btn btn-primary" onclick="addRow('${account.id}')">
+              <i class="fas fa-plus"></i>
+              إضافة حركة
+            </button>
+            <button class="btn btn-warning" onclick="filterData('${account.id}')">
+              <i class="fas fa-filter"></i>
+              فلترة
+            </button>
+          </div>
+        </div>
+        <div class="loading" id="loading-${account.id}">
+          <div class="spinner"></div>
+          <div>جاري تحميل البيانات...</div>
+        </div>
+        <table class="data-table" id="table-${account.id}" style="display: none;">
+          <thead>
+            <tr>
+              <th>التاريخ</th>
+              <th>البيان</th>
+              <th>إيراد</th>
+              <th>مصروف</th>
+              <th>المرفقات</th>
+              <th>ملاحظات</th>
+              <th>إجراءات</th>
+            </tr>
+          </thead>
+          <tbody id="tbody-${account.id}">
+            <!-- Data rows will be generated here -->
+          </tbody>
+        </table>
+      </div>
+    </div>
+  `).join('');
+}
+
+// Setup Summary Cards
+function setupSummaryCards() {
+  const summaryGrid = document.getElementById('summaryGrid');
+  
+  summaryGrid.innerHTML = TREASURY_ACCOUNTS.map(account => `
+    <div class="summary-card" id="summary-${account.id}">
+      <div class="summary-title">
+        <i class="fas ${account.icon}"></i>
+        ${account.name}
+      </div>
+      <div class="summary-amount" id="balance-${account.id}">0.00 ج.م</div>
+      <div class="summary-details">
+        <span>إجمالي الإيراد: <span id="income-${account.id}">0.00</span></span>
+        <span>إجمالي المصروف: <span id="expense-${account.id}">0.00</span></span>
+      </div>
+    </div>
+  `).join('');
+}
+
+// Setup Event Listeners
+function setupEventListeners() {
+  // Transfer form submission
+  document.getElementById('transferForm').addEventListener('submit', handleTransfer);
+  
+  // Set today's date as default for transfer
+  document.getElementById('transferDate').value = today;
+  
+  // Setup transfer account options
+  setupTransferAccounts();
+}
+
+// Setup Transfer Accounts
+function setupTransferAccounts() {
+  const fromAccount = document.getElementById('fromAccount');
+  const toAccount = document.getElementById('toAccount');
+  
+  const accountOptions = TREASURY_ACCOUNTS.map(account => 
+    `<option value="${account.id}">${account.name}</option>`
+  ).join('');
+  
+  fromAccount.innerHTML = '<option value="">اختر الحساب المصدر</option>' + accountOptions;
+  toAccount.innerHTML = '<option value="">اختر الحساب المستهدف</option>' + accountOptions;
+}
+
+// Load Treasury Data
+function loadTreasuryData() {
+  TREASURY_ACCOUNTS.forEach(account => {
+    loadAccountData(account.id);
+  });
+}
+
+// Load Account Data
+function loadAccountData(accountId) {
+  const accountRef = db.ref(`treasury/${accountId}`);
+  
+  accountRef.on('value', snapshot => {
+    const data = snapshot.val() || {};
+    treasuryData[accountId] = Object.keys(data).map(key => ({
+      id: key,
+      ...data[key]
+    }));
+    
+    renderAccountTable(accountId);
+    updateSummaryCard(accountId);
+  });
+}
+
+// Render Account Table
+function renderAccountTable(accountId) {
+  const tbody = document.getElementById(`tbody-${accountId}`);
+  const table = document.getElementById(`table-${accountId}`);
+  const loading = document.getElementById(`loading-${accountId}`);
+  
+  const data = treasuryData[accountId] || [];
+  
+  // Hide loading, show table
+  loading.style.display = 'none';
+  table.style.display = 'table';
+  
+  if (data.length === 0) {
+    tbody.innerHTML = `
+      <tr>
+        <td colspan="7" style="text-align: center; color: var(--muted);">
+          لا توجد حركات مالية
+        </td>
+      </tr>
+    `;
+    return;
+  }
+  
+  tbody.innerHTML = data.map(row => `
+    <tr data-id="${row.id}">
+      <td>
+        <input type="date" value="${row.date || today}" 
+               onchange="updateField('${accountId}', '${row.id}', 'date', this.value)">
+      </td>
+      <td>
+        <input type="text" value="${row.description || ''}" 
+               placeholder="أدخل البيان"
+               onchange="updateField('${accountId}', '${row.id}', 'description', this.value)">
+      </td>
+      <td>
+        <input type="number" class="income-input" value="${row.income || 0}" 
+               step="0.01" min="0" placeholder="0.00"
+               onchange="updateField('${accountId}', '${row.id}', 'income', this.value)">
+      </td>
+      <td>
+        <input type="number" class="expense-input" value="${row.expense || 0}" 
+               step="0.01" min="0" placeholder="0.00"
+               onchange="updateField('${accountId}', '${row.id}', 'expense', this.value)">
+      </td>
+      <td>
+        <div class="file-upload">
+          <input type="file" accept="image/*" onchange="uploadFile('${accountId}', '${row.id}', this.files[0])">
+          <label class="file-upload-label">
+            <i class="fas fa-paperclip"></i>
+            ${row.attachment ? 'تم الرفع' : 'رفع مرفق'}
+          </label>
+        </div>
+      </td>
+      <td>
+        <input type="text" value="${row.notes || ''}" 
+               placeholder="ملاحظات"
+               onchange="updateField('${accountId}', '${row.id}', 'notes', this.value)">
+      </td>
+      <td>
+        <button class="btn btn-danger" onclick="deleteRow('${accountId}', '${row.id}')">
+          <i class="fas fa-trash"></i>
+        </button>
+      </td>
+    </tr>
+  `).join('');
+}
+
+// Update Summary Card
+function updateSummaryCard(accountId) {
+  const data = treasuryData[accountId] || [];
+  
+  const totalIncome = data.reduce((sum, row) => sum + (parseFloat(row.income) || 0), 0);
+  const totalExpense = data.reduce((sum, row) => sum + (parseFloat(row.expense) || 0), 0);
+  const balance = totalIncome - totalExpense;
+  
+  document.getElementById(`income-${accountId}`).textContent = totalIncome.toFixed(2);
+  document.getElementById(`expense-${accountId}`).textContent = totalExpense.toFixed(2);
+  document.getElementById(`balance-${accountId}`).textContent = `${balance.toFixed(2)} ج.م`;
+  
+  // Update card color based on balance
+  const summaryCard = document.getElementById(`summary-${accountId}`);
+  summaryCard.classList.remove('positive', 'negative');
+  if (balance > 0) {
+    summaryCard.classList.add('positive');
+  } else if (balance < 0) {
+    summaryCard.classList.add('negative');
+  }
+}
+
+// Switch Tab
+function switchTab(accountId) {
+  currentTab = accountId;
+  
+  // Update tab buttons
+  document.querySelectorAll('.tab-button').forEach(btn => {
+    btn.classList.remove('active');
+  });
+  event.target.classList.add('active');
+  
+  // Update tab contents
+  document.querySelectorAll('.tab-content').forEach(content => {
+    content.classList.remove('active');
+  });
+  document.getElementById(`tab-${accountId}`).classList.add('active');
+}
+
+// Add Row
+function addRow(accountId) {
+  const newRow = {
+    date: today,
+    description: '',
+    income: 0,
+    expense: 0,
+    notes: '',
+    attachment: null,
+    createdAt: firebase.database.ServerValue.TIMESTAMP,
+    updatedAt: firebase.database.ServerValue.TIMESTAMP
+  };
+  
+  const accountRef = db.ref(`treasury/${accountId}`);
+  const newRef = accountRef.push();
+  
+  newRef.set(newRow)
+    .then(() => {
+      console.log('New row added successfully');
+    })
+    .catch(error => {
+      console.error('Error adding row:', error);
+      alert('حدث خطأ أثناء إضافة الحركة المالية');
+    });
+}
+
+// Update Field
+function updateField(accountId, rowId, field, value) {
+  let updateValue = value;
+  
+  // Convert number fields
+  if (field === 'income' || field === 'expense') {
+    updateValue = parseFloat(value) || 0;
+  }
+  
+  const updates = {
+    [field]: updateValue,
+    updatedAt: firebase.database.ServerValue.TIMESTAMP
+  };
+  
+  db.ref(`treasury/${accountId}/${rowId}`).update(updates)
+    .then(() => {
+      console.log(`Field ${field} updated successfully`);
+    })
+    .catch(error => {
+      console.error('Error updating field:', error);
+    });
+}
+
+// Delete Row
+function deleteRow(accountId, rowId) {
+  if (!confirm('هل أنت متأكد من حذف هذه الحركة المالية؟')) {
+    return;
+  }
+  
+  db.ref(`treasury/${accountId}/${rowId}`).remove()
+    .then(() => {
+      console.log('Row deleted successfully');
+    })
+    .catch(error => {
+      console.error('Error deleting row:', error);
+      alert('حدث خطأ أثناء حذف الحركة المالية');
+    });
+}
+
+// Upload File
+function uploadFile(accountId, rowId, file) {
+  if (!file) return;
+  
+  const storageRef = storage.ref(`treasury/${accountId}/${rowId}/${file.name}`);
+  const uploadTask = storageRef.put(file);
+  
+  uploadTask.on('state_changed', 
+    (snapshot) => {
+      // Handle upload progress
+      console.log('Upload progress:', snapshot.bytesTransferred / snapshot.totalBytes);
+    },
+    (error) => {
+      console.error('Upload error:', error);
+      alert('حدث خطأ أثناء رفع الملف');
+    },
+    () => {
+      // Handle successful upload
+      uploadTask.snapshot.ref.getDownloadURL().then(downloadURL => {
+        updateField(accountId, rowId, 'attachment', downloadURL);
+        console.log('File uploaded successfully:', downloadURL);
+      });
+    }
+  );
+}
+
+// Transfer Modal Functions
+function openTransferModal() {
+  document.getElementById('transferModal').classList.add('active');
+}
+
+function closeTransferModal() {
+  document.getElementById('transferModal').classList.remove('active');
+  document.getElementById('transferForm').reset();
+  document.getElementById('transferDate').value = today;
+}
+
+// Handle Transfer
+function handleTransfer(event) {
+  event.preventDefault();
+  
+  const fromAccount = document.getElementById('fromAccount').value;
+  const toAccount = document.getElementById('toAccount').value;
+  const amount = parseFloat(document.getElementById('transferAmount').value);
+  const description = document.getElementById('transferDescription').value;
+  const date = document.getElementById('transferDate').value;
+  
+  if (fromAccount === toAccount) {
+    alert('لا يمكن التحويل إلى نفس الحساب');
+    return;
+  }
+  
+  // Create transfer transactions
+  const fromTransaction = {
+    date: date,
+    description: `تحويل إلى: ${getAccountName(toAccount)} - ${description}`,
+    expense: amount,
+    income: 0,
+    notes: `تحويل مالي إلى ${getAccountName(toAccount)}`,
+    createdAt: firebase.database.ServerValue.TIMESTAMP,
+    updatedAt: firebase.database.ServerValue.TIMESTAMP
+  };
+  
+  const toTransaction = {
+    date: date,
+    description: `تحويل من: ${getAccountName(fromAccount)} - ${description}`,
+    income: amount,
+    expense: 0,
+    notes: `تحويل مالي من ${getAccountName(fromAccount)}`,
+    createdAt: firebase.database.ServerValue.TIMESTAMP,
+    updatedAt: firebase.database.ServerValue.TIMESTAMP
+  };
+  
+  // Execute both transactions
+  Promise.all([
+    db.ref(`treasury/${fromAccount}`).push().set(fromTransaction),
+    db.ref(`treasury/${toAccount}`).push().set(toTransaction)
+  ]).then(() => {
+    alert('تم تنفيذ التحويل بنجاح');
+    closeTransferModal();
+  }).catch(error => {
+    console.error('Transfer error:', error);
+    alert('حدث خطأ أثناء تنفيذ التحويل');
+  });
+}
+
+// Get Account Name
+function getAccountName(accountId) {
+  const account = TREASURY_ACCOUNTS.find(acc => acc.id === accountId);
+  return account ? account.name : accountId;
+}
+
+// Export Data
+function exportData() {
+  // This will be implemented with Excel export functionality
+  alert('سيتم تنفيذ تصدير Excel قريباً');
+}
+
+// Filter Data
+function filterData(accountId) {
+  // This will be implemented with filtering functionality
+  alert('سيتم تنفيذ الفلترة قريباً');
+}
+
+// Navigation Functions
+function goBack() {
+  window.location.href = 'dashboard.html';
+}
+
+function logout() {
+  auth.signOut().then(() => {
+    window.location.href = 'index.html';
+  });
+}
+
+// Global Functions
+window.switchTab = switchTab;
+window.addRow = addRow;
+window.updateField = updateField;
+window.deleteRow = deleteRow;
+window.uploadFile = uploadFile;
+window.openTransferModal = openTransferModal;
+window.closeTransferModal = closeTransferModal;
+window.exportData = exportData;
+window.filterData = filterData;
+window.goBack = goBack;
+window.logout = logout;
+</script>
+</body>
+</html>
