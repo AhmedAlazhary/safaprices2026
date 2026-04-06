@@ -645,8 +645,10 @@ header {
             <td id="alexPreviousCustody">0.00</td>
           </tr>
           <tr>
-            <td>بنود التصفية</td>
-            <td id="alexClearanceItems">0</td>
+            <td><strong></strong>بنود التصفية</strong></td>
+            <td id="alexClearanceItems">
+              <div id="alexClearanceItemsList"></div>
+            </td>
           </tr>
           <tr>
             <td>إجمالي التصفية اليومية</td>
@@ -676,8 +678,10 @@ header {
             <td id="dekPreviousCustody">0.00</td>
           </tr>
           <tr>
-            <td>بنود التصفية</td>
-            <td id="dekClearanceItems">0</td>
+            <td><strong>بنود التصفية</strong></td>
+            <td id="dekClearanceItems">
+              <div id="dekClearanceItemsList"></div>
+            </td>
           </tr>
           <tr>
             <td>إجمالي التصفية اليومية</td>
@@ -720,6 +724,19 @@ firebase.initializeApp(firebaseConfig);
 
 const db = firebase.database();
 const auth = firebase.auth();
+
+// IMMEDIATE GLOBAL FUNCTIONS - Available before everything else
+window.addRow = function(branch) {
+  console.log('IMMEDIATE addRow called for:', branch);
+  alert('جاري إضافة صف جديد لـ ' + (branch === 'alexandria' ? 'الإسكندرية' : 'الدخيلة'));
+};
+
+window.deleteRow = function(branch, rowId) {
+  console.log('IMMEDIATE deleteRow called for:', branch, rowId);
+  if (confirm('هل أنت متأكد من حذف هذا الصف؟')) {
+    alert('جاري حذف الصف');
+  }
+};
 
 // Global state
 let warehouseData = {
@@ -870,6 +887,54 @@ function createWarehouseRow(overrides = {}) {
   };
 }
 
+// Make addRow globally accessible IMMEDIATELY
+window.addRow = function(branch) {
+  console.log('addRow called for:', branch);
+  
+  if (!warehouseData) {
+    warehouseData = { alexandria: [], dekkela: [] };
+  }
+  
+  const newRow = createWarehouseRow();
+  
+  // Add to local data first (like daily.html)
+  if (!warehouseData[branch]) {
+    warehouseData[branch] = [];
+  }
+  warehouseData[branch].unshift(newRow); // Add to beginning
+  
+  // Save to Firebase
+  db.ref(`warehouse/${branch}/${newRow.id}`).set(newRow)
+    .then(() => {
+      console.log('New row added with ID:', newRow.id);
+      renderTable(branch);
+      calculateTotals();
+      generateDailyReport(branch);
+    })
+    .catch(error => {
+      console.error('Error adding row:', error);
+      alert('حدث خطأ أثناء إضافة الصف الجديد');
+      // Remove from local data if Firebase save failed
+      warehouseData[branch] = warehouseData[branch].filter(row => row.id !== newRow.id);
+      renderTable(branch);
+    });
+};
+
+// Make deleteRow globally accessible IMMEDIATELY  
+window.deleteRow = async function(branch, rowId) {
+  if (!confirm('هل أنت متأكد من حذف هذا الصف؟')) {
+    return;
+  }
+
+  try {
+    await db.ref(`warehouse/${branch}/${rowId}`).remove();
+    console.log('Row deleted successfully');
+  } catch (error) {
+    console.error('Error deleting row:', error);
+    alert('حدث خطأ أثناء حذف الصف');
+  }
+};
+
 // Add new row - make globally accessible (like daily.html)
 function addRow(branch) {
   const newRow = createWarehouseRow();
@@ -983,14 +1048,30 @@ function generateDailyReport(branch) {
   // Today's calculations
   const todayCredit = todayData.reduce((sum, row) => sum + (parseFloat(row.credit) || 0), 0);
   const todayDebit = todayData.reduce((sum, row) => sum + (parseFloat(row.debit) || 0), 0);
-  const clearanceItems = todayData.filter(row => parseFloat(row.debit) > 0).length;
+  
+  // Get clearance items with details
+  const clearanceItems = todayData.filter(row => parseFloat(row.debit) > 0);
   const afterClearance = previousTotal - todayDebit;
   const finalTotal = afterClearance + todayCredit;
 
   // Update report DOM
   const prefix = branch === 'alexandria' ? 'alex' : 'dek';
   document.getElementById(`${prefix}PreviousCustody`).textContent = previousTotal.toFixed(2);
-  document.getElementById(`${prefix}ClearanceItems`).textContent = clearanceItems;
+  
+  // Display individual clearance items
+  const clearanceListId = `${prefix}ClearanceItemsList`;
+  const clearanceListElement = document.getElementById(clearanceListId);
+  
+  if (clearanceItems.length > 0) {
+    clearanceListElement.innerHTML = clearanceItems.map(item => 
+      `<div style="margin-bottom: 4px; padding: 4px; background: #f8f9fa; border-radius: 4px; font-size: 0.85rem;">
+        <strong>${item.description || 'بدون بيان'}</strong>: ${parseFloat(item.debit).toFixed(2)} جنية
+      </div>`
+    ).join('');
+  } else {
+    clearanceListElement.innerHTML = '<div style="color: var(--muted); font-size: 0.85rem;">لا توجد بنود تصفية اليوم</div>';
+  }
+  
   document.getElementById(`${prefix}DailyClearance`).textContent = todayDebit.toFixed(2);
   document.getElementById(`${prefix}AfterClearance`).textContent = afterClearance.toFixed(2);
   document.getElementById(`${prefix}TodayCustody`).textContent = todayCredit.toFixed(2);

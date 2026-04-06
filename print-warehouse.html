@@ -231,13 +231,23 @@ function generateDailyReport(data, branch) {
   // Today's calculations
   const todayCredit = todayData.reduce((sum, row) => sum + (parseFloat(row.credit) || 0), 0);
   const todayDebit = todayData.reduce((sum, row) => sum + (parseFloat(row.debit) || 0), 0);
-  const clearanceItems = todayData.filter(row => parseFloat(row.debit) > 0).length;
+  
+  // Get clearance items with details
+  const clearanceItems = todayData.filter(row => parseFloat(row.debit) > 0);
+  const clearanceItemsHtml = clearanceItems.length > 0 
+    ? clearanceItems.map(item => 
+        `<div style="margin-bottom: 4px; padding: 4px; background: #f8f9fa; border-radius: 4px; font-size: 0.85rem;">
+          <strong>${item.description || 'بدون بيان'}</strong>: ${parseFloat(item.debit).toFixed(2)} جنية
+        </div>`
+      ).join('')
+    : '<div style="color: var(--muted); font-size: 0.85rem;">لا توجد بنود تصفية اليوم</div>';
+  
   const afterClearance = previousTotal - todayDebit;
   const finalTotal = afterClearance + todayCredit;
 
   return {
     previous: previousTotal.toFixed(2),
-    clearanceItems: clearanceItems,
+    clearanceItems: clearanceItemsHtml,
     dailyClearance: todayDebit.toFixed(2),
     afterClearance: afterClearance.toFixed(2),
     todayCustody: todayCredit.toFixed(2),
@@ -264,7 +274,7 @@ function renderPrintPage(alexandriaData, dekkelaData) {
             <td>${alexReport.previous}</td>
           </tr>
           <tr>
-            <td>بنود التصفية</td>
+            <td><strong>بنود التصفية</strong></td>
             <td>${alexReport.clearanceItems}</td>
           </tr>
           <tr>
@@ -295,7 +305,7 @@ function renderPrintPage(alexandriaData, dekkelaData) {
             <td>${dekkelaReport.previous}</td>
           </tr>
           <tr>
-            <td>بنود التصفية</td>
+            <td><strong>بنود التصفية</strong></td>
             <td>${dekkelaReport.clearanceItems}</td>
           </tr>
           <tr>
