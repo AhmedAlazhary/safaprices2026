@@ -114,6 +114,11 @@
             color: white;
         }
 
+        .btn-info {
+            background: var(--info);
+            color: white;
+        }
+
         .btn-ghost {
             background: transparent;
             color: white;
@@ -185,6 +190,40 @@
             justify-content: space-between;
             font-size: 0.8rem;
             color: var(--muted);
+        }
+
+        /* Print Styles for Summary Only */
+        @media print {
+            body * {
+                visibility: hidden;
+            }
+            
+            .summary-section, .summary-section * {
+                visibility: visible;
+            }
+            
+            .summary-section {
+                position: absolute;
+                left: 0;
+                top: 0;
+                width: 100%;
+                padding: 2rem;
+            }
+            
+            .summary-grid {
+                display: grid !important;
+                grid-template-columns: repeat(auto-fit, minmax(300px, 1fr)) !important;
+                gap: 1.5rem !important;
+            }
+            
+            .summary-card {
+                break-inside: avoid;
+                page-break-inside: avoid;
+            }
+            
+            header, .tabs-container, .modal {
+                display: none !important;
+            }
         }
 
         /* Tabs */
@@ -509,6 +548,16 @@
 <div class="container">
     <!-- Summary Cards Section -->
     <section class="summary-section">
+        <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 1.5rem; flex-wrap: wrap; gap: 1rem;">
+            <h2 style="color: white; font-size: 1.5rem; font-weight: 700; margin: 0;">
+                <i class="fas fa-chart-pie"></i>
+                ملخص الحسابات
+            </h2>
+            <button class="btn btn-info" onclick="printSummaryOnly()">
+                <i class="fas fa-print"></i>
+                طباعة الملخصات
+            </button>
+        </div>
         <div class="summary-grid" id="summaryGrid">
             <!-- Summary cards will be generated dynamically -->
         </div>
@@ -682,6 +731,7 @@ function setupTabs() {
             <tr>
               <th>التاريخ</th>
               <th>البيان</th>
+              <th>المستلم</th>
               <th>إيراد</th>
               <th>مصروف</th>
               <th>المرفقات</th>
@@ -780,7 +830,7 @@ function renderAccountTable(accountId) {
   if (data.length === 0) {
     tbody.innerHTML = `
       <tr>
-        <td colspan="7" style="text-align: center; color: var(--muted);">
+        <td colspan="8" style="text-align: center; color: var(--muted);">
           لا توجد حركات مالية
         </td>
       </tr>
@@ -798,6 +848,11 @@ function renderAccountTable(accountId) {
         <input type="text" value="${row.description || ''}" 
                placeholder="أدخل البيان"
                onchange="updateField('${accountId}', '${row.id}', 'description', this.value)">
+      </td>
+      <td>
+        <input type="text" value="${row.recipient || ''}" 
+               placeholder="أدخل اسم المستلم"
+               onchange="updateField('${accountId}', '${row.id}', 'recipient', this.value)">
       </td>
       <td>
         <input type="number" class="income-input" value="${row.income || 0}" 
@@ -876,6 +931,7 @@ function addRow(accountId) {
   const newRow = {
     date: today,
     description: '',
+    recipient: '',
     income: 0,
     expense: 0,
     notes: '',
@@ -1028,6 +1084,11 @@ function getAccountName(accountId) {
   return account ? account.name : accountId;
 }
 
+// Print Summary Only
+function printSummaryOnly() {
+  window.print();
+}
+
 // Export Data
 function exportData() {
   // This will be implemented with Excel export functionality
@@ -1061,6 +1122,7 @@ window.openTransferModal = openTransferModal;
 window.closeTransferModal = closeTransferModal;
 window.exportData = exportData;
 window.filterData = filterData;
+window.printSummaryOnly = printSummaryOnly;
 window.goBack = goBack;
 window.logout = logout;
 </script>
