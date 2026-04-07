@@ -525,22 +525,34 @@
             <h1>الخزينة والبنوك</h1>
         </div>
         <div class="header-actions">
-            <button class="btn btn-primary" onclick="openTransferModal()">
-                <i class="fas fa-exchange-alt"></i>
-                تحويل مالي
-            </button>
-            <button class="btn btn-success" onclick="exportData()">
-                <i class="fas fa-download"></i>
-                تصدير Excel
-            </button>
-            <button class="btn btn-ghost" onclick="goBack()">
-                <i class="fas fa-arrow-left"></i>
-                العودة
-            </button>
-            <button class="btn btn-danger" onclick="logout()">
-                <i class="fas fa-sign-out-alt"></i>
-                خروج
-            </button>
+            <div style="display: flex; align-items: center; gap: 1rem; margin-left: auto;">
+                <div style="display: flex; align-items: center; gap: 0.5rem; background: rgba(255,255,255,0.1); padding: 0.5rem 1rem; border-radius: 8px;">
+                    <label for="selectedDate" style="color: white; font-size: 0.9rem; font-weight: 600;">:</label>
+                    <input type="date" id="selectedDate" style="background: rgba(255,255,255,0.9); border: none; padding: 0.3rem 0.5rem; border-radius: 4px; font-weight: 600;" onchange="changeSelectedDate()">
+                </div>
+                <button class="btn btn-warning" onclick="openDayClosureModal()" id="dayClosureBtn" style="display: none;">
+                    <i class="fas fa-lock"></i>
+                    <span id="dayClosureText">...</span>
+                </button>
+            </div>
+            <div style="display: flex; gap: 1rem;">
+                <button class="btn btn-primary" onclick="openTransferModal()">
+                    <i class="fas fa-exchange-alt"></i>
+                    تحويل مالي
+                </button>
+                <button class="btn btn-success" onclick="exportData()">
+                    <i class="fas fa-download"></i>
+                    تصدير Excel
+                </button>
+                <button class="btn btn-ghost" onclick="goBack()">
+                    <i class="fas fa-arrow-left"></i>
+                    العودة
+                </button>
+                <button class="btn btn-danger" onclick="logout()">
+                    <i class="fas fa-sign-out-alt"></i>
+                    خروج
+                </button>
+            </div>
         </div>
     </div>
 </header>
@@ -549,10 +561,15 @@
     <!-- Summary Cards Section -->
     <section class="summary-section">
         <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 1.5rem; flex-wrap: wrap; gap: 1rem;">
-            <h2 style="color: white; font-size: 1.5rem; font-weight: 700; margin: 0;">
-                <i class="fas fa-chart-pie"></i>
-                ملخص الحسابات
-            </h2>
+            <div>
+                <h2 style="color: white; font-size: 1.5rem; font-weight: 700; margin: 0;">
+                    <i class="fas fa-chart-pie"></i>
+                    <span id="summaryTitle">...</span>
+                </h2>
+                <div style="color: rgba(255,255,255,0.8); font-size: 0.9rem; margin-top: 0.5rem;">
+                    <span id="openingBalanceInfo">...</span>
+                </div>
+            </div>
             <button class="btn btn-info" onclick="printSummaryOnly()">
                 <i class="fas fa-print"></i>
                 طباعة الملخصات
@@ -616,6 +633,22 @@
     </div>
 </div>
 
+<!-- Day Closure Modal -->
+<div class="modal" id="dayClosureModal">
+    <div class="modal-content" style="max-width: 600px;">
+        <div class="modal-header">
+            <h3 class="modal-title">
+                <i class="fas fa-lock"></i>
+                <span id="dayClosureModalTitle">...</span>
+            </h3>
+            <button class="modal-close" onclick="closeDayClosureModal()">&times;</button>
+        </div>
+        <div id="dayClosureContent">
+            <!-- Content will be generated dynamically -->
+        </div>
+    </div>
+</div>
+
 <!-- Firebase Scripts -->
 <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-app-compat.js"></script>
 <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-auth-compat.js"></script>
@@ -660,8 +693,13 @@ const TREASURY_ACCOUNTS = [
 // Global State
 let currentUser = null;
 let treasuryData = {};
+let archivedData = {};
+let dayStatus = {};
+let openingBalances = {};
 let currentTab = 'cash';
+let selectedDate = new Date().toISOString().split('T')[0];
 let today = new Date().toISOString().split('T')[0];
+let isReadOnly = false;
 
 // Initialize Application
 auth.onAuthStateChanged(user => {
@@ -685,10 +723,22 @@ function checkUserPermissions(user) {
 
 // Initialize Treasury System
 function initializeTreasury() {
+  setupDateSelector();
   setupTabs();
   setupSummaryCards();
   setupEventListeners();
+  loadDayStatus();
   loadTreasuryData();
+  updateUIForSelectedDate();
+}
+
+// Setup Date Selector
+function setupDateSelector() {
+  const dateInput = document.getElementById('selectedDate');
+  dateInput.value = selectedDate;
+  
+  // Set max date to today
+  dateInput.max = today;
 }
 
 // Setup Tabs
@@ -792,11 +842,32 @@ function setupTransferAccounts() {
   toAccount.innerHTML = '<option value="">اختر الحساب المستهدف</option>' + accountOptions;
 }
 
+// Load Day Status
+function loadDayStatus() {
+  const dayStatusRef = db.ref('dayStatus');
+  
+  dayStatusRef.on('value', snapshot => {
+    dayStatus = snapshot.val() || {};
+    updateDayClosureButton();
+  });
+}
+
+// Load Opening Balances
+function loadOpeningBalances() {
+  const openingBalancesRef = db.ref('openingBalances');
+  
+  openingBalancesRef.on('value', snapshot => {
+    openingBalances = snapshot.val() || {};
+    updateOpeningBalanceInfo();
+  });
+}
+
 // Load Treasury Data
 function loadTreasuryData() {
   TREASURY_ACCOUNTS.forEach(account => {
     loadAccountData(account.id);
   });
+  loadOpeningBalances();
 }
 
 // Load Account Data
@@ -808,7 +879,7 @@ function loadAccountData(accountId) {
     treasuryData[accountId] = Object.keys(data).map(key => ({
       id: key,
       ...data[key]
-    }));
+    })).filter(row => row.date === selectedDate); // Filter by selected date
     
     renderAccountTable(accountId);
     updateSummaryCard(accountId);
@@ -831,7 +902,7 @@ function renderAccountTable(accountId) {
     tbody.innerHTML = `
       <tr>
         <td colspan="8" style="text-align: center; color: var(--muted);">
-          لا توجد حركات مالية
+          ${isReadOnly ? 'No transactions for this archived date' : 'No financial transactions'}
         </td>
       </tr>
     `;
@@ -841,47 +912,67 @@ function renderAccountTable(accountId) {
   tbody.innerHTML = data.map(row => `
     <tr data-id="${row.id}">
       <td>
-        <input type="date" value="${row.date || today}" 
-               onchange="updateField('${accountId}', '${row.id}', 'date', this.value)">
+        ${isReadOnly ? 
+          `<span>${row.date || today}</span>` :
+          `<input type="date" value="${row.date || today}" 
+                 onchange="updateField('${accountId}', '${row.id}', 'date', this.value)">`
+        }
       </td>
       <td>
-        <input type="text" value="${row.description || ''}" 
-               placeholder="أدخل البيان"
-               onchange="updateField('${accountId}', '${row.id}', 'description', this.value)">
+        ${isReadOnly ? 
+          `<span>${row.description || '-'}</span>` :
+          `<input type="text" value="${row.description || ''}" 
+                 placeholder="Enter description"
+                 onchange="updateField('${accountId}', '${row.id}', 'description', this.value)">`
+        }
       </td>
       <td>
-        <input type="text" value="${row.recipient || ''}" 
-               placeholder="أدخل اسم المستلم"
-               onchange="updateField('${accountId}', '${row.id}', 'recipient', this.value)">
+        ${isReadOnly ? 
+          `<span>${row.recipient || '-'}</span>` :
+          `<input type="text" value="${row.recipient || ''}" 
+                 placeholder="Enter recipient name"
+                 onchange="updateField('${accountId}', '${row.id}', 'recipient', this.value)">`
+        }
       </td>
       <td>
-        <input type="number" class="income-input" value="${row.income || 0}" 
-               step="0.01" min="0" placeholder="0.00"
-               onchange="updateField('${accountId}', '${row.id}', 'income', this.value)">
+        ${isReadOnly ? 
+          `<span style="color: var(--success); font-weight: 600;">${parseFloat(row.income || 0).toFixed(2)}</span>` :
+          `<input type="number" class="income-input" value="${row.income || 0}" 
+                 step="0.01" min="0" placeholder="0.00"
+                 onchange="updateField('${accountId}', '${row.id}', 'income', this.value)">`
+        }
       </td>
       <td>
-        <input type="number" class="expense-input" value="${row.expense || 0}" 
-               step="0.01" min="0" placeholder="0.00"
-               onchange="updateField('${accountId}', '${row.id}', 'expense', this.value)">
+        ${isReadOnly ? 
+          `<span style="color: var(--danger); font-weight: 600;">${parseFloat(row.expense || 0).toFixed(2)}</span>` :
+          `<input type="number" class="expense-input" value="${row.expense || 0}" 
+                 step="0.01" min="0" placeholder="0.00"
+                 onchange="updateField('${accountId}', '${row.id}', 'expense', this.value)">`
+        }
       </td>
       <td>
-        <div class="file-upload">
-          <input type="file" accept="image/*" onchange="uploadFile('${accountId}', '${row.id}', this.files[0])">
-          <label class="file-upload-label">
-            <i class="fas fa-paperclip"></i>
-            ${row.attachment ? 'تم الرفع' : 'رفع مرفق'}
-          </label>
-        </div>
+        ${row.attachment ? 
+          `<a href="${row.attachment}" target="_blank" style="color: var(--info);">
+            <i class="fas fa-paperclip"></i> Attached
+          </a>` :
+          `<span style="color: var(--muted);">No attachment</span>`
+        }
       </td>
       <td>
-        <input type="text" value="${row.notes || ''}" 
-               placeholder="ملاحظات"
-               onchange="updateField('${accountId}', '${row.id}', 'notes', this.value)">
+        ${isReadOnly ? 
+          `<span>${row.notes || '-'}</span>` :
+          `<input type="text" value="${row.notes || ''}" 
+                 placeholder="Notes"
+                 onchange="updateField('${accountId}', '${row.id}', 'notes', this.value)">`
+        }
       </td>
       <td>
-        <button class="btn btn-danger" onclick="deleteRow('${accountId}', '${row.id}')">
-          <i class="fas fa-trash"></i>
-        </button>
+        ${isReadOnly ? 
+          `<span style="color: var(--muted);">Read-only</span>` :
+          `<button class="btn btn-danger" onclick="deleteRow('${accountId}', '${row.id}')">
+            <i class="fas fa-trash"></i>
+          </button>`
+        }
       </td>
     </tr>
   `).join('');
@@ -893,7 +984,10 @@ function updateSummaryCard(accountId) {
   
   const totalIncome = data.reduce((sum, row) => sum + (parseFloat(row.income) || 0), 0);
   const totalExpense = data.reduce((sum, row) => sum + (parseFloat(row.expense) || 0), 0);
-  const balance = totalIncome - totalExpense;
+  
+  // Get opening balance for selected date
+  const openingBalance = getOpeningBalance(accountId, selectedDate);
+  const balance = openingBalance + totalIncome - totalExpense;
   
   document.getElementById(`income-${accountId}`).textContent = totalIncome.toFixed(2);
   document.getElementById(`expense-${accountId}`).textContent = totalExpense.toFixed(2);
@@ -907,6 +1001,27 @@ function updateSummaryCard(accountId) {
   } else if (balance < 0) {
     summaryCard.classList.add('negative');
   }
+}
+
+// Get Opening Balance
+function getOpeningBalance(accountId, date) {
+  // For today, use the stored opening balance
+  if (date === today) {
+    return openingBalances[accountId] || 0;
+  }
+  
+  // For archived dates, calculate from previous day's closing balance
+  const previousDate = new Date(date);
+  previousDate.setDate(previousDate.getDate() - 1);
+  const previousDateStr = previousDate.toISOString().split('T')[0];
+  
+  // Check if previous day was closed
+  if (dayStatus[previousDateStr] && dayStatus[previousDateStr].closed) {
+    return dayStatus[previousDateStr].closingBalances[accountId] || 0;
+  }
+  
+  // If not closed, use opening balance
+  return openingBalances[accountId] || 0;
 }
 
 // Switch Tab
@@ -926,10 +1041,103 @@ function switchTab(accountId) {
   document.getElementById(`tab-${accountId}`).classList.add('active');
 }
 
+// Change Selected Date
+function changeSelectedDate() {
+  const dateInput = document.getElementById('selectedDate');
+  selectedDate = dateInput.value;
+  
+  // Update UI for selected date
+  updateUIForSelectedDate();
+  
+  // Reload data for new date
+  loadTreasuryData();
+}
+
+// Update UI for Selected Date
+function updateUIForSelectedDate() {
+  isReadOnly = selectedDate !== today;
+  
+  // Update summary title
+  const summaryTitle = document.getElementById('summaryTitle');
+  const openingBalanceInfo = document.getElementById('openingBalanceInfo');
+  
+  if (selectedDate === today) {
+    summaryTitle.textContent = 'Today\'s Treasury Summary';
+    openingBalanceInfo.textContent = 'Opening balance: ' + Object.values(openingBalances).reduce((sum, bal) => sum + bal, 0).toFixed(2) + ' EGP';
+  } else {
+    const dateObj = new Date(selectedDate + 'T00:00:00');
+    summaryTitle.textContent = `Treasury Summary - ${dateObj.toLocaleDateString('ar-EG', { weekday: 'long', year: 'numeric', month: 'long', day: 'numeric' })}`;
+    
+    const totalOpeningBalance = TREASURY_ACCOUNTS.reduce((sum, account) => {
+      return sum + getOpeningBalance(account.id, selectedDate);
+    }, 0);
+    openingBalanceInfo.textContent = 'Opening balance: ' + totalOpeningBalance.toFixed(2) + ' EGP';
+  }
+  
+  // Update day closure button
+  updateDayClosureButton();
+  
+  // Update add row buttons
+  updateAddRowButtons();
+}
+
+// Update Day Closure Button
+function updateDayClosureButton() {
+  const dayClosureBtn = document.getElementById('dayClosureBtn');
+  const dayClosureText = document.getElementById('dayClosureText');
+  
+  if (selectedDate === today) {
+    const todayStatus = dayStatus[today];
+    
+    if (todayStatus && todayStatus.closed) {
+      dayClosureBtn.style.display = 'block';
+      dayClosureBtn.className = 'btn btn-success';
+      dayClosureText.textContent = 'Day Closed';
+      dayClosureBtn.disabled = true;
+    } else {
+      dayClosureBtn.style.display = 'block';
+      dayClosureBtn.className = 'btn btn-warning';
+      dayClosureText.textContent = 'Close Day';
+      dayClosureBtn.disabled = false;
+    }
+  } else {
+    const dateStatus = dayStatus[selectedDate];
+    
+    if (dateStatus && dateStatus.closed) {
+      dayClosureBtn.style.display = 'block';
+      dayClosureBtn.className = 'btn btn-success';
+      dayClosureText.textContent = 'Archived';
+      dayClosureBtn.disabled = true;
+    } else {
+      dayClosureBtn.style.display = 'none';
+    }
+  }
+}
+
+// Update Add Row Buttons
+function updateAddRowButtons() {
+  TREASURY_ACCOUNTS.forEach(account => {
+    const addBtn = document.querySelector(`button[onclick="addRow('${account.id}')"]`);
+    if (addBtn) {
+      addBtn.style.display = isReadOnly ? 'none' : 'inline-flex';
+    }
+  });
+}
+
+// Update Opening Balance Info
+function updateOpeningBalanceInfo() {
+  updateUIForSelectedDate();
+}
+
 // Add Row
 function addRow(accountId) {
+  if (isReadOnly) {
+    alert('Cannot add transactions to archived dates');
+    return;
+  }
+  
   const newRow = {
-    date: today,
+    date: selectedDate,
     description: '',
     recipient: '',
     income: 0,
@@ -949,12 +1157,17 @@ function addRow(accountId) {
     })
     .catch(error => {
       console.error('Error adding row:', error);
-      alert('حدث خطأ أثناء إضافة الحركة المالية');
+      alert('Error adding financial transaction');
     });
 }
 
 // Update Field
 function updateField(accountId, rowId, field, value) {
+  if (isReadOnly) {
+    alert('Cannot modify archived transactions');
+    return;
+  }
+  
   let updateValue = value;
   
   // Convert number fields
@@ -978,7 +1191,12 @@ function updateField(accountId, rowId, field, value) {
 
 // Delete Row
 function deleteRow(accountId, rowId) {
-  if (!confirm('هل أنت متأكد من حذف هذه الحركة المالية؟')) {
+  if (isReadOnly) {
+    alert('Cannot delete archived transactions');
+    return;
+  }
+  
+  if (!confirm('Are you sure you want to delete this financial transaction?')) {
     return;
   }
   
@@ -988,7 +1206,124 @@ function deleteRow(accountId, rowId) {
     })
     .catch(error => {
       console.error('Error deleting row:', error);
-      alert('حدث خطأ أثناء حذف الحركة المالية');
+      alert('Error deleting financial transaction');
+    });
+}
+
+// Open Day Closure Modal
+function openDayClosureModal() {
+  if (selectedDate !== today) return;
+  
+  const modal = document.getElementById('dayClosureModal');
+  const title = document.getElementById('dayClosureModalTitle');
+  const content = document.getElementById('dayClosureContent');
+  
+  title.textContent = 'Close Day - ' + today;
+  
+  // Generate closure summary
+  const closingBalances = {};
+  TREASURY_ACCOUNTS.forEach(account => {
+    const data = treasuryData[account.id] || [];
+    const totalIncome = data.reduce((sum, row) => sum + (parseFloat(row.income) || 0), 0);
+    const totalExpense = data.reduce((sum, row) => sum + (parseFloat(row.expense) || 0), 0);
+    const openingBalance = getOpeningBalance(account.id, today);
+    closingBalances[account.id] = openingBalance + totalIncome - totalExpense;
+  });
+  
+  content.innerHTML = `
+    <div style="margin-bottom: 1.5rem;">
+      <h4 style="color: var(--primary); margin-bottom: 1rem;">Day Summary - ${today}</h4>
+      <div style="background: var(--light); padding: 1rem; border-radius: 8px;">
+        ${TREASURY_ACCOUNTS.map(account => `
+          <div style="display: flex; justify-content: space-between; margin-bottom: 0.5rem;">
+            <span>${account.name}:</span>
+            <strong style="color: ${closingBalances[account.id] >= 0 ? 'var(--success)' : 'var(--danger)'};">
+              ${closingBalances[account.id].toFixed(2)} EGP
+            </strong>
+          </div>
+        `).join('')}
+      </div>
+    </div>
+    
+    <div style="margin-bottom: 1.5rem;">
+      <label class="form-label">Physical Cash Count (Optional)</label>
+      <input type="number" class="form-control" id="physicalCashCount" step="0.01" placeholder="Enter physical cash count for verification">
+    </div>
+    
+    <div style="margin-bottom: 1.5rem;">
+      <label class="form-label">Notes</label>
+      <textarea class="form-control" id="closureNotes" rows="3" placeholder="Any notes about day closure..."></textarea>
+    </div>
+    
+    <div style="background: #fff3cd; border: 1px solid #ffeaa7; padding: 1rem; border-radius: 8px; margin-bottom: 1.5rem;">
+      <strong style="color: #856404;">Warning:</strong>
+      <p style="margin: 0.5rem 0 0 0; color: #856404; font-size: 0.9rem;">
+        Once you close the day, all transactions will be archived and you won't be able to modify them. 
+        Make sure all physical cash matches the system balances before proceeding.
+      </p>
+    </div>
+    
+    <div style="display: flex; gap: 1rem; justify-content: flex-end;">
+      <button type="button" class="btn btn-ghost" onclick="closeDayClosureModal()">Cancel</button>
+      <button type="button" class="btn btn-warning" onclick="executeDayClosure()">
+        <i class="fas fa-lock"></i>
+        Close Day
+      </button>
+    </div>
+  `;
+  
+  modal.classList.add('active');
+}
+
+// Close Day Closure Modal
+function closeDayClosureModal() {
+  const modal = document.getElementById('dayClosureModal');
+  modal.classList.remove('active');
+}
+
+// Execute Day Closure
+function executeDayClosure() {
+  if (!confirm('Are you sure you want to close the day? This action cannot be undone.')) {
+    return;
+  }
+  
+  const physicalCashCount = parseFloat(document.getElementById('physicalCashCount').value) || 0;
+  const closureNotes = document.getElementById('closureNotes').value;
+  
+  // Calculate closing balances
+  const closingBalances = {};
+  TREASURY_ACCOUNTS.forEach(account => {
+    const data = treasuryData[account.id] || [];
+    const totalIncome = data.reduce((sum, row) => sum + (parseFloat(row.income) || 0), 0);
+    const totalExpense = data.reduce((sum, row) => sum + (parseFloat(row.expense) || 0), 0);
+    const openingBalance = getOpeningBalance(account.id, today);
+    closingBalances[account.id] = openingBalance + totalIncome - totalExpense;
+  });
+  
+  // Create day closure record
+  const dayClosureData = {
+    date: today,
+    closed: true,
+    closedAt: firebase.database.ServerValue.TIMESTAMP,
+    closedBy: currentUser.email,
+    closingBalances: closingBalances,
+    physicalCashCount: physicalCashCount,
+    notes: closureNotes,
+    transactionCount: TREASURY_ACCOUNTS.reduce((sum, account) => {
+      return sum + (treasuryData[account.id] || []).length;
+    }, 0)
+  };
+  
+  // Update day status
+  db.ref(`dayStatus/${today}`).set(dayClosureData)
+    .then(() => {
+      console.log('Day closed successfully');
+      closeDayClosureModal();
+      alert('Day closed successfully! All transactions have been archived.');
+    })
+    .catch(error => {
+      console.error('Error closing day:', error);
+      alert('Error closing day. Please try again.');
     });
 }
 
@@ -1123,6 +1458,9 @@ window.closeTransferModal = closeTransferModal;
 window.exportData = exportData;
 window.filterData = filterData;
 window.printSummaryOnly = printSummaryOnly;
+window.changeSelectedDate = changeSelectedDate;
+window.openDayClosureModal = openDayClosureModal;
+window.closeDayClosureModal = closeDayClosureModal;
 window.goBack = goBack;
 window.logout = logout;
 </script>
