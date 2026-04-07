@@ -898,109 +898,163 @@ function renderAccountTable(accountId) {
   loading.style.display = 'none';
   table.style.display = 'table';
   
+  // Get previous day closing balance
+  const previousDayClosingBalance = getPreviousDayClosingBalance(accountId);
+  
+  let tableHTML = '';
+  
+  // Add previous day closing balance row (read-only reference)
+  if (previousDayClosingBalance !== null) {
+    tableHTML += `
+      <tr style="background: #f8f9fa; font-weight: bold; border-bottom: 2px solid var(--border);">
+        <td colspan="3" style="text-align: right; color: var(--primary);">
+          <i class="fas fa-history"></i>
+          Previous Day Closing Balance
+        </td>
+        <td style="color: var(--success); text-align: center;">
+          ${previousDayClosingBalance >= 0 ? '+' : ''}${previousDayClosingBalance.toFixed(2)}
+        </td>
+        <td colspan="5" style="color: var(--muted); text-align: center;">
+          (Reference Only - Not included in calculations)
+        </td>
+      </tr>
+    `;
+  }
+  
   if (data.length === 0) {
-    tbody.innerHTML = `
+    tableHTML += `
       <tr>
         <td colspan="8" style="text-align: center; color: var(--muted);">
           ${isReadOnly ? 'No transactions for this archived date' : 'No financial transactions'}
         </td>
       </tr>
     `;
-    return;
+  } else {
+    tableHTML += data.map(row => `
+      <tr data-id="${row.id}">
+        <td>
+          ${isReadOnly ? 
+            `<span>${row.date || today}</span>` :
+            `<input type="date" value="${row.date || today}" 
+                   onchange="updateField('${accountId}', '${row.id}', 'date', this.value)">`
+          }
+        </td>
+        <td>
+          ${isReadOnly ? 
+            `<span>${row.description || '-'}</span>` :
+            `<input type="text" value="${row.description || ''}" 
+                   placeholder="Enter description"
+                   onchange="updateField('${accountId}', '${row.id}', 'description', this.value)">`
+          }
+        </td>
+        <td>
+          ${isReadOnly ? 
+            `<span>${row.recipient || '-'}</span>` :
+            `<input type="text" value="${row.recipient || ''}" 
+                   placeholder="Enter recipient name"
+                   onchange="updateField('${accountId}', '${row.id}', 'recipient', this.value)">`
+          }
+        </td>
+        <td>
+          ${isReadOnly ? 
+            `<span style="color: var(--success); font-weight: 600;">${parseFloat(row.income || 0).toFixed(2)}</span>` :
+            `<input type="number" class="income-input" value="${row.income || 0}" 
+                   step="0.01" min="0" placeholder="0.00"
+                   onchange="updateField('${accountId}', '${row.id}', 'income', this.value)">`
+          }
+        </td>
+        <td>
+          ${isReadOnly ? 
+            `<span style="color: var(--danger); font-weight: 600;">${parseFloat(row.expense || 0).toFixed(2)}</span>` :
+            `<input type="number" class="expense-input" value="${row.expense || 0}" 
+                   step="0.01" min="0" placeholder="0.00"
+                   onchange="updateField('${accountId}', '${row.id}', 'expense', this.value)">`
+          }
+        </td>
+        <td>
+          ${row.attachment ? 
+            `<a href="${row.attachment}" target="_blank" style="color: var(--info);">
+              <i class="fas fa-paperclip"></i> Attached
+            </a>` :
+            `<span style="color: var(--muted);">No attachment</span>`
+          }
+        </td>
+        <td>
+          ${isReadOnly ? 
+            `<span>${row.notes || '-'}</span>` :
+            `<input type="text" value="${row.notes || ''}" 
+                   placeholder="Notes"
+                   onchange="updateField('${accountId}', '${row.id}', 'notes', this.value)">`
+          }
+        </td>
+        <td>
+          ${isReadOnly ? 
+            `<span style="color: var(--muted);">Read-only</span>` :
+            `<button class="btn btn-danger" onclick="deleteRow('${accountId}', '${row.id}')">
+              <i class="fas fa-trash"></i>
+            </button>`
+          }
+        </td>
+      </tr>
+    `).join('');
   }
   
-  tbody.innerHTML = data.map(row => `
-    <tr data-id="${row.id}">
-      <td>
-        ${isReadOnly ? 
-          `<span>${row.date || today}</span>` :
-          `<input type="date" value="${row.date || today}" 
-                 onchange="updateField('${accountId}', '${row.id}', 'date', this.value)">`
-        }
-      </td>
-      <td>
-        ${isReadOnly ? 
-          `<span>${row.description || '-'}</span>` :
-          `<input type="text" value="${row.description || ''}" 
-                 placeholder="Enter description"
-                 onchange="updateField('${accountId}', '${row.id}', 'description', this.value)">`
-        }
-      </td>
-      <td>
-        ${isReadOnly ? 
-          `<span>${row.recipient || '-'}</span>` :
-          `<input type="text" value="${row.recipient || ''}" 
-                 placeholder="Enter recipient name"
-                 onchange="updateField('${accountId}', '${row.id}', 'recipient', this.value)">`
-        }
-      </td>
-      <td>
-        ${isReadOnly ? 
-          `<span style="color: var(--success); font-weight: 600;">${parseFloat(row.income || 0).toFixed(2)}</span>` :
-          `<input type="number" class="income-input" value="${row.income || 0}" 
-                 step="0.01" min="0" placeholder="0.00"
-                 onchange="updateField('${accountId}', '${row.id}', 'income', this.value)">`
-        }
-      </td>
-      <td>
-        ${isReadOnly ? 
-          `<span style="color: var(--danger); font-weight: 600;">${parseFloat(row.expense || 0).toFixed(2)}</span>` :
-          `<input type="number" class="expense-input" value="${row.expense || 0}" 
-                 step="0.01" min="0" placeholder="0.00"
-                 onchange="updateField('${accountId}', '${row.id}', 'expense', this.value)">`
-        }
-      </td>
-      <td>
-        ${row.attachment ? 
-          `<a href="${row.attachment}" target="_blank" style="color: var(--info);">
-            <i class="fas fa-paperclip"></i> Attached
-          </a>` :
-          `<span style="color: var(--muted);">No attachment</span>`
-        }
-      </td>
-      <td>
-        ${isReadOnly ? 
-          `<span>${row.notes || '-'}</span>` :
-          `<input type="text" value="${row.notes || ''}" 
-                 placeholder="Notes"
-                 onchange="updateField('${accountId}', '${row.id}', 'notes', this.value)">`
-        }
-      </td>
-      <td>
-        ${isReadOnly ? 
-          `<span style="color: var(--muted);">Read-only</span>` :
-          `<button class="btn btn-danger" onclick="deleteRow('${accountId}', '${row.id}')">
-            <i class="fas fa-trash"></i>
-          </button>`
-        }
-      </td>
-    </tr>
-  `).join('');
+  tbody.innerHTML = tableHTML;
+}
+
+// Get Previous Day Closing Balance
+function getPreviousDayClosingBalance(accountId) {
+  // Calculate previous date
+  const previousDate = new Date(selectedDate);
+  previousDate.setDate(previousDate.getDate() - 1);
+  const previousDateStr = previousDate.toISOString().split('T')[0];
+  
+  // Check if previous day was closed
+  if (dayStatus[previousDateStr] && dayStatus[previousDateStr].closed) {
+    return dayStatus[previousDateStr].closingBalances[accountId] || 0;
+  }
+  
+  // If previous day wasn't closed, calculate from transactions
+  const accountRef = db.ref(`treasury/${accountId}`);
+  // This would need to be calculated from all previous transactions
+  // For now, return opening balance if no previous day closure
+  return openingBalances[accountId] || 0;
 }
 
 // Update Summary Card
 function updateSummaryCard(accountId) {
-  const data = treasuryData[accountId] || [];
+  // Load ALL data for this account (not filtered by date)
+  const accountRef = db.ref(`treasury/${accountId}`);
   
-  const totalIncome = data.reduce((sum, row) => sum + (parseFloat(row.income) || 0), 0);
-  const totalExpense = data.reduce((sum, row) => sum + (parseFloat(row.expense) || 0), 0);
-  
-  // Get opening balance for selected date
-  const openingBalance = getOpeningBalance(accountId, selectedDate);
-  const balance = openingBalance + totalIncome - totalExpense;
-  
-  document.getElementById(`income-${accountId}`).textContent = totalIncome.toFixed(2);
-  document.getElementById(`expense-${accountId}`).textContent = totalExpense.toFixed(2);
-  document.getElementById(`balance-${accountId}`).textContent = `${balance.toFixed(2)} ج.م`;
-  
-  // Update card color based on balance
-  const summaryCard = document.getElementById(`summary-${accountId}`);
-  summaryCard.classList.remove('positive', 'negative');
-  if (balance > 0) {
-    summaryCard.classList.add('positive');
-  } else if (balance < 0) {
-    summaryCard.classList.add('negative');
-  }
+  accountRef.once('value', snapshot => {
+    const allData = snapshot.val() || {};
+    const allTransactions = Object.keys(allData).map(key => ({
+      id: key,
+      ...allData[key]
+    }));
+    
+    // Calculate ALL-TIME totals
+    const totalIncome = allTransactions.reduce((sum, row) => sum + (parseFloat(row.income) || 0), 0);
+    const totalExpense = allTransactions.reduce((sum, row) => sum + (parseFloat(row.expense) || 0), 0);
+    
+    // Get opening balance (original starting balance)
+    const openingBalance = openingBalances[accountId] || 0;
+    const balance = openingBalance + totalIncome - totalExpense;
+    
+    // Update summary card with ALL-TIME data
+    document.getElementById(`income-${accountId}`).textContent = totalIncome.toFixed(2);
+    document.getElementById(`expense-${accountId}`).textContent = totalExpense.toFixed(2);
+    document.getElementById(`balance-${accountId}`).textContent = `${balance.toFixed(2)} EGP`;
+    
+    // Update card color based on balance
+    const summaryCard = document.getElementById(`summary-${accountId}`);
+    summaryCard.classList.remove('positive', 'negative');
+    if (balance > 0) {
+      summaryCard.classList.add('positive');
+    } else if (balance < 0) {
+      summaryCard.classList.add('negative');
+    }
+  });
 }
 
 // Get Opening Balance
@@ -1057,22 +1111,13 @@ function changeSelectedDate() {
 function updateUIForSelectedDate() {
   isReadOnly = selectedDate !== today;
   
-  // Update summary title
+  // Update summary title - now shows ALL-TIME totals
   const summaryTitle = document.getElementById('summaryTitle');
   const openingBalanceInfo = document.getElementById('openingBalanceInfo');
   
-  if (selectedDate === today) {
-    summaryTitle.textContent = 'Today\'s Treasury Summary';
-    openingBalanceInfo.textContent = 'Opening balance: ' + Object.values(openingBalances).reduce((sum, bal) => sum + bal, 0).toFixed(2) + ' EGP';
-  } else {
-    const dateObj = new Date(selectedDate + 'T00:00:00');
-    summaryTitle.textContent = `Treasury Summary - ${dateObj.toLocaleDateString('ar-EG', { weekday: 'long', year: 'numeric', month: 'long', day: 'numeric' })}`;
-    
-    const totalOpeningBalance = TREASURY_ACCOUNTS.reduce((sum, account) => {
-      return sum + getOpeningBalance(account.id, selectedDate);
-    }, 0);
-    openingBalanceInfo.textContent = 'Opening balance: ' + totalOpeningBalance.toFixed(2) + ' EGP';
-  }
+  // Always show all-time summary
+  summaryTitle.textContent = 'All-Time Treasury Summary';
+  openingBalanceInfo.textContent = 'Total opening balance: ' + Object.values(openingBalances).reduce((sum, bal) => sum + bal, 0).toFixed(2) + ' EGP';
   
   // Update day closure button
   updateDayClosureButton();
