@@ -543,9 +543,19 @@ header {
     <h1>إدارة العهد - مكتب الصفا</h1>
   </div>
   <div class="header-actions">
-    <button class="btn btn-ghost" onclick="window.location.href='dashboard.html'">العودة للوحة التحكم</button>
-    <button class="btn btn-primary print-btn" onclick="window.print()">طباعة التقرير</button>
-    <button class="btn btn-ghost" id="logoutBtn">تسجيل الخروج</button>
+    <div style="display: flex; align-items: center; gap: 1rem; margin-left: auto;">
+      <div style="display: flex; align-items: center; gap: 0.5rem; background: rgba(255,255,255,0.1); padding: 0.5rem 1rem; border-radius: 8px;">
+        <label for="selectedWarehouseDate" style="color: white; font-size: 0.9rem; font-weight: 600;">:</label>
+        <input type="date" id="selectedWarehouseDate" style="background: rgba(255,255,255,0.9); border: none; padding: 0.3rem 0.5rem; border-radius: 4px; font-weight: 600;" onchange="changeWarehouseSelectedDate()">
+      </div>
+      <button class="btn btn-warning" onclick="openWarehouseDayClosureModal()" id="warehouseDayClosureBtn" style="display: none;">
+        <i class="fas fa-lock"></i>
+        <span id="warehouseDayClosureText">...</span>
+      </button>
+    </div>
+    <button class="btn btn-ghost" onclick="window.location.href='dashboard.html'">Return to Dashboard</button>
+    <button class="btn btn-primary print-btn" onclick="window.print()">Print Report</button>
+    <button class="btn btn-ghost" id="logoutBtn">Logout</button>
   </div>
 </header>
 
@@ -706,6 +716,22 @@ header {
   </section>
 </div>
 
+<!-- Warehouse Day Closure Modal -->
+<div class="modal" id="warehouseDayClosureModal">
+  <div class="modal-content" style="max-width: 600px;">
+    <div class="modal-header">
+      <h3 class="modal-title">
+        <i class="fas fa-lock"></i>
+        <span id="warehouseDayClosureModalTitle">...</span>
+      </h3>
+      <button class="modal-close" onclick="closeWarehouseDayClosureModal()">&times;</button>
+    </div>
+    <div id="warehouseDayClosureContent">
+      <!-- Content will be generated dynamically -->
+    </div>
+  </div>
+</div>
+
 <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-app-compat.js"></script>
 <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-auth-compat.js"></script>
 <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-database-compat.js"></script>
@@ -745,6 +771,10 @@ let warehouseData = {
   dekkela: []
 };
 
+let warehouseDayStatus = {};
+let warehouseOpeningBalances = {};
+let selectedWarehouseDate = new Date().toISOString().split('T')[0];
+let isWarehouseReadOnly = false;
 let currentUser = null;
 let today = new Date().toISOString().split('T')[0];
 document.getElementById('todayDate').textContent = formatDateArabic(new Date());
@@ -766,8 +796,71 @@ document.getElementById('logoutBtn').addEventListener('click', async () => {
 
 // Initialize warehouse system
 function initializeWarehouse() {
+  setupWarehouseDateSelector();
   setupRealtimeListeners();
   setupEventListeners();
+  loadWarehouseDayStatus();
+  loadWarehouseOpeningBalances();
+}
+
+// Setup warehouse date selector
+function setupWarehouseDateSelector() {
+  const dateInput = document.getElementById('selectedWarehouseDate');
+  dateInput.value = selectedWarehouseDate;
+  dateInput.max = today;
+}
+
+// Load warehouse day status
+function loadWarehouseDayStatus() {
+  const dayStatusRef = db.ref('warehouseDayStatus');
+  dayStatusRef.on('value', snapshot => {
+    warehouseDayStatus = snapshot.val() || {};
+    updateWarehouseDayClosureButton();
+  });
+}
+
+// Load warehouse opening balances
+function loadWarehouseOpeningBalances() {
+  const openingBalancesRef = db.ref('warehouseOpeningBalances');
+  openingBalancesRef.on('value', snapshot => {
+    warehouseOpeningBalances = snapshot.val() || {};
+  });
+}
+
+// Get previous day warehouse balance
+function getPreviousDayWarehouseBalance(branch) {
+  return new Promise((resolve) => {
+    const previousDate = new Date(selectedWarehouseDate);
+    previousDate.setDate(previousDate.getDate() - 1);
+    const previousDateStr = previousDate.toISOString().split('T')[0];
+    
+    // Check if previous day was closed
+    if (warehouseDayStatus[previousDateStr] && warehouseDayStatus[previousDateStr].closed) {
+      resolve(warehouseDayStatus[previousDateStr].closingBalances[branch] || 0);
+      return;
+    }
+    
+    // Calculate from all previous transactions
+    const branchRef = db.ref(`warehouse/${branch}`);
+    branchRef.once('value', snapshot => {
+      const allData = snapshot.val() || {};
+      const allTransactions = Object.keys(allData).map(key => ({
+        id: key,
+        ...allData[key]
+      }));
+      
+      // Filter transactions up to and including previous day
+      const previousTransactions = allTransactions.filter(row => row.date <= previousDateStr);
+      
+      // Calculate running balance
+      let balance = warehouseOpeningBalances[branch] || 0;
+      previousTransactions.forEach(row => {
+        balance += (parseFloat(row.credit) || 0) - (parseFloat(row.debit) || 0);
+      });
+      
+      resolve(balance);
+    });
+  });
 }
 
 // Setup real-time listeners (like daily.html)
@@ -778,7 +871,8 @@ function setupRealtimeListeners() {
     warehouseData.alexandria = Object.keys(raw).map(key => ({
       id: key,
       ...raw[key]
-    }));
+    })).filter(row => row.date === selectedWarehouseDate); // Filter by selected date
+    
     renderTable('alexandria');
     calculateTotals();
     generateDailyReport('alexandria');
@@ -790,7 +884,8 @@ function setupRealtimeListeners() {
     warehouseData.dekkela = Object.keys(raw).map(key => ({
       id: key,
       ...raw[key]
-    }));
+    })).filter(row => row.date === selectedWarehouseDate); // Filter by selected date
+    
     renderTable('dekkela');
     calculateTotals();
     generateDailyReport('dekkela');
@@ -812,61 +907,92 @@ function renderTable(branch) {
   const tbody = document.getElementById(`${branch}TableBody`);
   const data = warehouseData[branch] || [];
   
-  if (data.length === 0) {
-    tbody.innerHTML = '<tr><td colspan="6" style="text-align: center; color: var(--muted);">لا توجد بيانات بعد</td></tr>';
-    return;
-  }
-
-  tbody.innerHTML = data.map((row, index) => `
-    <tr data-id="${row.id}">
-      <td>
-        <input type="date" 
-               class="date-input" 
-               value="${row.date || today}" 
-               data-field="date" 
-               data-id="${row.id}">
-      </td>
-      <td>
-        <input type="text" 
-               class="description-input" 
-               placeholder="أدخل البيان" 
-               value="${row.description || ''}" 
-               data-field="description" 
-               data-id="${row.id}">
-      </td>
-      <td>
-        <input type="number" 
-               class="number-input" 
-               placeholder="0.00" 
-               step="0.01" 
-               min="0"
-               value="${row.credit || 0}" 
-               data-field="credit" 
-               data-id="${row.id}">
-      </td>
-      <td>
-        <input type="number" 
-               class="number-input" 
-               placeholder="0.00" 
-               step="0.01" 
-               min="0"
-               value="${row.debit || 0}" 
-               data-field="debit" 
-               data-id="${row.id}">
-      </td>
-      <td>
-        <input type="text" 
-               class="notes-input" 
-               placeholder="ملاحظات" 
-               value="${row.notes || ''}" 
-               data-field="notes" 
-               data-id="${row.id}">
-      </td>
-      <td style="text-align: center;">
-        <button class="delete-btn" onclick="deleteRow('${branch}', '${row.id}')">حذف</button>
-      </td>
-    </tr>
-  `).join('');
+  let tableHTML = '';
+  
+  // Add previous day warehouse balance row (read-only reference)
+  getPreviousDayWarehouseBalance(branch).then(previousDayBalance => {
+    if (previousDayBalance !== null && previousDayBalance !== 0) {
+      tableHTML += `
+        <tr style="background: #f8f9fa; font-weight: bold; border-bottom: 2px solid var(--border);">
+          <td colspan="3" style="text-align: right; color: var(--primary);">
+            <i class="fas fa-history"></i>
+            Previous Day Warehouse Balance
+          </td>
+          <td style="color: var(--success); text-align: center;">
+            ${previousDayBalance >= 0 ? '+' : ''}${previousDayBalance.toFixed(2)}
+          </td>
+          <td colspan="3" style="color: var(--muted); text-align: center;">
+            (Reference Only - Not included in calculations)
+          </td>
+        </tr>
+      `;
+    }
+    
+    if (data.length === 0) {
+      tableHTML += '<tr><td colspan="6" style="text-align: center; color: var(--muted);">لا توجد بيانات بعد</td></tr>';
+    } else {
+      tableHTML += data.map((row, index) => `
+        <tr data-id="${row.id}">
+          <td>
+            <input type="date" 
+                   class="date-input" 
+                   value="${row.date || today}" 
+                   data-field="date" 
+                   data-id="${row.id}"
+                   ${isWarehouseReadOnly ? 'disabled' : ''}>
+          </td>
+          <td>
+            <input type="text" 
+                   class="description-input" 
+                   placeholder="أدخل البيان" 
+                   value="${row.description || ''}" 
+                   data-field="description" 
+                   data-id="${row.id}"
+                   ${isWarehouseReadOnly ? 'disabled' : ''}>
+          </td>
+          <td>
+            <input type="number" 
+                   class="number-input" 
+                   placeholder="0.00" 
+                   step="0.01" 
+                   min="0"
+                   value="${row.credit || 0}" 
+                   data-field="credit" 
+                   data-id="${row.id}"
+                   ${isWarehouseReadOnly ? 'disabled' : ''}>
+          </td>
+          <td>
+            <input type="number" 
+                   class="number-input" 
+                   placeholder="0.00" 
+                   step="0.01" 
+                   min="0"
+                   value="${row.debit || 0}" 
+                   data-field="debit" 
+                   data-id="${row.id}"
+                   ${isWarehouseReadOnly ? 'disabled' : ''}>
+          </td>
+          <td>
+            <input type="text" 
+                   class="notes-input" 
+                   placeholder="ملاحظات" 
+                   value="${row.notes || ''}" 
+                   data-field="notes" 
+                   data-id="${row.id}"
+                   ${isWarehouseReadOnly ? 'disabled' : ''}>
+          </td>
+          <td>
+            ${isWarehouseReadOnly ? 
+              '<span style="color: var(--muted);">Read-only</span>' :
+              `<button class="delete-btn" onclick="deleteRow('${branch}', '${row.id}')">حذف</button>`
+            }
+          </td>
+        </tr>
+      `).join('');
+    }
+    
+    tbody.innerHTML = tableHTML;
+  });
 }
 
 // Generate row ID (like daily.html)
@@ -1163,6 +1289,185 @@ window.exportAsImage = function() {
   };
   document.head.appendChild(script);
 };
+
+// Change Warehouse Selected Date
+function changeWarehouseSelectedDate() {
+  const dateInput = document.getElementById('selectedWarehouseDate');
+  selectedWarehouseDate = dateInput.value;
+  
+  // Update UI for selected date
+  updateWarehouseUIForSelectedDate();
+  
+  // Reload data for new date
+  setupRealtimeListeners();
+}
+
+// Update Warehouse UI for Selected Date
+function updateWarehouseUIForSelectedDate() {
+  isWarehouseReadOnly = selectedWarehouseDate !== today;
+  
+  // Update warehouse day closure button
+  updateWarehouseDayClosureButton();
+  
+  // Update add row buttons
+  updateWarehouseAddRowButtons();
+}
+
+// Update Warehouse Day Closure Button
+function updateWarehouseDayClosureButton() {
+  const dayClosureBtn = document.getElementById('warehouseDayClosureBtn');
+  const dayClosureText = document.getElementById('warehouseDayClosureText');
+  
+  if (selectedWarehouseDate === today) {
+    const todayStatus = warehouseDayStatus[today];
+    
+    if (todayStatus && todayStatus.closed) {
+      dayClosureBtn.style.display = 'block';
+      dayClosureBtn.className = 'btn btn-success';
+      dayClosureText.textContent = 'Day Closed';
+      dayClosureBtn.disabled = true;
+    } else {
+      dayClosureBtn.style.display = 'block';
+      dayClosureBtn.className = 'btn btn-warning';
+      dayClosureText.textContent = 'Close Day';
+      dayClosureBtn.disabled = false;
+    }
+  } else {
+    const dateStatus = warehouseDayStatus[selectedWarehouseDate];
+    
+    if (dateStatus && dateStatus.closed) {
+      dayClosureBtn.style.display = 'block';
+      dayClosureBtn.className = 'btn btn-success';
+      dayClosureText.textContent = 'Archived';
+      dayClosureBtn.disabled = true;
+    } else {
+      dayClosureBtn.style.display = 'none';
+    }
+  }
+}
+
+// Update Warehouse Add Row Buttons
+function updateWarehouseAddRowButtons() {
+  const addButtons = document.querySelectorAll('[onclick*="addRow"]');
+  addButtons.forEach(btn => {
+    btn.style.display = isWarehouseReadOnly ? 'none' : 'inline-flex';
+  });
+}
+
+// Open Warehouse Day Closure Modal
+function openWarehouseDayClosureModal() {
+  if (selectedWarehouseDate !== today) return;
+  
+  const modal = document.getElementById('warehouseDayClosureModal');
+  const title = document.getElementById('warehouseDayClosureModalTitle');
+  const content = document.getElementById('warehouseDayClosureContent');
+  
+  title.textContent = 'Close Warehouse Day - ' + today;
+  
+  // Generate closure summary
+  const closingBalances = {};
+  closingBalances.alexandria = calculateBranchTotal('alexandria');
+  closingBalances.dekkela = calculateBranchTotal('dekkela');
+  
+  content.innerHTML = `
+    <div style="margin-bottom: 1.5rem;">
+      <h4 style="color: var(--primary); margin-bottom: 1rem;">Warehouse Day Summary - ${today}</h4>
+      <div style="background: var(--light); padding: 1rem; border-radius: 8px;">
+        <div style="display: flex; justify-content: space-between; margin-bottom: 0.5rem;">
+          <span>Alexandria Warehouse:</span>
+          <strong style="color: ${closingBalances.alexandria >= 0 ? 'var(--success)' : 'var(--danger)'};">
+            ${closingBalances.alexandria.toFixed(2)} EGP
+          </strong>
+        </div>
+        <div style="display: flex; justify-content: space-between; margin-bottom: 0.5rem;">
+          <span>Dekkela Warehouse:</span>
+          <strong style="color: ${closingBalances.dekkela >= 0 ? 'var(--success)' : 'var(--danger)'};">
+            ${closingBalances.dekkela.toFixed(2)} EGP
+          </strong>
+        </div>
+      </div>
+    </div>
+    
+    <div style="margin-bottom: 1.5rem;">
+      <label class="form-label">Physical Warehouse Count (Optional)</label>
+      <input type="number" class="form-control" id="physicalWarehouseCount" step="0.01" placeholder="Enter physical warehouse count for verification">
+    </div>
+    
+    <div style="margin-bottom: 1.5rem;">
+      <label class="form-label">Notes</label>
+      <textarea class="form-control" id="warehouseClosureNotes" rows="3" placeholder="Any notes about warehouse day closure..."></textarea>
+    </div>
+    
+    <div style="background: #fff3cd; border: 1px solid #ffeaa7; padding: 1rem; border-radius: 8px; margin-bottom: 1.5rem;">
+      <strong style="color: #856404;">Warning:</strong>
+      <p style="margin: 0.5rem 0 0 0; color: #856404; font-size: 0.9rem;">
+        Once you close the day, all warehouse transactions will be archived and you won't be able to modify them. 
+        Make sure all physical warehouse counts match the system balances before proceeding.
+      </p>
+    </div>
+    
+    <div style="display: flex; gap: 1rem; justify-content: flex-end;">
+      <button type="button" class="btn btn-ghost" onclick="closeWarehouseDayClosureModal()">Cancel</button>
+      <button type="button" class="btn btn-warning" onclick="executeWarehouseDayClosure()">
+        <i class="fas fa-lock"></i>
+        Close Warehouse Day
+      </button>
+    </div>
+  `;
+  
+  modal.classList.add('active');
+}
+
+// Close Warehouse Day Closure Modal
+function closeWarehouseDayClosureModal() {
+  const modal = document.getElementById('warehouseDayClosureModal');
+  modal.classList.remove('active');
+}
+
+// Execute Warehouse Day Closure
+function executeWarehouseDayClosure() {
+  if (!confirm('Are you sure you want to close the warehouse day? This action cannot be undone.')) {
+    return;
+  }
+  
+  const physicalWarehouseCount = parseFloat(document.getElementById('physicalWarehouseCount').value) || 0;
+  const closureNotes = document.getElementById('warehouseClosureNotes').value;
+  
+  // Calculate closing balances
+  const closingBalances = {};
+  closingBalances.alexandria = calculateBranchTotal('alexandria');
+  closingBalances.dekkela = calculateBranchTotal('dekkela');
+  
+  // Create warehouse day closure record
+  const dayClosureData = {
+    date: today,
+    closed: true,
+    closedAt: firebase.database.ServerValue.TIMESTAMP,
+    closedBy: currentUser.email,
+    closingBalances: closingBalances,
+    physicalWarehouseCount: physicalWarehouseCount,
+    notes: closureNotes,
+    transactionCount: warehouseData.alexandria.length + warehouseData.dekkela.length
+  };
+  
+  // Update warehouse day status
+  db.ref(`warehouseDayStatus/${today}`).set(dayClosureData)
+    .then(() => {
+      console.log('Warehouse day closed successfully');
+      closeWarehouseDayClosureModal();
+      alert('Warehouse day closed successfully! All transactions have been archived.');
+    })
+    .catch(error => {
+      console.error('Error closing warehouse day:', error);
+      alert('Error closing warehouse day. Please try again.');
+    });
+}
+
+// Global warehouse functions
+window.changeWarehouseSelectedDate = changeWarehouseSelectedDate;
+window.openWarehouseDayClosureModal = openWarehouseDayClosureModal;
+window.closeWarehouseDayClosureModal = closeWarehouseDayClosureModal;
+window.executeWarehouseDayClosure = executeWarehouseDayClosure;
 </script>
 </body>
 </html>
