@@ -563,14 +563,14 @@ header {
   <!-- Totals Section -->
   <section class="totals-section">
     <div class="total-card">
-      <h3>صافي العهدة الحالية - الإسكندرية</h3>
+      <h3>All-Time Warehouse Balance - Alexandria</h3>
       <div class="total-amount" id="alexandriaTotal">0.00</div>
-      <div style="color: var(--muted); font-size: 0.9rem;">جميع الحركات المحسوبة</div>
+      <div style="color: var(--muted); font-size: 0.9rem;">All transactions calculated</div>
     </div>
     <div class="total-card">
-      <h3>صافي العهدة الحالية - الدخيلة</h3>
+      <h3>All-Time Warehouse Balance - Dekkela</h3>
       <div class="total-amount" id="dekkelaTotal">0.00</div>
-      <div style="color: var(--muted); font-size: 0.9rem;">جميع الحركات المحسوبة</div>
+      <div style="color: var(--muted); font-size: 0.9rem;">All transactions calculated</div>
     </div>
   </section>
 
@@ -1144,21 +1144,40 @@ function handleAutoSave(event) {
 
 // Calculate totals
 function calculateTotals() {
-  // Calculate Alexandria total
-  const alexTotal = calculateBranchTotal('alexandria');
-  document.getElementById('alexandriaTotal').textContent = alexTotal.toFixed(2);
-
-  // Calculate Dekkela total
-  const dekkelaTotal = calculateBranchTotal('dekkela');
-  document.getElementById('dekkelaTotal').textContent = dekkelaTotal.toFixed(2);
+  // Calculate Alexandria total (ALL-TIME)
+  calculateBranchTotal('alexandria');
+  
+  // Calculate Dekkela total (ALL-TIME)
+  calculateBranchTotal('dekkela');
 }
 
-// Calculate branch total
+// Calculate branch total (ALL-TIME)
 function calculateBranchTotal(branch) {
-  const data = warehouseData[branch] || [];
-  const totalCredit = data.reduce((sum, row) => sum + (parseFloat(row.credit) || 0), 0);
-  const totalDebit = data.reduce((sum, row) => sum + (parseFloat(row.debit) || 0), 0);
-  return totalCredit - totalDebit;
+  // Load ALL data for this branch (not filtered by date)
+  const branchRef = db.ref(`warehouse/${branch}`);
+  
+  branchRef.once('value', snapshot => {
+    const allData = snapshot.val() || {};
+    const allTransactions = Object.keys(allData).map(key => ({
+      id: key,
+      ...allData[key]
+    }));
+    
+    // Calculate ALL-TIME totals
+    const totalCredit = allTransactions.reduce((sum, row) => sum + (parseFloat(row.credit) || 0), 0);
+    const totalDebit = allTransactions.reduce((sum, row) => sum + (parseFloat(row.debit) || 0), 0);
+    
+    // Get opening balance (original starting balance)
+    const openingBalance = warehouseOpeningBalances[branch] || 0;
+    const balance = openingBalance + totalCredit - totalDebit;
+    
+    // Update display with ALL-TIME data
+    if (branch === 'alexandria') {
+      document.getElementById('alexandriaTotal').textContent = balance.toFixed(2);
+    } else if (branch === 'dekkela') {
+      document.getElementById('dekkelaTotal').textContent = balance.toFixed(2);
+    }
+  });
 }
 
 // Generate daily report
