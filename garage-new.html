@@ -1,0 +1,1515 @@
+<!DOCTYPE html>
+<html lang="ar" dir="rtl">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>نظام إدارة الجراج - مكتب الصفا</title>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
+    <style>
+        :root {
+            --primary: #2563eb;
+            --secondary: #6c757d;
+            --success: #28a745;
+            --danger: #dc3545;
+            --warning: #ffc107;
+            --info: #17a2b8;
+            --light: #f8f9fa;
+            --dark: #343a40;
+            --border: #dee2e6;
+            --muted: #6c757d;
+            --shadow: 0 2px 10px rgba(0,0,0,0.1);
+            --radius: 8px;
+            --transition: all 0.3s ease;
+        }
+
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            min-height: 100vh;
+            color: var(--dark);
+        }
+
+        header {
+            background: var(--primary);
+            color: white;
+            padding: 1rem 2rem;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            box-shadow: var(--shadow);
+        }
+
+        .brand {
+            display: flex;
+            align-items: center;
+            gap: 1rem;
+        }
+
+        .brand img {
+            width: 40px;
+            height: 40px;
+        }
+
+        .brand h1 {
+            font-size: 1.5rem;
+            font-weight: 700;
+        }
+
+        .header-actions {
+            display: flex;
+            gap: 1rem;
+            align-items: center;
+        }
+
+        .btn {
+            padding: 0.5rem 1rem;
+            border: none;
+            border-radius: var(--radius);
+            cursor: pointer;
+            font-size: 0.9rem;
+            font-weight: 600;
+            transition: var(--transition);
+            display: inline-flex;
+            align-items: center;
+            gap: 0.5rem;
+            text-decoration: none;
+        }
+
+        .btn-primary {
+            background: var(--primary);
+            color: white;
+        }
+
+        .btn-secondary {
+            background: var(--secondary);
+            color: white;
+        }
+
+        .btn-success {
+            background: var(--success);
+            color: white;
+        }
+
+        .btn-danger {
+            background: var(--danger);
+            color: white;
+        }
+
+        .btn-warning {
+            background: var(--warning);
+            color: var(--dark);
+        }
+
+        .btn-info {
+            background: var(--info);
+            color: white;
+        }
+
+        .btn-ghost {
+            background: transparent;
+            color: white;
+            border: 1px solid rgba(255,255,255,0.3);
+        }
+
+        .btn:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 4px 15px rgba(0,0,0,0.2);
+        }
+
+        .container {
+            max-width: 1400px;
+            margin: 2rem auto;
+            padding: 0 1rem;
+        }
+
+        .tabs-container {
+            background: white;
+            border-radius: var(--radius);
+            box-shadow: var(--shadow);
+            overflow: hidden;
+        }
+
+        .tabs-header {
+            display: flex;
+            background: var(--light);
+            border-bottom: 1px solid var(--border);
+        }
+
+        .tab-button {
+            padding: 1rem 1.5rem;
+            border: none;
+            background: transparent;
+            cursor: pointer;
+            font-weight: 600;
+            color: var(--muted);
+            transition: var(--transition);
+            border-bottom: 3px solid transparent;
+        }
+
+        .tab-button:hover {
+            background: rgba(37, 99, 235, 0.1);
+            color: var(--primary);
+        }
+
+        .tab-button.active {
+            background: white;
+            color: var(--primary);
+            border-bottom-color: var(--primary);
+        }
+
+        .tab-content {
+            display: none;
+            padding: 2rem;
+        }
+
+        .tab-content.active {
+            display: block;
+        }
+
+        .table-container {
+            background: white;
+            border-radius: var(--radius);
+            box-shadow: var(--shadow);
+            overflow: hidden;
+            margin-bottom: 2rem;
+        }
+
+        .table-header {
+            background: var(--light);
+            padding: 1rem 1.5rem;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            border-bottom: 1px solid var(--border);
+        }
+
+        .table-title {
+            font-size: 1.2rem;
+            font-weight: 700;
+            color: var(--primary);
+        }
+
+        .table-actions {
+            display: flex;
+            gap: 0.5rem;
+        }
+
+        .data-table {
+            width: 100%;
+            border-collapse: collapse;
+            background: white;
+        }
+
+        .data-table th {
+            background: var(--primary);
+            color: white;
+            padding: 0.75rem;
+            text-align: center;
+            font-weight: 600;
+            white-space: nowrap;
+        }
+
+        .data-table td {
+            padding: 0.5rem;
+            border: 1px solid var(--border);
+            text-align: center;
+        }
+
+        .data-table input {
+            width: 100%;
+            border: none;
+            padding: 0.5rem;
+            text-align: center;
+            font-size: 0.9rem;
+        }
+
+        .data-table input:focus {
+            outline: 2px solid var(--primary);
+            background: rgba(37, 99, 235, 0.05);
+        }
+
+        .data-table .calculated {
+            background: var(--light);
+            font-weight: 600;
+            color: var(--primary);
+        }
+
+        .data-table .dropdown {
+            width: 100%;
+            border: none;
+            padding: 0.5rem;
+            text-align: center;
+            font-size: 0.9rem;
+            background: white;
+        }
+
+        .loading {
+            text-align: center;
+            padding: 3rem;
+            color: var(--muted);
+        }
+
+        .spinner {
+            border: 3px solid var(--border);
+            border-top: 3px solid var(--primary);
+            border-radius: 50%;
+            width: 40px;
+            height: 40px;
+            animation: spin 1s linear infinite;
+            margin: 0 auto 1rem;
+        }
+
+        @keyframes spin {
+            0% { transform: rotate(0deg); }
+            100% { transform: rotate(360deg); }
+        }
+
+        .summary-section {
+            background: white;
+            border-radius: var(--radius);
+            padding: 2rem;
+            margin-bottom: 2rem;
+            box-shadow: var(--shadow);
+        }
+
+        .summary-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+            gap: 1rem;
+            margin-top: 1rem;
+        }
+
+        .summary-card {
+            background: var(--light);
+            padding: 1.5rem;
+            border-radius: var(--radius);
+            text-align: center;
+            border: 1px solid var(--border);
+        }
+
+        .summary-title {
+            font-weight: 600;
+            color: var(--muted);
+            margin-bottom: 0.5rem;
+        }
+
+        .summary-amount {
+            font-size: 1.5rem;
+            font-weight: 700;
+            color: var(--primary);
+        }
+
+        .modal {
+            display: none;
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: rgba(0,0,0,0.5);
+            z-index: 1000;
+            justify-content: center;
+            align-items: center;
+        }
+
+        .modal.active {
+            display: flex;
+        }
+
+        .modal-content {
+            background: white;
+            border-radius: var(--radius);
+            padding: 2rem;
+            max-width: 500px;
+            width: 90%;
+            max-height: 80vh;
+            overflow-y: auto;
+        }
+
+        .modal-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 1.5rem;
+        }
+
+        .modal-title {
+            font-size: 1.2rem;
+            font-weight: 700;
+            color: var(--primary);
+        }
+
+        .modal-close {
+            background: none;
+            border: none;
+            font-size: 1.5rem;
+            cursor: pointer;
+            color: var(--muted);
+        }
+
+        .form-group {
+            margin-bottom: 1rem;
+        }
+
+        .form-label {
+            display: block;
+            margin-bottom: 0.5rem;
+            font-weight: 600;
+            color: var(--dark);
+        }
+
+        .form-control {
+            width: 100%;
+            padding: 0.75rem;
+            border: 1px solid var(--border);
+            border-radius: var(--radius);
+            font-size: 0.9rem;
+        }
+
+        .form-control:focus {
+            outline: none;
+            border-color: var(--primary);
+            box-shadow: 0 0 0 3px rgba(37, 99, 235, 0.1);
+        }
+
+        @media (max-width: 768px) {
+            .container {
+                padding: 0 0.5rem;
+            }
+            
+            .tabs-header {
+                flex-wrap: wrap;
+            }
+            
+            .tab-button {
+                padding: 0.75rem 1rem;
+                font-size: 0.8rem;
+            }
+            
+            .data-table {
+                font-size: 0.8rem;
+            }
+            
+            .data-table th,
+            .data-table td {
+                padding: 0.3rem;
+            }
+        }
+    </style>
+</head>
+<body>
+<header>
+    <div class="brand">
+        <img src="logo.png" alt="logo">
+        <h1>نظام إدارة الجراج - مكتب الصفا</h1>
+    </div>
+    <div class="header-actions">
+        <button class="btn btn-ghost" onclick="window.location.href='dashboard.html'">
+            <i class="fas fa-arrow-left"></i>
+            العودة للوحة التحكم
+        </button>
+        <button class="btn btn-primary" onclick="printReport()">
+            <i class="fas fa-print"></i>
+            طباعة التقرير
+        </button>
+        <button class="btn btn-danger" onclick="logout()">
+            <i class="fas fa-sign-out-alt"></i>
+            خروج
+        </button>
+    </div>
+</header>
+
+<div class="container">
+    <!-- Summary Section -->
+    <section class="summary-section">
+        <h2 style="color: var(--primary); margin-bottom: 1rem;">
+            <i class="fas fa-chart-line"></i>
+            ملخص الجراج
+        </h2>
+        <div class="summary-grid">
+            <div class="summary-card">
+                <div class="summary-title">إجمالي المخزون</div>
+                <div class="summary-amount" id="totalInventory">0.00</div>
+            </div>
+            <div class="summary-card">
+                <div class="summary-title">إجمالي قطع الغيار</div>
+                <div class="summary-amount" id="totalSpareParts">0.00</div>
+            </div>
+            <div class="summary-card">
+                <div class="summary-title">إجمالي السيارات</div>
+                <div class="summary-amount" id="totalVehicles">0</div>
+            </div>
+            <div class="summary-card">
+                <div class="summary-title">صافي الحسابات</div>
+                <div class="summary-amount" id="netBalance">0.00</div>
+            </div>
+        </div>
+    </section>
+
+    <!-- Tabs Section -->
+    <div class="tabs-container">
+        <div class="tabs-header" id="tabsHeader">
+            <button class="tab-button active" onclick="switchTab('inventory')">
+                <i class="fas fa-boxes"></i>
+                المخزن
+            </button>
+            <button class="tab-button" onclick="switchTab('spareParts')">
+                <i class="fas fa-cogs"></i>
+                قطع الغيار
+            </button>
+            <button class="tab-button" onclick="switchTab('vehicles')">
+                <i class="fas fa-car"></i>
+                السيارات
+            </button>
+            <button class="tab-button" onclick="switchTab('custody')">
+                <i class="fas fa-hand-holding-usd"></i>
+                العهد
+            </button>
+            <button class="tab-button" onclick="switchTab('expenses')">
+                <i class="fas fa-money-bill-wave"></i>
+                المصروفات
+            </button>
+            <button class="tab-button" onclick="switchTab('settings')">
+                <i class="fas fa-cog"></i>
+                القوائم
+            </button>
+        </div>
+
+        <!-- Tab Contents -->
+        <div id="tabContents">
+            <!-- المخزن Tab -->
+            <div class="tab-content active" id="tab-inventory">
+                <div class="table-container">
+                    <div class="table-header">
+                        <h3 class="table-title">المخزن</h3>
+                        <div class="table-actions">
+                            <button class="btn btn-primary" onclick="addInventoryRow()">
+                                <i class="fas fa-plus"></i>
+                                إضافة صنف
+                            </button>
+                        </div>
+                    </div>
+                    <div class="loading" id="loading-inventory">
+                        <div class="spinner"></div>
+                        <div>جاري تحميل البيانات...</div>
+                    </div>
+                    <table class="data-table" id="table-inventory" style="display: none;">
+                        <thead>
+                            <tr>
+                                <th>التاريخ</th>
+                                <th>البيان</th>
+                                <th>الصنف</th>
+                                <th>الكمية</th>
+                                <th>وارد</th>
+                                <th>صادر</th>
+                                <th>الرصيد</th>
+                                <th>إجراءات</th>
+                            </tr>
+                        </thead>
+                        <tbody id="tbody-inventory">
+                            <!-- Data rows will be generated here -->
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+
+            <!-- قطع الغيار Tab -->
+            <div class="tab-content" id="tab-spareParts">
+                <div class="table-container">
+                    <div class="table-header">
+                        <h3 class="table-title">قطع الغيار</h3>
+                        <div class="table-actions">
+                            <button class="btn btn-primary" onclick="addSparePartRow()">
+                                <i class="fas fa-plus"></i>
+                                إضافة قطعة
+                            </button>
+                        </div>
+                    </div>
+                    <div class="loading" id="loading-spareParts">
+                        <div class="spinner"></div>
+                        <div>جاري تحميل البيانات...</div>
+                    </div>
+                    <table class="data-table" id="table-spareParts" style="display: none;">
+                        <thead>
+                            <tr>
+                                <th>التاريخ</th>
+                                <th>البيان</th>
+                                <th>الصنف</th>
+                                <th>الكمية</th>
+                                <th>وارد</th>
+                                <th>صادر</th>
+                                <th>الرصيد</th>
+                                <th>إجراءات</th>
+                            </tr>
+                        </thead>
+                        <tbody id="tbody-spareParts">
+                            <!-- Data rows will be generated here -->
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+
+            <!-- السيارات Tab -->
+            <div class="tab-content" id="tab-vehicles">
+                <div class="table-container">
+                    <div class="table-header">
+                        <h3 class="table-title">السيارات</h3>
+                        <div class="table-actions">
+                            <button class="btn btn-primary" onclick="addVehicleRow()">
+                                <i class="fas fa-plus"></i>
+                                إضافة سيارة
+                            </button>
+                        </div>
+                    </div>
+                    <div class="loading" id="loading-vehicles">
+                        <div class="spinner"></div>
+                        <div>جاري تحميل البيانات...</div>
+                    </div>
+                    <table class="data-table" id="table-vehicles" style="display: none;">
+                        <thead>
+                            <tr>
+                                <th>التاريخ</th>
+                                <th>رقم السيارة</th>
+                                <th>اسم السائق</th>
+                                <th>المكان</th>
+                                <th>العهدة</th>
+                                <th>الإيصالات</th>
+                                <th>التصفية</th>
+                                <th>إجراءات</th>
+                            </tr>
+                        </thead>
+                        <tbody id="tbody-vehicles">
+                            <!-- Data rows will be generated here -->
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+
+            <!-- العهد Tab -->
+            <div class="tab-content" id="tab-custody">
+                <div class="table-container">
+                    <div class="table-header">
+                        <h3 class="table-title">العهد</h3>
+                        <div class="table-actions">
+                            <button class="btn btn-primary" onclick="addCustodyRow()">
+                                <i class="fas fa-plus"></i>
+                                إضافة حركة
+                            </button>
+                        </div>
+                    </div>
+                    <div class="loading" id="loading-custody">
+                        <div class="spinner"></div>
+                        <div>جاري تحميل البيانات...</div>
+                    </div>
+                    <table class="data-table" id="table-custody" style="display: none;">
+                        <thead>
+                            <tr>
+                                <th>التاريخ</th>
+                                <th>من حساب</th>
+                                <th>إلى حساب</th>
+                                <th>المبلغ</th>
+                                <th>ملاحظات</th>
+                                <th>إجراءات</th>
+                            </tr>
+                        </thead>
+                        <tbody id="tbody-custody">
+                            <!-- Data rows will be generated here -->
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+
+            <!-- المصروفات Tab -->
+            <div class="tab-content" id="tab-expenses">
+                <div class="table-container">
+                    <div class="table-header">
+                        <h3 class="table-title">المصروفات</h3>
+                        <div class="table-actions">
+                            <button class="btn btn-primary" onclick="addExpenseRow()">
+                                <i class="fas fa-plus"></i>
+                                إضافة مصروف
+                            </button>
+                        </div>
+                    </div>
+                    <div class="loading" id="loading-expenses">
+                        <div class="spinner"></div>
+                        <div>جاري تحميل البيانات...</div>
+                    </div>
+                    <table class="data-table" id="table-expenses" style="display: none;">
+                        <thead>
+                            <tr>
+                                <th>التاريخ</th>
+                                <th>من حساب</th>
+                                <th>إلى حساب</th>
+                                <th>المبلغ</th>
+                                <th>ملاحظات</th>
+                                <th>إجراءات</th>
+                            </tr>
+                        </thead>
+                        <tbody id="tbody-expenses">
+                            <!-- Data rows will be generated here -->
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+
+            <!-- القوائم Tab -->
+            <div class="tab-content" id="tab-settings">
+                <div class="table-container">
+                    <div class="table-header">
+                        <h3 class="table-title">القوائم</h3>
+                        <div class="table-actions">
+                            <button class="btn btn-success" onclick="saveAllSettings()">
+                                <i class="fas fa-save"></i>
+                                حفظ كل الإعدادات
+                            </button>
+                        </div>
+                    </div>
+                    
+                    <!-- Items List -->
+                    <div style="margin-bottom: 2rem;">
+                        <h4 style="color: var(--primary); margin-bottom: 1rem;">الأصناف</h4>
+                        <div class="loading" id="loading-items">
+                            <div class="spinner"></div>
+                            <div>جاري تحميل البيانات...</div>
+                        </div>
+                        <table class="data-table" id="table-items" style="display: none;">
+                            <thead>
+                                <tr>
+                                    <th>اسم الصنف</th>
+                                    <th>الوحدة</th>
+                                    <th>السعر</th>
+                                    <th>إجراءات</th>
+                                </tr>
+                            </thead>
+                            <tbody id="tbody-items">
+                                <!-- Items will be generated here -->
+                            </tbody>
+                        </table>
+                        <div style="margin-top: 1rem;">
+                            <button class="btn btn-primary" onclick="addItem()">
+                                <i class="fas fa-plus"></i>
+                                إضافة صنف
+                            </button>
+                        </div>
+                    </div>
+
+                    <!-- Locations List -->
+                    <div style="margin-bottom: 2rem;">
+                        <h4 style="color: var(--primary); margin-bottom: 1rem;">الأماكن</h4>
+                        <div class="loading" id="loading-locations">
+                            <div class="spinner"></div>
+                            <div>جاري تحميل البيانات...</div>
+                        </div>
+                        <table class="data-table" id="table-locations" style="display: none;">
+                            <thead>
+                                <tr>
+                                    <th>اسم المكان</th>
+                                    <th>النوع</th>
+                                    <th>إجراءات</th>
+                                </tr>
+                            </thead>
+                            <tbody id="tbody-locations">
+                                <!-- Locations will be generated here -->
+                            </tbody>
+                        </table>
+                        <div style="margin-top: 1rem;">
+                            <button class="btn btn-primary" onclick="addLocation()">
+                                <i class="fas fa-plus"></i>
+                                إضافة مكان
+                            </button>
+                        </div>
+                    </div>
+
+                    <!-- Accounts List -->
+                    <div style="margin-bottom: 2rem;">
+                        <h4 style="color: var(--primary); margin-bottom: 1rem;">الحسابات</h4>
+                        <div class="loading" id="loading-accounts">
+                            <div class="spinner"></div>
+                            <div>جاري تحميل البيانات...</div>
+                        </div>
+                        <table class="data-table" id="table-accounts" style="display: none;">
+                            <thead>
+                                <tr>
+                                    <th>اسم الحساب</th>
+                                    <th>النوع</th>
+                                    <th>الرصيد الحالي</th>
+                                    <th>إجراءات</th>
+                                </tr>
+                            </thead>
+                            <tbody id="tbody-accounts">
+                                <!-- Accounts will be generated here -->
+                            </tbody>
+                        </table>
+                        <div style="margin-top: 1rem;">
+                            <button class="btn btn-primary" onclick="addAccount()">
+                                <i class="fas fa-plus"></i>
+                                إضافة حساب
+                            </button>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Settings Modal -->
+<div class="modal" id="settingsModal">
+    <div class="modal-content">
+        <div class="modal-header">
+            <h3 class="modal-title">إعدادات</h3>
+            <button class="modal-close" onclick="closeSettingsModal()">&times;</button>
+        </div>
+        <div id="settingsContent">
+            <!-- Content will be generated dynamically -->
+        </div>
+    </div>
+</div>
+
+<script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-app-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-auth-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-database-compat.js"></script>
+
+<script>
+const firebaseConfig = {
+  apiKey: "AIzaSyARqSgfh78TqFQ2hhZaAtUaVQFqlPuRM3w",
+  authDomain: "trialsafaprices2026.firebaseapp.com",
+  databaseURL: "https://trialsafaprices2026-default-rtdb.firebaseio.com",
+  projectId: "trialsafaprices2026",
+  storageBucket: "trialsafaprices2026.appspot.com",
+  messagingSenderId: "177091434445",
+  appId: "1:177091434445:web:568b6ae3ba270a21d4d684"
+};
+
+firebase.initializeApp(firebaseConfig);
+
+const db = firebase.database();
+const auth = firebase.auth();
+
+// Global State
+let currentUser = null;
+let garageData = {
+    inventory: [],
+    spareParts: [],
+    vehicles: [],
+    custody: [],
+    expenses: []
+};
+let masterData = {
+    items: [],
+    locations: [],
+    accounts: []
+};
+let currentTab = 'inventory';
+let today = new Date().toISOString().split('T')[0];
+
+// Authentication check
+auth.onAuthStateChanged(user => {
+    currentUser = user;
+    if (!user) {
+        window.location.href = 'index.html';
+        return;
+    }
+    initializeGarage();
+});
+
+document.getElementById('logoutBtn').addEventListener('click', async () => {
+    await auth.signOut();
+    window.location.href = 'index.html';
+});
+
+// Initialize Garage System
+function initializeGarage() {
+    setupTabs();
+    loadGarageData();
+    loadMasterData();
+    updateSummary();
+}
+
+// Setup Tabs
+function setupTabs() {
+    // Tabs are already set up in HTML
+}
+
+// Load Garage Data
+function loadGarageData() {
+    // Load Inventory
+    db.ref('garage/inventory').on('value', snapshot => {
+        const data = snapshot.val() || {};
+        garageData.inventory = Object.keys(data).map(key => ({
+            id: key,
+            ...data[key]
+        }));
+        renderInventoryTable();
+    });
+
+    // Load Spare Parts
+    db.ref('garage/spareParts').on('value', snapshot => {
+        const data = snapshot.val() || {};
+        garageData.spareParts = Object.keys(data).map(key => ({
+            id: key,
+            ...data[key]
+        }));
+        renderSparePartsTable();
+    });
+
+    // Load Vehicles
+    db.ref('garage/vehicles').on('value', snapshot => {
+        const data = snapshot.val() || {};
+        garageData.vehicles = Object.keys(data).map(key => ({
+            id: key,
+            ...data[key]
+        }));
+        renderVehiclesTable();
+    });
+
+    // Load Custody
+    db.ref('garage/custody').on('value', snapshot => {
+        const data = snapshot.val() || {};
+        garageData.custody = Object.keys(data).map(key => ({
+            id: key,
+            ...data[key]
+        }));
+        renderCustodyTable();
+    });
+
+    // Load Expenses
+    db.ref('garage/expenses').on('value', snapshot => {
+        const data = snapshot.val() || {};
+        garageData.expenses = Object.keys(data).map(key => ({
+            id: key,
+            ...data[key]
+        }));
+        renderExpensesTable();
+    });
+}
+
+// Load Master Data
+function loadMasterData() {
+    // Load Items
+    db.ref('master/items').on('value', snapshot => {
+        const data = snapshot.val() || {};
+        masterData.items = Object.keys(data).map(key => ({
+            id: key,
+            ...data[key]
+        }));
+        renderItemsTable();
+    });
+
+    // Load Locations
+    db.ref('master/locations').on('value', snapshot => {
+        const data = snapshot.val() || {};
+        masterData.locations = Object.keys(data).map(key => ({
+            id: key,
+            ...data[key]
+        }));
+        renderLocationsTable();
+    });
+
+    // Load Accounts
+    db.ref('master/accounts').on('value', snapshot => {
+        const data = snapshot.val() || {};
+        masterData.accounts = Object.keys(data).map(key => ({
+            id: key,
+            ...data[key]
+        }));
+        renderAccountsTable();
+    });
+}
+
+// Switch Tab
+function switchTab(tabName) {
+    currentTab = tabName;
+    
+    // Update tab buttons
+    document.querySelectorAll('.tab-button').forEach(btn => {
+        btn.classList.remove('active');
+    });
+    event.target.classList.add('active');
+    
+    // Update tab contents
+    document.querySelectorAll('.tab-content').forEach(content => {
+        content.classList.remove('active');
+    });
+    document.getElementById(`tab-${tabName}`).classList.add('active');
+}
+
+// Render Inventory Table
+function renderInventoryTable() {
+    const tbody = document.getElementById('tbody-inventory');
+    const table = document.getElementById('table-inventory');
+    const loading = document.getElementById('loading-inventory');
+    
+    const data = garageData.inventory || [];
+    
+    // Hide loading, show table
+    loading.style.display = 'none';
+    table.style.display = 'table';
+    
+    if (data.length === 0) {
+        tbody.innerHTML = '<tr><td colspan="8" style="text-align: center; color: var(--muted);">لا توجد بيانات</td></tr>';
+        return;
+    }
+
+    tbody.innerHTML = data.map((row, index) => {
+        const balance = calculateBalance(row);
+        return `
+            <tr data-id="${row.id}">
+                <td><input type="date" value="${row.date || today}" onchange="updateField('inventory', '${row.id}', 'date', this.value)"></td>
+                <td><input type="text" value="${row.description || ''}" placeholder="البيان" onchange="updateField('inventory', '${row.id}', 'description', this.value)"></td>
+                <td>
+                    <select class="dropdown" onchange="updateField('inventory', '${row.id}', 'item', this.value)">
+                        <option value="">اختر الصنف</option>
+                        ${masterData.items.map(item => `
+                            <option value="${item.name}" ${row.item === item.name ? 'selected' : ''}>${item.name}</option>
+                        `).join('')}
+                    </select>
+                </td>
+                <td><input type="number" value="${row.quantity || 0}" placeholder="الكمية" onchange="calculateInventoryRow('${row.id}')"></td>
+                <td class="calculated">${row.incoming || 0}</td>
+                <td class="calculated">${row.outgoing || 0}</td>
+                <td class="calculated">${balance.toFixed(2)}</td>
+                <td>
+                    <button class="btn btn-danger" onclick="deleteRow('inventory', '${row.id}')">
+                        <i class="fas fa-trash"></i>
+                    </button>
+                </td>
+            </tr>
+        `;
+    }).join('');
+}
+
+// Render Spare Parts Table
+function renderSparePartsTable() {
+    const tbody = document.getElementById('tbody-spareParts');
+    const table = document.getElementById('table-spareParts');
+    const loading = document.getElementById('loading-spareParts');
+    
+    const data = garageData.spareParts || [];
+    
+    // Hide loading, show table
+    loading.style.display = 'none';
+    table.style.display = 'table';
+    
+    if (data.length === 0) {
+        tbody.innerHTML = '<tr><td colspan="8" style="text-align: center; color: var(--muted);">لا توجد بيانات</td></tr>';
+        return;
+    }
+
+    tbody.innerHTML = data.map((row, index) => {
+        const balance = calculateBalance(row);
+        return `
+            <tr data-id="${row.id}">
+                <td><input type="date" value="${row.date || today}" onchange="updateField('spareParts', '${row.id}', 'date', this.value)"></td>
+                <td><input type="text" value="${row.description || ''}" placeholder="البيان" onchange="updateField('spareParts', '${row.id}', 'description', this.value)"></td>
+                <td>
+                    <select class="dropdown" onchange="updateField('spareParts', '${row.id}', 'item', this.value)">
+                        <option value="">اختر الصنف</option>
+                        ${masterData.items.map(item => `
+                            <option value="${item.name}" ${row.item === item.name ? 'selected' : ''}>${item.name}</option>
+                        `).join('')}
+                    </select>
+                </td>
+                <td><input type="number" value="${row.quantity || 0}" placeholder="الكمية" onchange="calculateSparePartsRow('${row.id}')"></td>
+                <td class="calculated">${row.incoming || 0}</td>
+                <td class="calculated">${row.outgoing || 0}</td>
+                <td class="calculated">${balance.toFixed(2)}</td>
+                <td>
+                    <button class="btn btn-danger" onclick="deleteRow('spareParts', '${row.id}')">
+                        <i class="fas fa-trash"></i>
+                    </button>
+                </td>
+            </tr>
+        `;
+    }).join('');
+}
+
+// Render Vehicles Table
+function renderVehiclesTable() {
+    const tbody = document.getElementById('tbody-vehicles');
+    const table = document.getElementById('table-vehicles');
+    const loading = document.getElementById('loading-vehicles');
+    
+    const data = garageData.vehicles || [];
+    
+    // Hide loading, show table
+    loading.style.display = 'none';
+    table.style.display = 'table';
+    
+    if (data.length === 0) {
+        tbody.innerHTML = '<tr><td colspan="8" style="text-align: center; color: var(--muted);">لا توجد بيانات</td></tr>';
+        return;
+    }
+
+    tbody.innerHTML = data.map((row, index) => `
+        <tr data-id="${row.id}">
+            <td><input type="date" value="${row.date || today}" onchange="updateField('vehicles', '${row.id}', 'date', this.value)"></td>
+            <td><input type="text" value="${row.vehicleNumber || ''}" placeholder="رقم السيارة" onchange="updateField('vehicles', '${row.id}', 'vehicleNumber', this.value)"></td>
+            <td><input type="text" value="${row.driverName || ''}" placeholder="اسم السائق" onchange="updateField('vehicles', '${row.id}', 'driverName', this.value)"></td>
+            <td><input type="text" value="${row.location || ''}" placeholder="المكان" onchange="updateField('vehicles', '${row.id}', 'location', this.value)"></td>
+            <td><input type="number" value="${row.custody || 0}" placeholder="العهدة" onchange="updateField('vehicles', '${row.id}', 'custody', this.value)"></td>
+            <td><input type="text" value="${row.receipts || ''}" placeholder="الإيصالات" onchange="updateField('vehicles', '${row.id}', 'receipts', this.value)"></td>
+            <td><input type="number" value="${row.settlement || 0}" placeholder="التصفية" onchange="updateField('vehicles', '${row.id}', 'settlement', this.value)"></td>
+            <td>
+                <button class="btn btn-danger" onclick="deleteRow('vehicles', '${row.id}')">
+                    <i class="fas fa-trash"></i>
+                </button>
+            </td>
+        </tr>
+    `).join('');
+}
+
+// Render Custody Table
+function renderCustodyTable() {
+    const tbody = document.getElementById('tbody-custody');
+    const table = document.getElementById('table-custody');
+    const loading = document.getElementById('loading-custody');
+    
+    const data = garageData.custody || [];
+    
+    // Hide loading, show table
+    loading.style.display = 'none';
+    table.style.display = 'table';
+    
+    if (data.length === 0) {
+        tbody.innerHTML = '<tr><td colspan="6" style="text-align: center; color: var(--muted);">لا توجد بيانات</td></tr>';
+        return;
+    }
+
+    tbody.innerHTML = data.map((row, index) => `
+        <tr data-id="${row.id}">
+            <td><input type="date" value="${row.date || today}" onchange="updateField('custody', '${row.id}', 'date', this.value)"></td>
+            <td>
+                <select class="dropdown" onchange="updateField('custody', '${row.id}', 'fromAccount', this.value)">
+                    <option value="">اختر الحساب</option>
+                    ${masterData.accounts.map(account => `
+                        <option value="${account.name}" ${row.fromAccount === account.name ? 'selected' : ''}>${account.name}</option>
+                    `).join('')}
+                </select>
+            </td>
+            <td>
+                <select class="dropdown" onchange="updateField('custody', '${row.id}', 'toAccount', this.value)">
+                    <option value="">اختر الحساب</option>
+                    ${masterData.accounts.map(account => `
+                        <option value="${account.name}" ${row.toAccount === account.name ? 'selected' : ''}>${account.name}</option>
+                    `).join('')}
+                </select>
+            </td>
+            <td><input type="number" value="${row.amount || 0}" placeholder="المبلغ" onchange="updateField('custody', '${row.id}', 'amount', this.value)"></td>
+            <td><input type="text" value="${row.notes || ''}" placeholder="ملاحظات" onchange="updateField('custody', '${row.id}', 'notes', this.value)"></td>
+            <td>
+                <button class="btn btn-danger" onclick="deleteRow('custody', '${row.id}')">
+                    <i class="fas fa-trash"></i>
+                </button>
+            </td>
+        </tr>
+    `).join('');
+}
+
+// Render Expenses Table
+function renderExpensesTable() {
+    const tbody = document.getElementById('tbody-expenses');
+    const table = document.getElementById('table-expenses');
+    const loading = document.getElementById('loading-expenses');
+    
+    const data = garageData.expenses || [];
+    
+    // Hide loading, show table
+    loading.style.display = 'none';
+    table.style.display = 'table';
+    
+    if (data.length === 0) {
+        tbody.innerHTML = '<tr><td colspan="6" style="text-align: center; color: var(--muted);">لا توجد بيانات</td></tr>';
+        return;
+    }
+
+    tbody.innerHTML = data.map((row, index) => `
+        <tr data-id="${row.id}">
+            <td><input type="date" value="${row.date || today}" onchange="updateField('expenses', '${row.id}', 'date', this.value)"></td>
+            <td>
+                <select class="dropdown" onchange="updateField('expenses', '${row.id}', 'fromAccount', this.value)">
+                    <option value="">اختر الحساب</option>
+                    ${masterData.accounts.map(account => `
+                        <option value="${account.name}" ${row.fromAccount === account.name ? 'selected' : ''}>${account.name}</option>
+                    `).join('')}
+                </select>
+            </td>
+            <td>
+                <select class="dropdown" onchange="updateField('expenses', '${row.id}', 'toAccount', this.value)">
+                    <option value="">اختر الحساب</option>
+                    ${masterData.accounts.map(account => `
+                        <option value="${account.name}" ${row.toAccount === account.name ? 'selected' : ''}>${account.name}</option>
+                    `).join('')}
+                </select>
+            </td>
+            <td><input type="number" value="${row.amount || 0}" placeholder="المبلغ" onchange="updateField('expenses', '${row.id}', 'amount', this.value)"></td>
+            <td><input type="text" value="${row.notes || ''}" placeholder="ملاحظات" onchange="updateField('expenses', '${row.id}', 'notes', this.value)"></td>
+            <td>
+                <button class="btn btn-danger" onclick="deleteRow('expenses', '${row.id}')">
+                    <i class="fas fa-trash"></i>
+                </button>
+            </td>
+        </tr>
+    `).join('');
+}
+
+// Render Items Table
+function renderItemsTable() {
+    const tbody = document.getElementById('tbody-items');
+    const table = document.getElementById('table-items');
+    const loading = document.getElementById('loading-items');
+    
+    const data = masterData.items || [];
+    
+    // Hide loading, show table
+    loading.style.display = 'none';
+    table.style.display = 'table';
+    
+    if (data.length === 0) {
+        tbody.innerHTML = '<tr><td colspan="4" style="text-align: center; color: var(--muted);">لا توجد بيانات</td></tr>';
+        return;
+    }
+
+    tbody.innerHTML = data.map((row, index) => `
+        <tr data-id="${row.id}">
+            <td><input type="text" value="${row.name || ''}" placeholder="اسم الصنف" onchange="updateMasterField('items', '${row.id}', 'name', this.value)"></td>
+            <td><input type="text" value="${row.unit || ''}" placeholder="الوحدة" onchange="updateMasterField('items', '${row.id}', 'unit', this.value)"></td>
+            <td><input type="number" value="${row.price || 0}" placeholder="السعر" onchange="updateMasterField('items', '${row.id}', 'price', this.value)"></td>
+            <td>
+                <button class="btn btn-danger" onclick="deleteMasterRow('items', '${row.id}')">
+                    <i class="fas fa-trash"></i>
+                </button>
+            </td>
+        </tr>
+    `).join('');
+}
+
+// Render Locations Table
+function renderLocationsTable() {
+    const tbody = document.getElementById('tbody-locations');
+    const table = document.getElementById('table-locations');
+    const loading = document.getElementById('loading-locations');
+    
+    const data = masterData.locations || [];
+    
+    // Hide loading, show table
+    loading.style.display = 'none';
+    table.style.display = 'table';
+    
+    if (data.length === 0) {
+        tbody.innerHTML = '<tr><td colspan="3" style="text-align: center; color: var(--muted);">لا توجد بيانات</td></tr>';
+        return;
+    }
+
+    tbody.innerHTML = data.map((row, index) => `
+        <tr data-id="${row.id}">
+            <td><input type="text" value="${row.name || ''}" placeholder="اسم المكان" onchange="updateMasterField('locations', '${row.id}', 'name', this.value)"></td>
+            <td><input type="text" value="${row.type || ''}" placeholder="النوع" onchange="updateMasterField('locations', '${row.id}', 'type', this.value)"></td>
+            <td>
+                <button class="btn btn-danger" onclick="deleteMasterRow('locations', '${row.id}')">
+                    <i class="fas fa-trash"></i>
+                </button>
+            </td>
+        </tr>
+    `).join('');
+}
+
+// Render Accounts Table
+function renderAccountsTable() {
+    const tbody = document.getElementById('tbody-accounts');
+    const table = document.getElementById('table-accounts');
+    const loading = document.getElementById('loading-accounts');
+    
+    const data = masterData.accounts || [];
+    
+    // Hide loading, show table
+    loading.style.display = 'none';
+    table.style.display = 'table';
+    
+    if (data.length === 0) {
+        tbody.innerHTML = '<tr><td colspan="4" style="text-align: center; color: var(--muted);">لا توجد بيانات</td></tr>';
+        return;
+    }
+
+    tbody.innerHTML = data.map((row, index) => `
+        <tr data-id="${row.id}">
+            <td><input type="text" value="${row.name || ''}" placeholder="اسم الحساب" onchange="updateMasterField('accounts', '${row.id}', 'name', this.value)"></td>
+            <td><input type="text" value="${row.type || ''}" placeholder="النوع" onchange="updateMasterField('accounts', '${row.id}', 'type', this.value)"></td>
+            <td class="calculated">${(row.balance || 0).toFixed(2)}</td>
+            <td>
+                <button class="btn btn-danger" onclick="deleteMasterRow('accounts', '${row.id}')">
+                    <i class="fas fa-trash"></i>
+                </button>
+            </td>
+        </tr>
+    `).join('');
+}
+
+// Calculate Balance
+function calculateBalance(row) {
+    const incoming = parseFloat(row.incoming) || 0;
+    const outgoing = parseFloat(row.outgoing) || 0;
+    return incoming - outgoing;
+}
+
+// Calculate Inventory Row
+function calculateInventoryRow(rowId) {
+    const row = garageData.inventory.find(r => r.id === rowId);
+    if (!row) return;
+    
+    const quantity = parseFloat(row.quantity) || 0;
+    const item = masterData.items.find(item => item.name === row.item);
+    const price = item ? parseFloat(item.price) || 0 : 0;
+    
+    const incoming = quantity * price;
+    const outgoing = parseFloat(row.outgoing) || 0;
+    
+    updateField('inventory', rowId, 'incoming', incoming);
+}
+
+// Calculate Spare Parts Row
+function calculateSparePartsRow(rowId) {
+    const row = garageData.spareParts.find(r => r.id === rowId);
+    if (!row) return;
+    
+    const quantity = parseFloat(row.quantity) || 0;
+    const item = masterData.items.find(item => item.name === row.item);
+    const price = item ? parseFloat(item.price) || 0 : 0;
+    
+    const incoming = quantity * price;
+    const outgoing = parseFloat(row.outgoing) || 0;
+    
+    updateField('spareParts', rowId, 'incoming', incoming);
+}
+
+// Update Summary
+function updateSummary() {
+    // Calculate total inventory value
+    const totalInventory = garageData.inventory.reduce((sum, row) => {
+        const item = masterData.items.find(item => item.name === row.item);
+        const price = item ? parseFloat(item.price) || 0 : 0;
+        const quantity = parseFloat(row.quantity) || 0;
+        return sum + (quantity * price);
+    }, 0);
+
+    // Calculate total spare parts value
+    const totalSpareParts = garageData.spareParts.reduce((sum, row) => {
+        const item = masterData.items.find(item => item.name === row.item);
+        const price = item ? parseFloat(item.price) || 0 : 0;
+        const quantity = parseFloat(row.quantity) || 0;
+        return sum + (quantity * price);
+    }, 0);
+
+    // Count vehicles
+    const totalVehicles = garageData.vehicles.length;
+
+    // Calculate net balance from custody and expenses
+    const custodyIn = garageData.custody.reduce((sum, row) => sum + (parseFloat(row.amount) || 0), 0);
+    const expensesOut = garageData.expenses.reduce((sum, row) => sum + (parseFloat(row.amount) || 0), 0);
+    const netBalance = custodyIn - expensesOut;
+
+    // Update summary display
+    document.getElementById('totalInventory').textContent = totalInventory.toFixed(2);
+    document.getElementById('totalSpareParts').textContent = totalSpareParts.toFixed(2);
+    document.getElementById('totalVehicles').textContent = totalVehicles;
+    document.getElementById('netBalance').textContent = netBalance.toFixed(2);
+}
+
+// Add Row Functions
+function addInventoryRow() {
+    const newRow = {
+        date: today,
+        description: '',
+        item: '',
+        quantity: 0,
+        incoming: 0,
+        outgoing: 0
+    };
+    
+    const newRef = db.ref('garage/inventory').push();
+    newRef.set(newRow)
+        .then(() => console.log('Inventory row added'))
+        .catch(error => console.error('Error adding inventory row:', error));
+}
+
+function addSparePartRow() {
+    const newRow = {
+        date: today,
+        description: '',
+        item: '',
+        quantity: 0,
+        incoming: 0,
+        outgoing: 0
+    };
+    
+    const newRef = db.ref('garage/spareParts').push();
+    newRef.set(newRow)
+        .then(() => console.log('Spare part row added'))
+        .catch(error => console.error('Error adding spare part row:', error));
+}
+
+function addVehicleRow() {
+    const newRow = {
+        date: today,
+        vehicleNumber: '',
+        driverName: '',
+        location: '',
+        custody: 0,
+        receipts: '',
+        settlement: 0
+    };
+    
+    const newRef = db.ref('garage/vehicles').push();
+    newRef.set(newRow)
+        .then(() => console.log('Vehicle row added'))
+        .catch(error => console.error('Error adding vehicle row:', error));
+}
+
+function addCustodyRow() {
+    const newRow = {
+        date: today,
+        fromAccount: '',
+        toAccount: '',
+        amount: 0,
+        notes: ''
+    };
+    
+    const newRef = db.ref('garage/custody').push();
+    newRef.set(newRow)
+        .then(() => console.log('Custody row added'))
+        .catch(error => console.error('Error adding custody row:', error));
+}
+
+function addExpenseRow() {
+    const newRow = {
+        date: today,
+        fromAccount: '',
+        toAccount: '',
+        amount: 0,
+        notes: ''
+    };
+    
+    const newRef = db.ref('garage/expenses').push();
+    newRef.set(newRow)
+        .then(() => console.log('Expense row added'))
+        .catch(error => console.error('Error adding expense row:', error));
+}
+
+// Add Master Data Functions
+function addItem() {
+    const newRow = {
+        name: '',
+        unit: '',
+        price: 0
+    };
+    
+    const newRef = db.ref('master/items').push();
+    newRef.set(newRow)
+        .then(() => console.log('Item added'))
+        .catch(error => console.error('Error adding item:', error));
+}
+
+function addLocation() {
+    const newRow = {
+        name: '',
+        type: ''
+    };
+    
+    const newRef = db.ref('master/locations').push();
+    newRef.set(newRow)
+        .then(() => console.log('Location added'))
+        .catch(error => console.error('Error adding location:', error));
+}
+
+function addAccount() {
+    const newRow = {
+        name: '',
+        type: '',
+        balance: 0
+    };
+    
+    const newRef = db.ref('master/accounts').push();
+    newRef.set(newRow)
+        .then(() => console.log('Account added'))
+        .catch(error => console.error('Error adding account:', error));
+}
+
+// Update Field Functions
+function updateField(table, rowId, field, value) {
+    const updateData = {};
+    updateData[field] = value;
+    
+    db.ref(`garage/${table}/${rowId}`).update(updateData)
+        .then(() => console.log(`${table} field updated`))
+        .catch(error => console.error('Error updating field:', error));
+    
+    // Recalculate if needed
+    if (table === 'inventory' && field === 'quantity') {
+        calculateInventoryRow(rowId);
+    } else if (table === 'spareParts' && field === 'quantity') {
+        calculateSparePartsRow(rowId);
+    }
+    
+    // Update summary
+    updateSummary();
+}
+
+function updateMasterField(table, rowId, field, value) {
+    const updateData = {};
+    updateData[field] = value;
+    
+    db.ref(`master/${table}/${rowId}`).update(updateData)
+        .then(() => console.log(`${table} master field updated`))
+        .catch(error => console.error('Error updating master field:', error));
+}
+
+// Delete Row Functions
+function deleteRow(table, rowId) {
+    if (!confirm('هل أنت متأكد من الحذف؟')) return;
+    
+    db.ref(`garage/${table}/${rowId}`).remove()
+        .then(() => console.log(`${table} row deleted`))
+        .catch(error => console.error('Error deleting row:', error));
+}
+
+function deleteMasterRow(table, rowId) {
+    if (!confirm('هل أنت متأكد من الحذف؟')) return;
+    
+    db.ref(`master/${table}/${rowId}`).remove()
+        .then(() => console.log(`${table} master row deleted`))
+        .catch(error => console.error('Error deleting master row:', error));
+}
+
+// Utility Functions
+function logout() {
+    auth.signOut().then(() => {
+        window.location.href = 'index.html';
+    });
+}
+
+function printReport() {
+    window.print();
+}
+
+// Global functions for HTML access
+window.switchTab = switchTab;
+window.addInventoryRow = addInventoryRow;
+window.addSparePartRow = addSparePartRow;
+window.addVehicleRow = addVehicleRow;
+window.addCustodyRow = addCustodyRow;
+window.addExpenseRow = addExpenseRow;
+window.addItem = addItem;
+window.addLocation = addLocation;
+window.addAccount = addAccount;
+window.deleteRow = deleteRow;
+window.deleteMasterRow = deleteMasterRow;
+</script>
+</body>
+</html>
