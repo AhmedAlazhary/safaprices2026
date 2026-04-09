@@ -1016,8 +1016,8 @@ function renderInventoryTable() {
                         `).join('')}
                     </select>
                 </td>
-                <td><input type="number" value="${row.quantity || 0}" placeholder="الكمية" onchange="updateInventoryRow('${row.id}')"></td>
-                <td><input type="number" value="${price}" placeholder="السعر" onchange="updateInventoryRow('${row.id}')"></td>
+                <td><input type="text" value="${row.quantity || 0}" placeholder="=A1*B1" onchange="handleFormulaInput(this, 'inventory', '${row.id}', 'quantity')"></td>
+                <td><input type="text" value="${price}" placeholder="=100*1.5" onchange="handleFormulaInput(this, 'inventory', '${row.id}', 'price')"></td>
                 <td class="calculated">${balance.toFixed(2)}</td>
                 <td>
                     <button class="btn btn-danger" onclick="deleteRow('inventory', '${row.id}')">
@@ -1310,6 +1310,24 @@ function updateInventoryRow(rowId) {
     const row = garageData.inventory.find(r => r.id === rowId);
     if (!row) return;
     
+    // Get current values from the table
+    const tr = document.querySelector(`tr[data-id="${rowId}"]`);
+    if (!tr) return;
+    
+    const quantity = parseFloat(tr.querySelector('td:nth-child(4) input').value) || 0;
+    const item = masterData.items.find(item => item.name === row.item);
+    const price = item ? parseFloat(item.price) || 0 : 0;
+    const balance = quantity * price;
+    
+    // Update the balance display
+    const balanceCell = tr.querySelector('td:nth-child(6)');
+    if (balanceCell) {
+        balanceCell.textContent = balance.toFixed(2);
+    }
+    
+    // Update the database
+    updateField('inventory', rowId, 'quantity', quantity);
+    
     // Update balances immediately
     updateBalances();
 }
@@ -1319,8 +1337,104 @@ function updateSparePartsRow(rowId) {
     const row = garageData.spareParts.find(r => r.id === rowId);
     if (!row) return;
     
+    // Get current values from the table
+    const tr = document.querySelector(`tr[data-id="${rowId}"]`);
+    if (!tr) return;
+    
+    const quantity = parseFloat(tr.querySelector('td:nth-child(4) input').value) || 0;
+    const item = masterData.items.find(item => item.name === row.item);
+    const price = item ? parseFloat(item.price) || 0 : 0;
+    const balance = quantity * price;
+    
+    // Update the balance display
+    const balanceCell = tr.querySelector('td:nth-child(6)');
+    if (balanceCell) {
+        balanceCell.textContent = balance.toFixed(2);
+    }
+    
+    // Update the database
+    updateField('spareParts', rowId, 'quantity', quantity);
+    
     // Update balances immediately
     updateBalances();
+}
+
+// Handle Excel-like Formula Input
+function handleFormulaInput(input, table, rowId, field) {
+    const value = input.value.trim();
+    
+    // Check if it's a formula (starts with =)
+    if (value.startsWith('=')) {
+        try {
+            // Simple formula evaluation (basic operations)
+            const formula = value.substring(1); // Remove =
+            const result = evaluateFormula(formula);
+            
+            // Update input with calculated result
+            input.value = result;
+            
+            // Update the field
+            updateField(table, rowId, field, result);
+            
+            // Update row calculations
+            if (table === 'inventory') {
+                updateInventoryRow(rowId);
+            } else if (table === 'spareParts') {
+                updateSparePartsRow(rowId);
+            }
+        } catch (error) {
+            alert('Formula error: ' + error.message);
+        }
+    } else {
+        // Regular numeric input
+        const numValue = parseFloat(value) || 0;
+        
+        // Update the field
+        updateField(table, rowId, field, numValue);
+        
+        // Update row calculations
+        if (table === 'inventory') {
+            updateInventoryRow(rowId);
+        } else if (table === 'spareParts') {
+            updateSparePartsRow(rowId);
+        }
+    }
+}
+
+// Evaluate Simple Excel-like Formulas
+function evaluateFormula(formula) {
+    // Remove spaces and convert to lowercase
+    formula = formula.replace(/\s/g, '').toLowerCase();
+    
+    // Basic arithmetic operations
+    if (formula.includes('+')) {
+        const parts = formula.split('+');
+        return parts.reduce((sum, part) => sum + parseFloat(part || 0), 0);
+    }
+    
+    if (formula.includes('-')) {
+        const parts = formula.split('-');
+        return parts.reduce((result, part, index) => {
+            if (index === 0) return parseFloat(part || 0);
+            return result - parseFloat(part || 0);
+        }, 0);
+    }
+    
+    if (formula.includes('*')) {
+        const parts = formula.split('*');
+        return parts.reduce((product, part) => product * parseFloat(part || 0), 1);
+    }
+    
+    if (formula.includes('/')) {
+        const parts = formula.split('/');
+        return parts.reduce((quotient, part, index) => {
+            if (index === 0) return parseFloat(part || 0);
+            return quotient / parseFloat(part || 1);
+        }, 0);
+    }
+    
+    // Return as number if it's just a number
+    return parseFloat(formula) || 0;
 }
 
 // Update Balances
