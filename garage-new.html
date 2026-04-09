@@ -475,6 +475,10 @@
                 <i class="fas fa-money-bill-wave"></i>
                 المصروفات
             </button>
+            <button class="tab-button" onclick="switchTab('balances')">
+                <i class="fas fa-balance-scale"></i>
+                الأرصدة
+            </button>
             <button class="tab-button" onclick="switchTab('settings')">
                 <i class="fas fa-cog"></i>
                 القوائم
@@ -506,8 +510,7 @@
                                 <th>البيان</th>
                                 <th>الصنف</th>
                                 <th>الكمية</th>
-                                <th>وارد</th>
-                                <th>صادر</th>
+                                <th>السعر</th>
                                 <th>الرصيد</th>
                                 <th>إجراءات</th>
                             </tr>
@@ -542,8 +545,7 @@
                                 <th>البيان</th>
                                 <th>الصنف</th>
                                 <th>الكمية</th>
-                                <th>وارد</th>
-                                <th>صادر</th>
+                                <th>السعر</th>
                                 <th>الرصيد</th>
                                 <th>إجراءات</th>
                             </tr>
@@ -656,6 +658,38 @@
                             <!-- Data rows will be generated here -->
                         </tbody>
                     </table>
+                </div>
+            </div>
+
+            <!-- الأرصدة Tab -->
+            <div class="tab-content" id="tab-balances">
+                <div class="summary-section">
+                    <h2 style="color: var(--primary); margin-bottom: 1.5rem;">
+                        <i class="fas fa-balance-scale"></i>
+                        ملخص الأرصدة المالية
+                    </h2>
+                    <div class="summary-grid">
+                        <div class="summary-card">
+                            <div class="summary-title">إجمالي رصيد المخزن</div>
+                            <div class="summary-amount" id="totalInventoryBalance">0.00</div>
+                        </div>
+                        <div class="summary-card">
+                            <div class="summary-title">إجمالي رصيد قطع الغيار</div>
+                            <div class="summary-amount" id="totalSparePartsBalance">0.00</div>
+                        </div>
+                        <div class="summary-card">
+                            <div class="summary-title">إجمالي العهد</div>
+                            <div class="summary-amount" id="totalCustodyBalance">0.00</div>
+                        </div>
+                        <div class="summary-card">
+                            <div class="summary-title">إجمالي المصروفات</div>
+                            <div class="summary-amount" id="totalExpensesBalance">0.00</div>
+                        </div>
+                        <div class="summary-card" style="background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); color: white;">
+                            <div class="summary-title" style="color: white;">صافي القيمة الإجمالية</div>
+                            <div class="summary-amount" id="netTotalBalance">0.00</div>
+                        </div>
+                    </div>
                 </div>
             </div>
 
@@ -848,6 +882,7 @@ function loadGarageData() {
             ...data[key]
         }));
         renderInventoryTable();
+        updateBalances();
     });
 
     // Load Spare Parts
@@ -858,6 +893,7 @@ function loadGarageData() {
             ...data[key]
         }));
         renderSparePartsTable();
+        updateBalances();
     });
 
     // Load Vehicles
@@ -868,6 +904,7 @@ function loadGarageData() {
             ...data[key]
         }));
         renderVehiclesTable();
+        updateBalances();
     });
 
     // Load Custody
@@ -878,6 +915,7 @@ function loadGarageData() {
             ...data[key]
         }));
         renderCustodyTable();
+        updateBalances();
     });
 
     // Load Expenses
@@ -888,6 +926,7 @@ function loadGarageData() {
             ...data[key]
         }));
         renderExpensesTable();
+        updateBalances();
     });
 }
 
@@ -901,6 +940,7 @@ function loadMasterData() {
             ...data[key]
         }));
         renderItemsTable();
+        updateBalances();
     });
 
     // Load Locations
@@ -959,7 +999,11 @@ function renderInventoryTable() {
     }
 
     tbody.innerHTML = data.map((row, index) => {
-        const balance = calculateBalance(row);
+        const item = masterData.items.find(item => item.name === row.item);
+        const price = item ? parseFloat(item.price) || 0 : 0;
+        const quantity = parseFloat(row.quantity) || 0;
+        const balance = quantity * price;
+        
         return `
             <tr data-id="${row.id}">
                 <td><input type="date" value="${row.date || today}" onchange="updateField('inventory', '${row.id}', 'date', this.value)"></td>
@@ -972,9 +1016,8 @@ function renderInventoryTable() {
                         `).join('')}
                     </select>
                 </td>
-                <td><input type="number" value="${row.quantity || 0}" placeholder="الكمية" onchange="calculateInventoryRow('${row.id}')"></td>
-                <td class="calculated">${row.incoming || 0}</td>
-                <td class="calculated">${row.outgoing || 0}</td>
+                <td><input type="number" value="${row.quantity || 0}" placeholder="الكمية" onchange="updateInventoryRow('${row.id}')"></td>
+                <td><input type="number" value="${price}" placeholder="السعر" onchange="updateInventoryRow('${row.id}')"></td>
                 <td class="calculated">${balance.toFixed(2)}</td>
                 <td>
                     <button class="btn btn-danger" onclick="deleteRow('inventory', '${row.id}')">
@@ -1004,7 +1047,11 @@ function renderSparePartsTable() {
     }
 
     tbody.innerHTML = data.map((row, index) => {
-        const balance = calculateBalance(row);
+        const item = masterData.items.find(item => item.name === row.item);
+        const price = item ? parseFloat(item.price) || 0 : 0;
+        const quantity = parseFloat(row.quantity) || 0;
+        const balance = quantity * price;
+        
         return `
             <tr data-id="${row.id}">
                 <td><input type="date" value="${row.date || today}" onchange="updateField('spareParts', '${row.id}', 'date', this.value)"></td>
@@ -1017,9 +1064,8 @@ function renderSparePartsTable() {
                         `).join('')}
                     </select>
                 </td>
-                <td><input type="number" value="${row.quantity || 0}" placeholder="الكمية" onchange="calculateSparePartsRow('${row.id}')"></td>
-                <td class="calculated">${row.incoming || 0}</td>
-                <td class="calculated">${row.outgoing || 0}</td>
+                <td><input type="number" value="${row.quantity || 0}" placeholder="الكمية" onchange="updateSparePartsRow('${row.id}')"></td>
+                <td><input type="number" value="${price}" placeholder="السعر" onchange="updateSparePartsRow('${row.id}')"></td>
                 <td class="calculated">${balance.toFixed(2)}</td>
                 <td>
                     <button class="btn btn-danger" onclick="deleteRow('spareParts', '${row.id}')">
@@ -1259,34 +1305,57 @@ function calculateBalance(row) {
     return incoming - outgoing;
 }
 
-// Calculate Inventory Row
-function calculateInventoryRow(rowId) {
+// Update Inventory Row
+function updateInventoryRow(rowId) {
     const row = garageData.inventory.find(r => r.id === rowId);
     if (!row) return;
     
-    const quantity = parseFloat(row.quantity) || 0;
-    const item = masterData.items.find(item => item.name === row.item);
-    const price = item ? parseFloat(item.price) || 0 : 0;
-    
-    const incoming = quantity * price;
-    const outgoing = parseFloat(row.outgoing) || 0;
-    
-    updateField('inventory', rowId, 'incoming', incoming);
+    // Update balances immediately
+    updateBalances();
 }
 
-// Calculate Spare Parts Row
-function calculateSparePartsRow(rowId) {
+// Update Spare Parts Row
+function updateSparePartsRow(rowId) {
     const row = garageData.spareParts.find(r => r.id === rowId);
     if (!row) return;
     
-    const quantity = parseFloat(row.quantity) || 0;
-    const item = masterData.items.find(item => item.name === row.item);
-    const price = item ? parseFloat(item.price) || 0 : 0;
-    
-    const incoming = quantity * price;
-    const outgoing = parseFloat(row.outgoing) || 0;
-    
-    updateField('spareParts', rowId, 'incoming', incoming);
+    // Update balances immediately
+    updateBalances();
+}
+
+// Update Balances
+function updateBalances() {
+    // Calculate total inventory balance
+    const totalInventoryBalance = garageData.inventory.reduce((sum, row) => {
+        const item = masterData.items.find(item => item.name === row.item);
+        const price = item ? parseFloat(item.price) || 0 : 0;
+        const quantity = parseFloat(row.quantity) || 0;
+        return sum + (quantity * price);
+    }, 0);
+
+    // Calculate total spare parts balance
+    const totalSparePartsBalance = garageData.spareParts.reduce((sum, row) => {
+        const item = masterData.items.find(item => item.name === row.item);
+        const price = item ? parseFloat(item.price) || 0 : 0;
+        const quantity = parseFloat(row.quantity) || 0;
+        return sum + (quantity * price);
+    }, 0);
+
+    // Calculate total custody balance
+    const totalCustodyBalance = garageData.custody.reduce((sum, row) => sum + (parseFloat(row.amount) || 0), 0);
+
+    // Calculate total expenses balance
+    const totalExpensesBalance = garageData.expenses.reduce((sum, row) => sum + (parseFloat(row.amount) || 0), 0);
+
+    // Calculate net total balance
+    const netTotalBalance = totalInventoryBalance + totalSparePartsBalance + totalCustodyBalance - totalExpensesBalance;
+
+    // Update balances display
+    document.getElementById('totalInventoryBalance').textContent = totalInventoryBalance.toFixed(2);
+    document.getElementById('totalSparePartsBalance').textContent = totalSparePartsBalance.toFixed(2);
+    document.getElementById('totalCustodyBalance').textContent = totalCustodyBalance.toFixed(2);
+    document.getElementById('totalExpensesBalance').textContent = totalExpensesBalance.toFixed(2);
+    document.getElementById('netTotalBalance').textContent = netTotalBalance.toFixed(2);
 }
 
 // Update Summary
@@ -1328,9 +1397,7 @@ function addInventoryRow() {
         date: today,
         description: '',
         item: '',
-        quantity: 0,
-        incoming: 0,
-        outgoing: 0
+        quantity: 0
     };
     
     const newRef = db.ref('garage/inventory').push();
@@ -1344,9 +1411,7 @@ function addSparePartRow() {
         date: today,
         description: '',
         item: '',
-        quantity: 0,
-        incoming: 0,
-        outgoing: 0
+        quantity: 0
     };
     
     const newRef = db.ref('garage/spareParts').push();
@@ -1450,12 +1515,8 @@ function updateField(table, rowId, field, value) {
         .then(() => console.log(`${table} field updated`))
         .catch(error => console.error('Error updating field:', error));
     
-    // Recalculate if needed
-    if (table === 'inventory' && field === 'quantity') {
-        calculateInventoryRow(rowId);
-    } else if (table === 'spareParts' && field === 'quantity') {
-        calculateSparePartsRow(rowId);
-    }
+    // Update balances immediately
+    updateBalances();
     
     // Update summary
     updateSummary();
