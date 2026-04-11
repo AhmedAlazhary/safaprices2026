@@ -1,7 +1,24 @@
 // Firebase Configuration - Modular SDK v9
 import { initializeApp } from "https://www.gstatic.com/firebasejs/9.23.0/firebase-app.js";
 import { getAuth } from "https://www.gstatic.com/firebasejs/9.23.0/firebase-auth.js";
-import { getFirestore, serverTimestamp, runTransaction } from "https://www.gstatic.com/firebasejs/9.23.0/firebase-firestore.js";
+import { 
+  getFirestore, 
+  serverTimestamp, 
+  runTransaction,
+  collection,
+  doc,
+  addDoc,
+  updateDoc,
+  deleteDoc,
+  getDocs,
+  getDoc,
+  query,
+  orderBy,
+  where,
+  limit,
+  setDoc,
+  writeBatch
+} from "https://www.gstatic.com/firebasejs/9.23.0/firebase-firestore.js";
 import { getDatabase } from "https://www.gstatic.com/firebasejs/9.23.0/firebase-database.js";
 
 const firebaseConfig = {
@@ -21,7 +38,23 @@ const app = initializeApp(firebaseConfig);
 export const auth = getAuth(app);
 export const db = getFirestore(app);
 export const realtimeDb = getDatabase(app);
-export { serverTimestamp, runTransaction };
+export { 
+  serverTimestamp, 
+  runTransaction,
+  collection,
+  doc,
+  addDoc,
+  updateDoc,
+  deleteDoc,
+  getDocs,
+  getDoc,
+  query,
+  orderBy,
+  where,
+  limit,
+  setDoc,
+  writeBatch
+};
 
 // Export app for legacy compatibility
 export default app;

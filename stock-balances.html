@@ -401,7 +401,7 @@ tr:hover {
 </div>
 
 <script type="module">
-import { auth, db, serverTimestamp } from './firebase-config.js';
+import { auth, db, serverTimestamp, collection, doc, addDoc, updateDoc, deleteDoc, getDocs, getDoc, query, orderBy, where, limit, setDoc } from './firebase-config.js';
 
 // Check authentication
 auth.onAuthStateChanged(user => {
@@ -440,8 +440,8 @@ async function loadData() {
 // Load products
 async function loadProducts() {
   try {
-    const snapshot = await db.collection('products').get();
-    products = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
+    const productsSnapshot = await getDocs(collection(db, 'products'));
+    products = productsSnapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
   } catch (error) {
     console.error('Error loading products:', error);
   }
@@ -450,8 +450,8 @@ async function loadProducts() {
 // Load warehouses
 async function loadWarehouses() {
   try {
-    const snapshot = await db.collection('warehouses').get();
-    warehouses = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
+    const warehousesSnapshot = await getDocs(collection(db, 'warehouses'));
+    warehouses = warehousesSnapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
     
     // Update warehouse filter
     const warehouseFilter = document.getElementById('warehouseFilter');

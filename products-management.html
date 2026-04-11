@@ -523,7 +523,7 @@ tr:hover {
 </div>
 
 <script type="module">
-import { auth, db, serverTimestamp } from './firebase-config.js';
+import { auth, db, serverTimestamp, collection, doc, addDoc, updateDoc, deleteDoc, getDocs, getDoc, query, orderBy } from './firebase-config.js';
 
 // Check authentication
 auth.onAuthStateChanged(user => {
@@ -556,7 +556,7 @@ document.getElementById('productForm').addEventListener('submit', async (e) => {
       updatedAt: serverTimestamp()
     };
     
-    await db.collection('products').add(productData);
+    await addDoc(collection(db, 'products'), productData);
     
     showAlert('تم إضافة الصنف بنجاح', 'success');
     resetForm();
@@ -584,7 +584,7 @@ document.getElementById('editForm').addEventListener('submit', async (e) => {
       updatedAt: serverTimestamp()
     };
     
-    await db.collection('products').doc(editingProduct.id).update(updatedData);
+    await updateDoc(doc(db, 'products', editingProduct.id), updatedData);
     
     showAlert('تم تحديث الصنف بنجاح', 'success');
     closeEditModal();
@@ -598,7 +598,7 @@ document.getElementById('editForm').addEventListener('submit', async (e) => {
 // Load products
 async function loadProducts() {
   try {
-    const snapshot = await db.collection('products').orderBy('createdAt', 'desc').get();
+    const snapshot = await getDocs(query(collection(db, 'products'), orderBy('createdAt', 'desc')));
     products = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
     renderProductsTable(products);
   } catch (error) {
@@ -657,7 +657,7 @@ async function deleteProduct(productId) {
   if (!confirm('هل أنت متأكد من حذف هذا الصنف؟')) return;
   
   try {
-    await db.collection('products').doc(productId).delete();
+    await deleteDoc(doc(db, 'products', productId));
     showAlert('تم حذف الصنف بنجاح', 'success');
     loadProducts();
   } catch (error) {

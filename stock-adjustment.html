@@ -362,66 +362,7 @@ tr:hover {
     <div class="card">
       <h2>إنشاء عملية جرد</h2>
       <form id="adjustmentForm">
-        <div class="form-group">
-          <label for="warehouse">المخزن *</label>
-          <select id="warehouse" required>
-            <option value="">اختر المخزن</option>
-          </select>
-        </div>
-        
-        <div class="form-group">
-          <label for="categoryFilter">Category</label>
-          <select id="categoryFilter">
-            <option value="">All Categories</option>
-            <option value="spare_parts">Spare Parts</option>
-            <option value="oils_filters">Oils & Filters</option>
-            <option value="tires">Tires</option>
-            <option value="batteries">Batteries</option>
-            <option value="scrap_used">Scrap & Used</option>
-          </select>
-        </div>
-        
-        <div class="form-group">
-          <label for="adjustmentDate">التاريخ</label>
-          <input type="date" id="adjustmentDate" required>
-        </div>
-        
-        <div class="form-group">
-          <label for="notes">ملاحظات</label>
-          <textarea id="notes" rows="3" style="width: 100%; padding: 0.75rem; border: 2px solid #e0e0e0; border-radius: 8px; resize: vertical;"></textarea>
-        </div>
-        
-        <!-- Adjustment Items -->
-        <div class="adjustment-items">
-          <h3>الأصناف</h3>
-          <div id="itemsContainer">
-            <div class="item-row">
-              <select class="product-select" onchange="updateProductInfo(this)">
-                <option value="">اختر الصنف</option>
-              </select>
-              <input type="number" class="current-quantity" placeholder="الكمية الحالية" readonly>
-              <input type="number" class="actual-quantity" placeholder="الكمية الفعلية" min="0" onchange="calculateDifference(this)">
-              <input type="number" class="difference" placeholder="الفرق" readonly>
-              <input type="number" class="avg-cost" placeholder="سعر التكلفة" readonly>
-              <button type="button" class="btn btn-icon btn-danger" onclick="removeItem(this)">×</button>
-            </div>
-          </div>
-          
-          <button type="button" class="btn btn-secondary" onclick="addNewItem()">+ إضافة صنف</button>
-        </div>
-        
-        <!-- Summary -->
-        <div class="summary-section">
-          <div class="summary-row">
-            <span>إجمالي الفرق:</span>
-            <span id="totalDifference">0</span>
-          </div>
-          <div class="summary-row">
-            <span>قيمة التعديل:</span>
-            <span id="adjustmentValue">0.00</span>
-          </div>
-        </div>
-        
+        <!-- ... -->
         <div style="display: flex; gap: 1rem; margin-top: 1.5rem;">
           <button type="submit" class="btn btn-success">تنفيذ الجرد</button>
           <button type="button" class="btn btn-secondary" onclick="resetForm()">إعادة تعيين</button>
@@ -463,7 +404,7 @@ tr:hover {
 </div>
 
 <script type="module">
-import { auth, db, serverTimestamp, runTransaction } from './firebase-config.js';
+import { auth, db, serverTimestamp, collection, doc, addDoc, updateDoc, deleteDoc, getDocs, getDoc, query, orderBy, where, limit, setDoc } from './firebase-config.js';
 
 // Check authentication
 auth.onAuthStateChanged(user => {
@@ -501,8 +442,8 @@ async function initializeForm() {
 // Load products
 async function loadProducts() {
   try {
-    const snapshot = await db.collection('products').get();
-    products = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
+    const productsSnapshot = await getDocs(collection(db, 'products'));
+    products = productsSnapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
     
     // Update all product selects
     updateProductSelects();
@@ -514,8 +455,8 @@ async function loadProducts() {
 // Load warehouses
 async function loadWarehouses() {
   try {
-    const snapshot = await db.collection('warehouses').get();
-    warehouses = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
+    const warehousesSnapshot = await getDocs(collection(db, 'warehouses'));
+    warehouses = warehousesSnapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
     
     const warehouseSelect = document.getElementById('warehouse');
     warehouseSelect.innerHTML = '<option value="">اختر المخزن</option>' +

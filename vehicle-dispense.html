@@ -328,9 +328,9 @@ header nav button:hover {
     <h1>Warehouse Issue Order</h1>
   </div>
   <nav>
-    <button onclick="window.location='inventory-management.html'">Home</button>
-    <button onclick="goBack()">Back</button>
-    <button onclick="logout()">Logout</button>
+    <button onclick="window.location='inventory-management.html'">الرئيسية</button>
+    <button onclick="goBack()">رجوع</button>
+    <button onclick="logout()">تسجيل خروج</button>
   </nav>
 </header>
 
@@ -387,8 +387,8 @@ header nav button:hover {
             </div>
           </div>
           
-          <button type="button" class="btn btn-secondary" onclick="addNewItem()">+ Add Part</button>
-          <button type="button" class="btn btn-warning" onclick="collectScrap()">+ Receive Scrap</button>
+          <button type="button" class="btn btn-secondary" onclick="addNewItem()">+ إضافة قطعة</button>
+          <button type="button" class="btn btn-warning" onclick="collectScrap()">+ استلام تالف</button>
         </div>
         
         <!-- Issue Summary -->
@@ -404,8 +404,8 @@ header nav button:hover {
         </div>
         
         <div style="display: flex; gap: 1rem; margin-top: 1.5rem;">
-          <button type="submit" class="btn btn-success">Save Issue Order</button>
-          <button type="button" class="btn btn-secondary" onclick="resetForm()">Reset</button>
+          <button type="submit" class="btn btn-success">حفظ إذن الصرف</button>
+          <button type="button" class="btn btn-secondary" onclick="resetForm()">إعادة تعيين</button>
         </div>
       </form>
     </div>
@@ -455,15 +455,15 @@ header nav button:hover {
       </div>
       
       <div style="display: flex; gap: 1rem; justify-content: flex-end;">
-        <button type="button" class="btn btn-secondary" onclick="closeScrapModal()">Cancel</button>
-        <button type="submit" class="btn btn-warning">Receive Scrap</button>
+        <button type="button" class="btn btn-secondary" onclick="closeScrapModal()">إلغاء</button>
+        <button type="submit" class="btn btn-warning">استلام تالف</button>
       </div>
     </form>
   </div>
 </div>
 
 <script type="module">
-import { auth, db, serverTimestamp, runTransaction } from './firebase-config.js';
+import { auth, db, serverTimestamp, runTransaction, collection, doc, addDoc, updateDoc, deleteDoc, getDocs, getDoc, query, orderBy, where, limit, setDoc } from './firebase-config.js';
 
 // Check authentication
 auth.onAuthStateChanged(user => {
@@ -502,7 +502,7 @@ async function initializeForm() {
 async function loadProducts() {
   try {
     console.log('Loading products from Firestore...');
-    const snapshot = await db.collection('products').get();
+    const snapshot = await getDocs(collection(db, 'products'));
     console.log('Products snapshot size:', snapshot.size);
     
     products = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
@@ -520,7 +520,7 @@ async function loadProducts() {
 async function loadWarehouses() {
   try {
     console.log('Loading warehouses from Firestore...');
-    const snapshot = await db.collection('warehouses').get();
+    const snapshot = await getDocs(collection(db, 'warehouses'));
     console.log('Warehouses snapshot size:', snapshot.size);
     
     warehouses = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
@@ -680,7 +680,7 @@ async function createDispenseWithTransaction(dispenseData) {
   
   await runTransaction(db, async (transaction) => {
     // Create dispense record
-    const dispenseRef = db.collection('dispenses').doc();
+    const dispenseRef = doc(collection(db, 'dispenses'));
     console.log('Creating dispense record with ID:', dispenseRef.id);
     
     transaction.set(dispenseRef, {
@@ -699,7 +699,7 @@ async function createDispenseWithTransaction(dispenseData) {
       console.log('Processing item:', item);
       
       // Create dispense item
-      const itemRef = db.collection('dispense_items').doc();
+      const itemRef = doc(collection(db, 'dispense_items'));
       transaction.set(itemRef, {
         dispenseId: dispenseRef.id,
         productId: item.productId,
@@ -717,7 +717,7 @@ async function createDispenseWithTransaction(dispenseData) {
       
       // Update stock balance
       const stockId = `${item.productId}_${dispenseData.warehouseId}`;
-      const stockRef = db.collection('stock_balances').doc(stockId);
+      const stockRef = doc(collection(db, 'stock_balances'), stockId);
       const stockDoc = await transaction.get(stockRef);
       
       let currentQuantity = 0;
@@ -746,7 +746,7 @@ async function createDispenseWithTransaction(dispenseData) {
       });
       
       // Create stock movement
-      const movementRef = db.collection('stock_movements').doc();
+      const movementRef = doc(collection(db, 'stock_movements'));
       transaction.set(movementRef, {
         type: 'dispense',
         productId: item.productId,
@@ -774,10 +774,7 @@ async function createDispenseWithTransaction(dispenseData) {
 async function loadRecentDispenses() {
   try {
     console.log('Loading recent dispenses...');
-    const snapshot = await db.collection('dispenses')
-      .orderBy('createdAt', 'desc')
-      .limit(10)
-      .get();
+    const snapshot = await getDocs(query(collection(db, 'dispenses'), orderBy('createdAt', 'desc'), limit(10)));
     
     const container = document.getElementById('recentDispenses');
     

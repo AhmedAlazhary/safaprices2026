@@ -350,9 +350,9 @@ tr:hover {
     <h1>Scrap Inventory</h1>
   </div>
   <nav>
-    <button onclick="window.location='inventory-management.html'">Home</button>
-    <button onclick="goBack()">Back</button>
-    <button onclick="logout()">Logout</button>
+    <button onclick="window.location='inventory-management.html'">الرئيسية</button>
+    <button onclick="goBack()">رجوع</button>
+    <button onclick="logout()">تسجيل خروج</button>
   </nav>
 </header>
 
@@ -398,9 +398,9 @@ tr:hover {
       </div>
     </div>
     <div style="display: flex; gap: 1rem;">
-      <button class="btn btn-primary" onclick="applyFilters()">Apply Filters</button>
-      <button class="btn btn-secondary" onclick="clearFilters()">Clear Filters</button>
-      <button class="btn btn-warning" onclick="sellScrap()">Sell Selected</button>
+      <button class="btn btn-primary" onclick="applyFilters()">تطبيق الفلاتر</button>
+      <button class="btn btn-secondary" onclick="clearFilters()">مسح الفلاتر</button>
+      <button class="btn btn-warning" onclick="sellScrap()">بيع المحدد</button>
     </div>
   </div>
 
@@ -460,15 +460,15 @@ tr:hover {
       </div>
       
       <div style="display: flex; gap: 1rem; justify-content: flex-end;">
-        <button type="button" class="btn btn-secondary" onclick="closeSellModal()">Cancel</button>
-        <button type="submit" class="btn btn-success">Sell Scrap</button>
+        <button type="button" class="btn btn-secondary" onclick="closeSellModal()">إلغاء</button>
+        <button type="submit" class="btn btn-success">بيع الخردة</button>
       </div>
     </form>
   </div>
 </div>
 
 <script type="module">
-import { auth, db, serverTimestamp, runTransaction } from './firebase-config.js';
+import { auth, db, serverTimestamp, runTransaction, collection, doc, addDoc, updateDoc, deleteDoc, getDocs, getDoc, query, orderBy, where, limit, setDoc } from './firebase-config.js';
 
 // Check authentication
 auth.onAuthStateChanged(user => {
@@ -507,7 +507,7 @@ async function loadData() {
 // Load products
 async function loadProducts() {
   try {
-    const snapshot = await db.collection('products').get();
+    const snapshot = await getDocs(collection(db, 'products'));
     products = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
   } catch (error) {
     console.error('Error loading products:', error);
@@ -517,7 +517,7 @@ async function loadProducts() {
 // Load warehouses
 async function loadWarehouses() {
   try {
-    const snapshot = await db.collection('warehouses').get();
+    const snapshot = await getDocs(collection(db, 'warehouses'));
     warehouses = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
     
     // Update warehouse filter
@@ -536,14 +536,11 @@ async function loadScrapInventory() {
     const scrapProducts = products.filter(p => p.categoryId === 'scrap_used');
     
     // Get stock balances for scrap products
-    const stockSnapshot = await db.collection('stock_balances').get();
+    const stockSnapshot = await getDocs(collection(db, 'stock_balances'));
     const stockBalances = stockSnapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
     
     // Get scrap movements for additional info
-    const movementsSnapshot = await db.collection('stock_movements')
-      .where('type', '==', 'scrap_in')
-      .orderBy('date', 'desc')
-      .get();
+    const movementsSnapshot = await getDocs(query(collection(db, 'stock_movements'), where('type', '==', 'scrap_in'), orderBy('date', 'desc')));
     
     const scrapMovements = movementsSnapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
     
@@ -612,8 +609,8 @@ function renderScrapTable() {
         <td>${new Date(item.dateReceived).toLocaleDateString('ar-EG')}</td>
         <td>
           <div class="action-buttons">
-            <button class="btn btn-sm btn-primary" onclick="viewDetails('${item.id}')">View</button>
-            <button class="btn btn-sm btn-warning" onclick="editItem('${item.id}')">Edit</button>
+            <button class="btn btn-sm btn-primary" onclick="viewDetails('${item.id}')">عرض</button>
+            <button class="btn btn-sm btn-warning" onclick="editItem('${item.id}')">تعديل</button>
           </div>
         </td>
       </tr>
