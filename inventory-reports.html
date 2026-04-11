@@ -1,0 +1,1099 @@
+<!DOCTYPE html>
+<html lang="ar" dir="rtl">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>التقارير - نظام المخازن</title>
+
+<style>
+* {
+  margin: 0;
+  padding: 0;
+  box-sizing: border-box;
+}
+
+body {
+  font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+  background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+  min-height: 100vh;
+}
+
+header {
+  background: rgba(255, 255, 255, 0.95);
+  backdrop-filter: blur(10px);
+  box-shadow: 0 2px 20px rgba(0, 0, 0, 0.1);
+  padding: 1rem 2rem;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  position: sticky;
+  top: 0;
+  z-index: 100;
+}
+
+header img {
+  height: 50px;
+}
+
+header h1 {
+  color: #2c3e50;
+  font-size: 1.8rem;
+}
+
+header nav {
+  display: flex;
+  gap: 1rem;
+}
+
+header nav button {
+  background: #3498db;
+  color: white;
+  border: none;
+  padding: 0.5rem 1rem;
+  border-radius: 8px;
+  cursor: pointer;
+  transition: all 0.3s ease;
+}
+
+header nav button:hover {
+  background: #2980b9;
+  transform: translateY(-2px);
+}
+
+.container {
+  max-width: 1400px;
+  margin: 2rem auto;
+  padding: 0 1rem;
+}
+
+.reports-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+  gap: 1.5rem;
+  margin-bottom: 2rem;
+}
+
+.report-card {
+  background: rgba(255, 255, 255, 0.95);
+  backdrop-filter: blur(10px);
+  border-radius: 16px;
+  padding: 1.5rem;
+  box-shadow: 0 8px 32px rgba(0, 0, 0, 0.1);
+  transition: all 0.3s ease;
+  border: 1px solid rgba(255, 255, 255, 0.2);
+  cursor: pointer;
+}
+
+.report-card:hover {
+  transform: translateY(-5px);
+  box-shadow: 0 12px 40px rgba(0, 0, 0, 0.15);
+}
+
+.report-card h3 {
+  color: #2c3e50;
+  margin-bottom: 1rem;
+  font-size: 1.2rem;
+}
+
+.report-card p {
+  color: #7f8c8d;
+  margin-bottom: 1rem;
+}
+
+.report-icon {
+  width: 60px;
+  height: 60px;
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 1.5rem;
+  margin-bottom: 1rem;
+}
+
+.filters-section {
+  background: rgba(255, 255, 255, 0.95);
+  backdrop-filter: blur(10px);
+  border-radius: 16px;
+  padding: 1.5rem;
+  box-shadow: 0 8px 32px rgba(0, 0, 0, 0.1);
+  margin-bottom: 2rem;
+  display: none;
+}
+
+.filters-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+  gap: 1rem;
+  margin-bottom: 1rem;
+}
+
+.form-group {
+  display: flex;
+  flex-direction: column;
+}
+
+.form-group label {
+  margin-bottom: 0.5rem;
+  color: #2c3e50;
+  font-weight: 500;
+}
+
+.form-group input,
+.form-group select {
+  padding: 0.75rem;
+  border: 2px solid #e0e0e0;
+  border-radius: 8px;
+  font-size: 1rem;
+  transition: border-color 0.3s ease;
+}
+
+.form-group input:focus,
+.form-group select:focus {
+  outline: none;
+  border-color: #3498db;
+}
+
+.btn {
+  padding: 0.75rem 1.5rem;
+  border: none;
+  border-radius: 8px;
+  font-size: 1rem;
+  cursor: pointer;
+  transition: all 0.3s ease;
+  font-weight: 500;
+}
+
+.btn-primary {
+  background: #3498db;
+  color: white;
+}
+
+.btn-primary:hover {
+  background: #2980b9;
+  transform: translateY(-2px);
+}
+
+.btn-secondary {
+  background: #95a5a6;
+  color: white;
+}
+
+.btn-secondary:hover {
+  background: #7f8c8d;
+  transform: translateY(-2px);
+}
+
+.btn-success {
+  background: #27ae60;
+  color: white;
+}
+
+.btn-success:hover {
+  background: #229954;
+  transform: translateY(-2px);
+}
+
+.report-container {
+  background: rgba(255, 255, 255, 0.95);
+  backdrop-filter: blur(10px);
+  border-radius: 16px;
+  padding: 1.5rem;
+  box-shadow: 0 8px 32px rgba(0, 0, 0, 0.1);
+  display: none;
+}
+
+.report-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 1.5rem;
+}
+
+.report-header h2 {
+  color: #2c3e50;
+}
+
+.table-container {
+  overflow-x: auto;
+  border-radius: 12px;
+  box-shadow: 0 4px 16px rgba(0, 0, 0, 0.1);
+}
+
+table {
+  width: 100%;
+  border-collapse: collapse;
+  background: white;
+}
+
+th {
+  background: #3498db;
+  color: white;
+  padding: 1rem;
+  text-align: right;
+  font-weight: 600;
+  position: sticky;
+  top: 0;
+  z-index: 10;
+}
+
+td {
+  padding: 1rem;
+  border-bottom: 1px solid #ecf0f1;
+  text-align: right;
+}
+
+tr:hover {
+  background: #f8f9fa;
+}
+
+.summary-cards {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+  gap: 1rem;
+  margin-bottom: 1.5rem;
+}
+
+.summary-card {
+  background: #f8f9fa;
+  padding: 1rem;
+  border-radius: 8px;
+  text-align: center;
+}
+
+.summary-value {
+  font-size: 1.5rem;
+  font-weight: bold;
+  color: #2c3e50;
+}
+
+.summary-label {
+  color: #7f8c8d;
+  font-size: 0.9rem;
+}
+
+.chart-container {
+  background: white;
+  padding: 1rem;
+  border-radius: 8px;
+  margin-bottom: 1rem;
+  height: 300px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: #7f8c8d;
+}
+
+.loading {
+  text-align: center;
+  padding: 2rem;
+}
+
+.spinner {
+  border: 4px solid #f3f3f3;
+  border-top: 4px solid #3498db;
+  border-radius: 50%;
+  width: 40px;
+  height: 40px;
+  animation: spin 1s linear infinite;
+  margin: 0 auto;
+}
+
+@keyframes spin {
+  0% { transform: rotate(0deg); }
+  100% { transform: rotate(360deg); }
+}
+
+@media (max-width: 768px) {
+  header {
+    flex-direction: column;
+    gap: 1rem;
+  }
+  
+  .reports-grid {
+    grid-template-columns: 1fr;
+  }
+  
+  .filters-grid {
+    grid-template-columns: 1fr;
+  }
+}
+</style>
+</head>
+
+<body>
+
+<header>
+  <div style="display: flex; align-items: center; gap: 1rem;">
+    <img src="logo.png" alt="شعار مكتب الصفا">
+    <h1>التقارير</h1>
+  </div>
+  <nav>
+    <button onclick="window.location='inventory-management.html'">الرئيسية</button>
+    <button onclick="goBack()">رجوع</button>
+    <button onclick="logout()">تسجيل خروج</button>
+  </nav>
+</header>
+
+<div class="container">
+  <!-- Reports Grid -->
+  <div class="reports-grid">
+    <div class="report-card" onclick="openReport('stock-balance')">
+      <div class="report-icon" style="background: #3498db; color: white;">📊</div>
+      <h3>تقرير رصيد المخزون</h3>
+      <p>عرض أرصدة المخزون الحالية لكل المنتجات والمخازن</p>
+    </div>
+    
+    <div class="report-card" onclick="openReport('product-movement')">
+      <div class="report-icon" style="background: #27ae60; color: white;">🔄</div>
+      <h3>حركة الصنف</h3>
+      <p>تتبع حركات صنف معين خلال فترة زمنية محددة</p>
+    </div>
+    
+    <div class="report-card" onclick="openReport('profit-loss')">
+      <div class="report-icon" style="background: #f39c12; color: white;">💰</div>
+      <h3>تقرير الأرباح</h3>
+      <p>حساب الأرباح والخسائر من المبيعات والمشتريات</p>
+    </div>
+    
+    <div class="report-card" onclick="openReport('low-stock')">
+      <div class="report-icon" style="background: #e74c3c; color: white;">⚠️</div>
+      <h3>الأصناف الناقصة</h3>
+      <p>عرض الأصناف التي وصلت للحد الأدنى أو أقل</p>
+    </div>
+    
+    <div class="report-card" onclick="openReport('sales-summary')">
+      <div class="report-icon" style="background: #9b59b6; color: white;">📈</div>
+      <h3>ملخص المبيعات</h3>
+      <p>إحصائيات المبيعات خلال فترة زمنية محددة</p>
+    </div>
+    
+    <div class="report-card" onclick="openReport('warehouse-value')">
+      <div class="report-icon" style="background: #1abc9c; color: white;">🏪</div>
+      <h3>قيمة المخازن</h3>
+      <p>حساب القيمة الإجمالية للمخزون في كل مخزن</p>
+    </div>
+  </div>
+
+  <!-- Filters Section -->
+  <div class="filters-section" id="filtersSection">
+    <h2 style="margin-bottom: 1rem; color: #2c3e50;">فلاتر التقرير</h2>
+    <div class="filters-grid">
+      <div class="form-group">
+        <label for="dateFrom">من تاريخ</label>
+        <input type="date" id="dateFrom">
+      </div>
+      <div class="form-group">
+        <label for="dateTo">إلى تاريخ</label>
+        <input type="date" id="dateTo">
+      </div>
+      <div class="form-group" id="productFilterGroup">
+        <label for="productFilter">الصنف</label>
+        <select id="productFilter">
+          <option value="">كل الأصناف</option>
+        </select>
+      </div>
+      <div class="form-group" id="warehouseFilterGroup">
+        <label for="warehouseFilter">المخزن</label>
+        <select id="warehouseFilter">
+          <option value="">كل المخازن</option>
+        </select>
+      </div>
+    </div>
+    <div style="display: flex; gap: 1rem;">
+      <button class="btn btn-primary" onclick="generateReport()">توليد التقرير</button>
+      <button class="btn btn-secondary" onclick="exportReport()">تصدير Excel</button>
+      <button class="btn btn-secondary" onclick="closeReport()">إغلاق</button>
+    </div>
+  </div>
+
+  <!-- Report Container -->
+  <div class="report-container" id="reportContainer">
+    <div class="report-header">
+      <h2 id="reportTitle">التقرير</h2>
+      <button class="btn btn-success" onclick="exportReport()">تصدير Excel</button>
+    </div>
+    
+    <!-- Summary Cards -->
+    <div class="summary-cards" id="summaryCards"></div>
+    
+    <!-- Chart -->
+    <div class="chart-container" id="chartContainer">
+      <p>الرسم البياني سيظهر هنا</p>
+    </div>
+    
+    <!-- Table -->
+    <div class="table-container">
+      <table id="reportTable">
+        <thead id="reportTableHead">
+          <tr></tr>
+        </thead>
+        <tbody id="reportTableBody">
+          <tr>
+            <td colspan="10" class="loading">
+              <div class="spinner"></div>
+            </td>
+          </tr>
+        </tbody>
+      </table>
+    </div>
+  </div>
+</div>
+
+<script type="module">
+import { auth, db, serverTimestamp } from './firebase-config.js';
+
+// Check authentication
+auth.onAuthStateChanged(user => {
+  if (!user) {
+    window.location = "index.html";
+    return;
+  }
+  
+  // Initialize
+  initializeReports();
+});
+
+// Global variables
+let currentReport = '';
+let products = [];
+let warehouses = [];
+let reportData = [];
+
+// Initialize reports
+async function initializeReports() {
+  try {
+    await Promise.all([
+      loadProducts(),
+      loadWarehouses()
+    ]);
+  } catch (error) {
+    console.error('Error initializing reports:', error);
+  }
+}
+
+// Load products
+async function loadProducts() {
+  try {
+    const snapshot = await db.collection('products').get();
+    products = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
+    
+    const productFilter = document.getElementById('productFilter');
+    productFilter.innerHTML = '<option value="">كل الأصناف</option>' +
+      products.map(p => `<option value="${p.id}">${p.name}</option>`).join('');
+  } catch (error) {
+    console.error('Error loading products:', error);
+  }
+}
+
+// Load warehouses
+async function loadWarehouses() {
+  try {
+    const snapshot = await db.collection('warehouses').get();
+    warehouses = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
+    
+    const warehouseFilter = document.getElementById('warehouseFilter');
+    warehouseFilter.innerHTML = '<option value="">كل المخازن</option>' +
+      warehouses.map(w => `<option value="${w.id}">${w.name}</option>`).join('');
+  } catch (error) {
+    console.error('Error loading warehouses:', error);
+  }
+}
+
+// Open report
+function openReport(reportType) {
+  currentReport = reportType;
+  
+  // Show filters and report container
+  document.getElementById('filtersSection').style.display = 'block';
+  document.getElementById('reportContainer').style.display = 'block';
+  
+  // Set default dates
+  const today = new Date();
+  const lastMonth = new Date(today.getFullYear(), today.getMonth() - 1, today.getDate());
+  document.getElementById('dateFrom').value = lastMonth.toISOString().split('T')[0];
+  document.getElementById('dateTo').value = today.toISOString().split('T')[0];
+  
+  // Show/hide relevant filters
+  const productFilterGroup = document.getElementById('productFilterGroup');
+  const warehouseFilterGroup = document.getElementById('warehouseFilterGroup');
+  
+  switch (reportType) {
+    case 'stock-balance':
+      productFilterGroup.style.display = 'none';
+      warehouseFilterGroup.style.display = 'block';
+      document.getElementById('reportTitle').textContent = 'تقرير رصيد المخزون';
+      break;
+    case 'product-movement':
+      productFilterGroup.style.display = 'block';
+      warehouseFilterGroup.style.display = 'block';
+      document.getElementById('reportTitle').textContent = 'حركة الصنف';
+      break;
+    case 'profit-loss':
+      productFilterGroup.style.display = 'none';
+      warehouseFilterGroup.style.display = 'none';
+      document.getElementById('reportTitle').textContent = 'تقرير الأرباح';
+      break;
+    case 'low-stock':
+      productFilterGroup.style.display = 'none';
+      warehouseFilterGroup.style.display = 'block';
+      document.getElementById('reportTitle').textContent = 'الأصناف الناقصة';
+      break;
+    case 'sales-summary':
+      productFilterGroup.style.display = 'none';
+      warehouseFilterGroup.style.display = 'block';
+      document.getElementById('reportTitle').textContent = 'ملخص المبيعات';
+      break;
+    case 'warehouse-value':
+      productFilterGroup.style.display = 'none';
+      warehouseFilterGroup.style.display = 'none';
+      document.getElementById('reportTitle').textContent = 'قيمة المخازن';
+      break;
+  }
+  
+  // Auto-generate report
+  generateReport();
+}
+
+// Generate report
+async function generateReport() {
+  try {
+    const dateFrom = document.getElementById('dateFrom').value;
+    const dateTo = document.getElementById('dateTo').value;
+    const productFilter = document.getElementById('productFilter').value;
+    const warehouseFilter = document.getElementById('warehouseFilter').value;
+    
+    switch (currentReport) {
+      case 'stock-balance':
+        await generateStockBalanceReport(warehouseFilter);
+        break;
+      case 'product-movement':
+        await generateProductMovementReport(dateFrom, dateTo, productFilter, warehouseFilter);
+        break;
+      case 'profit-loss':
+        await generateProfitLossReport(dateFrom, dateTo);
+        break;
+      case 'low-stock':
+        await generateLowStockReport(warehouseFilter);
+        break;
+      case 'sales-summary':
+        await generateSalesSummaryReport(dateFrom, dateTo, warehouseFilter);
+        break;
+      case 'warehouse-value':
+        await generateWarehouseValueReport();
+        break;
+    }
+  } catch (error) {
+    console.error('Error generating report:', error);
+  }
+}
+
+// Generate stock balance report
+async function generateStockBalanceReport(warehouseFilter) {
+  const snapshot = await db.collection('stock_balances').get();
+  let stockBalances = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
+  
+  if (warehouseFilter) {
+    stockBalances = stockBalances.filter(s => s.warehouseId === warehouseFilter);
+  }
+  
+  // Join with products and warehouses
+  reportData = stockBalances.map(stock => {
+    const product = products.find(p => p.id === stock.productId);
+    const warehouse = warehouses.find(w => w.id === stock.warehouseId);
+    
+    return {
+      productName: product ? product.name : 'غير معروف',
+      warehouseName: warehouse ? warehouse.name : 'غير معروف',
+      quantity: stock.quantity || 0,
+      avgCost: stock.avgCost || 0,
+      totalValue: (stock.quantity || 0) * (stock.avgCost || 0)
+    };
+  });
+  
+  renderStockBalanceTable();
+  renderStockBalanceSummary();
+}
+
+// Generate product movement report
+async function generateProductMovementReport(dateFrom, dateTo, productFilter, warehouseFilter) {
+  let query = db.collection('stock_movements').orderBy('date', 'desc');
+  
+  if (dateFrom) {
+    query = query.where('date', '>=', new Date(dateFrom));
+  }
+  if (dateTo) {
+    query = query.where('date', '<=', new Date(dateTo + 'T23:59:59'));
+  }
+  if (productFilter) {
+    query = query.where('productId', '==', productFilter);
+  }
+  if (warehouseFilter) {
+    query = query.where('warehouseId', '==', warehouseFilter);
+  }
+  
+  const snapshot = await query.get();
+  reportData = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
+  
+  renderProductMovementTable();
+  renderProductMovementSummary();
+}
+
+// Generate profit loss report
+async function generateProfitLossReport(dateFrom, dateTo) {
+  const salesSnapshot = await db.collection('stock_movements')
+    .where('type', '==', 'sale')
+    .where('date', '>=', new Date(dateFrom))
+    .where('date', '<=', new Date(dateTo + 'T23:59:59'))
+    .get();
+  
+  const purchasesSnapshot = await db.collection('stock_movements')
+    .where('type', '==', 'purchase')
+    .where('date', '>=', new Date(dateFrom))
+    .where('date', '<=', new Date(dateTo + 'T23:59:59'))
+    .get();
+  
+  const sales = salesSnapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
+  const purchases = purchasesSnapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
+  
+  const totalSales = sales.reduce((sum, sale) => sum + Math.abs(sale.totalCost || 0), 0);
+  const totalPurchases = purchases.reduce((sum, purchase) => sum + (purchase.totalCost || 0), 0);
+  const profit = totalSales - totalPurchases;
+  
+  reportData = {
+    totalSales,
+    totalPurchases,
+    profit,
+    profitMargin: totalSales > 0 ? (profit / totalSales * 100) : 0
+  };
+  
+  renderProfitLossTable();
+  renderProfitLossSummary();
+}
+
+// Generate low stock report
+async function generateLowStockReport(warehouseFilter) {
+  const snapshot = await db.collection('stock_balances').get();
+  let stockBalances = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
+  
+  if (warehouseFilter) {
+    stockBalances = stockBalances.filter(s => s.warehouseId === warehouseFilter);
+  }
+  
+  // Filter low stock items
+  reportData = stockBalances
+    .map(stock => {
+      const product = products.find(p => p.id === stock.productId);
+      const warehouse = warehouses.find(w => w.id === stock.warehouseId);
+      
+      return {
+        productName: product ? product.name : 'غير معروف',
+        warehouseName: warehouse ? warehouse.name : 'غير معروف',
+        quantity: stock.quantity || 0,
+        minStock: product ? product.minStock || 0 : 0,
+        avgCost: stock.avgCost || 0,
+        status: stock.quantity <= 0 ? 'منتهي' : stock.quantity <= (product?.minStock || 0) ? 'ناقص' : 'طبيعي'
+      };
+    })
+    .filter(item => item.status !== 'طبيعي');
+  
+  renderLowStockTable();
+  renderLowStockSummary();
+}
+
+// Generate sales summary report
+async function generateSalesSummaryReport(dateFrom, dateTo, warehouseFilter) {
+  let query = db.collection('stock_movements')
+    .where('type', '==', 'sale')
+    .orderBy('date', 'desc');
+  
+  if (dateFrom) {
+    query = query.where('date', '>=', new Date(dateFrom));
+  }
+  if (dateTo) {
+    query = query.where('date', '<=', new Date(dateTo + 'T23:59:59'));
+  }
+  if (warehouseFilter) {
+    query = query.where('warehouseId', '==', warehouseFilter);
+  }
+  
+  const snapshot = await query.get();
+  const sales = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
+  
+  // Group by product
+  const salesByProduct = {};
+  sales.forEach(sale => {
+    const product = products.find(p => p.id === sale.productId);
+    const productName = product ? product.name : 'غير معروف';
+    
+    if (!salesByProduct[productName]) {
+      salesByProduct[productName] = {
+        productName,
+        totalQuantity: 0,
+        totalRevenue: 0,
+        avgPrice: 0
+      };
+    }
+    
+    salesByProduct[productName].totalQuantity += Math.abs(sale.quantity);
+    salesByProduct[productName].totalRevenue += Math.abs(sale.totalCost);
+  });
+  
+  // Calculate average prices
+  Object.values(salesByProduct).forEach(item => {
+    item.avgPrice = item.totalQuantity > 0 ? item.totalRevenue / item.totalQuantity : 0;
+  });
+  
+  reportData = Object.values(salesByProduct).sort((a, b) => b.totalRevenue - a.totalRevenue);
+  
+  renderSalesSummaryTable();
+  renderSalesSummarySummary();
+}
+
+// Generate warehouse value report
+async function generateWarehouseValueReport() {
+  const snapshot = await db.collection('stock_balances').get();
+  const stockBalances = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
+  
+  // Group by warehouse
+  const warehouseValues = {};
+  let totalValue = 0;
+  
+  stockBalances.forEach(stock => {
+    const warehouse = warehouses.find(w => w.id === stock.warehouseId);
+    const warehouseName = warehouse ? warehouse.name : 'غير معروف';
+    const value = (stock.quantity || 0) * (stock.avgCost || 0);
+    
+    if (!warehouseValues[warehouseName]) {
+      warehouseValues[warehouseName] = {
+        warehouseName,
+        totalValue: 0,
+        productCount: 0
+      };
+    }
+    
+    warehouseValues[warehouseName].totalValue += value;
+    warehouseValues[warehouseName].productCount += 1;
+    totalValue += value;
+  });
+  
+  reportData = Object.values(warehouseValues).map(warehouse => ({
+    ...warehouse,
+    percentage: totalValue > 0 ? (warehouse.totalValue / totalValue * 100) : 0
+  }));
+  
+  renderWarehouseValueTable();
+  renderWarehouseValueSummary();
+}
+
+// Render functions for each report type
+function renderStockBalanceTable() {
+  const thead = document.getElementById('reportTableHead');
+  const tbody = document.getElementById('reportTableBody');
+  
+  thead.innerHTML = `
+    <tr>
+      <th>اسم الصنف</th>
+      <th>المخزن</th>
+      <th>الكمية</th>
+      <th>سعر التكلفة</th>
+      <th>الإجمالي</th>
+    </tr>
+  `;
+  
+  tbody.innerHTML = reportData.map(item => `
+    <tr>
+      <td>${item.productName}</td>
+      <td>${item.warehouseName}</td>
+      <td>${item.quantity}</td>
+      <td>${item.avgCost.toFixed(2)}</td>
+      <td>${item.totalValue.toFixed(2)}</td>
+    </tr>
+  `).join('');
+}
+
+function renderStockBalanceSummary() {
+  const summaryCards = document.getElementById('summaryCards');
+  const totalValue = reportData.reduce((sum, item) => sum + item.totalValue, 0);
+  const totalProducts = reportData.length;
+  
+  summaryCards.innerHTML = `
+    <div class="summary-card">
+      <div class="summary-value">${totalProducts}</div>
+      <div class="summary-label">إجمالي الأصناف</div>
+    </div>
+    <div class="summary-card">
+      <div class="summary-value">${totalValue.toFixed(2)}</div>
+      <div class="summary-label">إجمالي القيمة</div>
+    </div>
+  `;
+}
+
+function renderProductMovementTable() {
+  const thead = document.getElementById('reportTableHead');
+  const tbody = document.getElementById('reportTableBody');
+  
+  thead.innerHTML = `
+    <tr>
+      <th>التاريخ</th>
+      <th>الصنف</th>
+      <th>المخزن</th>
+      <th>نوع الحركة</th>
+      <th>الكمية</th>
+      <th>الإجمالي</th>
+    </tr>
+  `;
+  
+  tbody.innerHTML = reportData.map(item => {
+    const product = products.find(p => p.id === item.productId);
+    const warehouse = warehouses.find(w => w.id === item.warehouseId);
+    const typeText = item.type === 'sale' ? 'بيع' : item.type === 'purchase' ? 'شراء' : 'تحويل';
+    
+    return `
+      <tr>
+        <td>${item.date ? new Date(item.date.toDate()).toLocaleDateString('ar-EG') : '-'}</td>
+        <td>${product ? product.name : 'غير معروف'}</td>
+        <td>${warehouse ? warehouse.name : 'غير معروف'}</td>
+        <td>${typeText}</td>
+        <td>${item.quantity}</td>
+        <td>${(item.totalCost || 0).toFixed(2)}</td>
+      </tr>
+    `;
+  }).join('');
+}
+
+function renderProductMovementSummary() {
+  const summaryCards = document.getElementById('summaryCards');
+  const totalMovements = reportData.length;
+  const totalQuantity = reportData.reduce((sum, item) => sum + Math.abs(item.quantity), 0);
+  
+  summaryCards.innerHTML = `
+    <div class="summary-card">
+      <div class="summary-value">${totalMovements}</div>
+      <div class="summary-label">إجمالي الحركات</div>
+    </div>
+    <div class="summary-card">
+      <div class="summary-value">${totalQuantity}</div>
+      <div class="summary-label">إجمالي الكمية</div>
+    </div>
+  `;
+}
+
+function renderProfitLossTable() {
+  const thead = document.getElementById('reportTableHead');
+  const tbody = document.getElementById('reportTableBody');
+  
+  thead.innerHTML = `
+    <tr>
+      <th>البند</th>
+      <th>القيمة</th>
+    </tr>
+  `;
+  
+  tbody.innerHTML = `
+    <tr>
+      <td>إجمالي المبيعات</td>
+      <td>${reportData.totalSales.toFixed(2)}</td>
+    </tr>
+    <tr>
+      <td>إجمالي المشتريات</td>
+      <td>${reportData.totalPurchases.toFixed(2)}</td>
+    </tr>
+    <tr>
+      <td>الربح</td>
+      <td style="color: ${reportData.profit >= 0 ? '#27ae60' : '#e74c3c'}">${reportData.profit.toFixed(2)}</td>
+    </tr>
+    <tr>
+      <td>نسبة الربح</td>
+      <td>${reportData.profitMargin.toFixed(2)}%</td>
+    </tr>
+  `;
+}
+
+function renderProfitLossSummary() {
+  const summaryCards = document.getElementById('summaryCards');
+  
+  summaryCards.innerHTML = `
+    <div class="summary-card">
+      <div class="summary-value" style="color: ${reportData.profit >= 0 ? '#27ae60' : '#e74c3c'}">${reportData.profit.toFixed(2)}</div>
+      <div class="summary-label">صافي الربح</div>
+    </div>
+    <div class="summary-card">
+      <div class="summary-value">${reportData.profitMargin.toFixed(2)}%</div>
+      <div class="summary-label">نسبة الربح</div>
+    </div>
+  `;
+}
+
+function renderLowStockTable() {
+  const thead = document.getElementById('reportTableHead');
+  const tbody = document.getElementById('reportTableBody');
+  
+  thead.innerHTML = `
+    <tr>
+      <th>اسم الصنف</th>
+      <th>المخزن</th>
+      <th>الكمية</th>
+      <th>الحد الأدنى</th>
+      <th>الحالة</th>
+    </tr>
+  `;
+  
+  tbody.innerHTML = reportData.map(item => {
+    const statusClass = item.status === 'منتهي' ? 'color: #e74c3c' : 'color: #f39c12';
+    
+    return `
+      <tr>
+        <td>${item.productName}</td>
+        <td>${item.warehouseName}</td>
+        <td>${item.quantity}</td>
+        <td>${item.minStock}</td>
+        <td style="${statusClass}">${item.status}</td>
+      </tr>
+    `;
+  }).join('');
+}
+
+function renderLowStockSummary() {
+  const summaryCards = document.getElementById('summaryCards');
+  const criticalCount = reportData.filter(item => item.status === 'منتهي').length;
+  const lowCount = reportData.filter(item => item.status === 'ناقص').length;
+  
+  summaryCards.innerHTML = `
+    <div class="summary-card">
+      <div class="summary-value" style="color: #e74c3c">${criticalCount}</div>
+      <div class="summary-label">أصناف منتهية</div>
+    </div>
+    <div class="summary-card">
+      <div class="summary-value" style="color: #f39c12">${lowCount}</div>
+      <div class="summary-label">أصناف ناقصة</div>
+    </div>
+  `;
+}
+
+function renderSalesSummaryTable() {
+  const thead = document.getElementById('reportTableHead');
+  const tbody = document.getElementById('reportTableBody');
+  
+  thead.innerHTML = `
+    <tr>
+      <th>اسم الصنف</th>
+      <th>الكمية المباعة</th>
+      <th>الإجمالي</th>
+      <th>متوسط السعر</th>
+    </tr>
+  `;
+  
+  tbody.innerHTML = reportData.map(item => `
+    <tr>
+      <td>${item.productName}</td>
+      <td>${item.totalQuantity}</td>
+      <td>${item.totalRevenue.toFixed(2)}</td>
+      <td>${item.avgPrice.toFixed(2)}</td>
+    </tr>
+  `).join('');
+}
+
+function renderSalesSummarySummary() {
+  const summaryCards = document.getElementById('summaryCards');
+  const totalRevenue = reportData.reduce((sum, item) => sum + item.totalRevenue, 0);
+  const totalQuantity = reportData.reduce((sum, item) => sum + item.totalQuantity, 0);
+  
+  summaryCards.innerHTML = `
+    <div class="summary-card">
+      <div class="summary-value">${totalRevenue.toFixed(2)}</div>
+      <div class="summary-label">إجمالي الإيرادات</div>
+    </div>
+    <div class="summary-card">
+      <div class="summary-value">${totalQuantity}</div>
+      <div class="summary-label">إجمالي الكمية</div>
+    </div>
+  `;
+}
+
+function renderWarehouseValueTable() {
+  const thead = document.getElementById('reportTableHead');
+  const tbody = document.getElementById('reportTableBody');
+  
+  thead.innerHTML = `
+    <tr>
+      <th>اسم المخزن</th>
+      <th>عدد الأصناف</th>
+      <th>القيمة الإجمالية</th>
+      <th>النسبة المئوية</th>
+    </tr>
+  `;
+  
+  tbody.innerHTML = reportData.map(item => `
+    <tr>
+      <td>${item.warehouseName}</td>
+      <td>${item.productCount}</td>
+      <td>${item.totalValue.toFixed(2)}</td>
+      <td>${item.percentage.toFixed(2)}%</td>
+    </tr>
+  `).join('');
+}
+
+function renderWarehouseValueSummary() {
+  const summaryCards = document.getElementById('summaryCards');
+  const totalValue = reportData.reduce((sum, item) => sum + item.totalValue, 0);
+  const totalWarehouses = reportData.length;
+  
+  summaryCards.innerHTML = `
+    <div class="summary-card">
+      <div class="summary-value">${totalWarehouses}</div>
+      <div class="summary-label">عدد المخازن</div>
+    </div>
+    <div class="summary-card">
+      <div class="summary-value">${totalValue.toFixed(2)}</div>
+      <div class="summary-label">إجمالي القيمة</div>
+    </div>
+  `;
+}
+
+// Export report to Excel
+function exportReport() {
+  const table = document.getElementById('reportTable');
+  const rows = table.querySelectorAll('tr');
+  
+  let csvContent = '';
+  rows.forEach(row => {
+    const cells = row.querySelectorAll('td, th');
+    const rowData = Array.from(cells).map(cell => cell.textContent);
+    csvContent += rowData.join(',') + '\n';
+  });
+  
+  // Create download link
+  const blob = new Blob(['\ufeff' + csvContent], { type: 'text/csv;charset=utf-8;' });
+  const link = document.createElement('a');
+  const url = URL.createObjectURL(blob);
+  link.setAttribute('href', url);
+  link.setAttribute('download', `${currentReport}_${new Date().toISOString().split('T')[0]}.csv`);
+  link.style.visibility = 'hidden';
+  document.body.appendChild(link);
+  link.click();
+  document.body.removeChild(link);
+}
+
+// Close report
+function closeReport() {
+  document.getElementById('filtersSection').style.display = 'none';
+  document.getElementById('reportContainer').style.display = 'none';
+  currentReport = '';
+  reportData = [];
+}
+
+// Navigation functions
+function goBack() {
+  window.location = "inventory-management.html";
+}
+
+function logout() {
+  auth.signOut().then(() => {
+    window.location = "index.html";
+  });
+}
+</script>
+
+</body>
+</html>

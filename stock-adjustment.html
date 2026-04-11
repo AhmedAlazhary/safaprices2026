@@ -1,0 +1,874 @@
+<!DOCTYPE html>
+<html lang="ar" dir="rtl">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>جرد المخزون - نظام المخازن</title>
+
+<style>
+* {
+  margin: 0;
+  padding: 0;
+  box-sizing: border-box;
+}
+
+body {
+  font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+  background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+  min-height: 100vh;
+}
+
+header {
+  background: rgba(255, 255, 255, 0.95);
+  backdrop-filter: blur(10px);
+  box-shadow: 0 2px 20px rgba(0, 0, 0, 0.1);
+  padding: 1rem 2rem;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  position: sticky;
+  top: 0;
+  z-index: 100;
+}
+
+header img {
+  height: 50px;
+}
+
+header h1 {
+  color: #2c3e50;
+  font-size: 1.8rem;
+}
+
+header nav {
+  display: flex;
+  gap: 1rem;
+}
+
+header nav button {
+  background: #3498db;
+  color: white;
+  border: none;
+  padding: 0.5rem 1rem;
+  border-radius: 8px;
+  cursor: pointer;
+  transition: all 0.3s ease;
+}
+
+header nav button:hover {
+  background: #2980b9;
+  transform: translateY(-2px);
+}
+
+.container {
+  max-width: 1400px;
+  margin: 2rem auto;
+  padding: 0 1rem;
+}
+
+.main-content {
+  display: grid;
+  grid-template-columns: 1fr 2fr;
+  gap: 2rem;
+}
+
+.card {
+  background: rgba(255, 255, 255, 0.95);
+  backdrop-filter: blur(10px);
+  border-radius: 16px;
+  padding: 1.5rem;
+  box-shadow: 0 8px 32px rgba(0, 0, 0, 0.1);
+  border: 1px solid rgba(255, 255, 255, 0.2);
+}
+
+.card h2 {
+  color: #2c3e50;
+  margin-bottom: 1.5rem;
+  font-size: 1.4rem;
+}
+
+.form-group {
+  margin-bottom: 1.5rem;
+}
+
+.form-group label {
+  display: block;
+  margin-bottom: 0.5rem;
+  color: #2c3e50;
+  font-weight: 500;
+}
+
+.form-group input,
+.form-group select {
+  width: 100%;
+  padding: 0.75rem;
+  border: 2px solid #e0e0e0;
+  border-radius: 8px;
+  font-size: 1rem;
+  transition: border-color 0.3s ease;
+}
+
+.form-group input:focus,
+.form-group select:focus {
+  outline: none;
+  border-color: #3498db;
+}
+
+.btn {
+  padding: 0.75rem 1.5rem;
+  border: none;
+  border-radius: 8px;
+  font-size: 1rem;
+  cursor: pointer;
+  transition: all 0.3s ease;
+  font-weight: 500;
+}
+
+.btn-primary {
+  background: #3498db;
+  color: white;
+}
+
+.btn-primary:hover {
+  background: #2980b9;
+  transform: translateY(-2px);
+}
+
+.btn-success {
+  background: #27ae60;
+  color: white;
+}
+
+.btn-success:hover {
+  background: #229954;
+  transform: translateY(-2px);
+}
+
+.btn-danger {
+  background: #e74c3c;
+  color: white;
+}
+
+.btn-danger:hover {
+  background: #c0392b;
+  transform: translateY(-2px);
+}
+
+.btn-secondary {
+  background: #95a5a6;
+  color: white;
+}
+
+.btn-secondary:hover {
+  background: #7f8c8d;
+  transform: translateY(-2px);
+}
+
+.adjustment-items {
+  margin-top: 1.5rem;
+}
+
+.item-row {
+  display: grid;
+  grid-template-columns: 2fr 1fr 1fr 1fr 1fr auto;
+  gap: 0.5rem;
+  margin-bottom: 0.5rem;
+  align-items: center;
+}
+
+.item-row input,
+.item-row select {
+  padding: 0.5rem;
+  border: 2px solid #e0e0e0;
+  border-radius: 6px;
+  font-size: 0.9rem;
+}
+
+.item-row input:focus,
+.item-row select:focus {
+  outline: none;
+  border-color: #3498db;
+}
+
+.difference {
+  font-weight: bold;
+  text-align: center;
+}
+
+.difference.positive {
+  color: #27ae60;
+}
+
+.difference.negative {
+  color: #e74c3c;
+}
+
+.difference.zero {
+  color: #7f8c8d;
+}
+
+.table-container {
+  overflow-x: auto;
+  border-radius: 12px;
+  box-shadow: 0 4px 16px rgba(0, 0, 0, 0.1);
+}
+
+table {
+  width: 100%;
+  border-collapse: collapse;
+  background: white;
+}
+
+th {
+  background: #3498db;
+  color: white;
+  padding: 1rem;
+  text-align: right;
+  font-weight: 600;
+  position: sticky;
+  top: 0;
+  z-index: 10;
+}
+
+td {
+  padding: 1rem;
+  border-bottom: 1px solid #ecf0f1;
+  text-align: right;
+}
+
+tr:hover {
+  background: #f8f9fa;
+}
+
+.alert {
+  padding: 1rem;
+  border-radius: 8px;
+  margin-bottom: 1rem;
+}
+
+.alert-success {
+  background: #d4edda;
+  border: 1px solid #c3e6cb;
+  color: #155724;
+}
+
+.alert-error {
+  background: #f8d7da;
+  border: 1px solid #f5c6cb;
+  color: #721c24;
+}
+
+.alert-warning {
+  background: #fff3cd;
+  border: 1px solid #ffeaa7;
+  color: #856404;
+}
+
+.loading {
+  text-align: center;
+  padding: 2rem;
+}
+
+.spinner {
+  border: 4px solid #f3f3f3;
+  border-top: 4px solid #3498db;
+  border-radius: 50%;
+  width: 40px;
+  height: 40px;
+  animation: spin 1s linear infinite;
+  margin: 0 auto;
+}
+
+@keyframes spin {
+  0% { transform: rotate(0deg); }
+  100% { transform: rotate(360deg); }
+}
+
+.btn-sm {
+  padding: 0.5rem 1rem;
+  font-size: 0.875rem;
+}
+
+.btn-icon {
+  padding: 0.5rem;
+  border-radius: 50%;
+  width: 32px;
+  height: 32px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.summary-section {
+  background: #f8f9fa;
+  padding: 1.5rem;
+  border-radius: 12px;
+  margin-top: 1rem;
+}
+
+.summary-row {
+  display: flex;
+  justify-content: space-between;
+  margin-bottom: 0.5rem;
+  font-size: 1.1rem;
+}
+
+.summary-row.total {
+  font-weight: bold;
+  font-size: 1.3rem;
+  color: #2c3e50;
+  border-top: 2px solid #3498db;
+  padding-top: 0.5rem;
+  margin-top: 0.5rem;
+}
+
+@media (max-width: 1024px) {
+  .main-content {
+    grid-template-columns: 1fr;
+  }
+  
+  .item-row {
+    grid-template-columns: 1fr;
+    gap: 0.25rem;
+  }
+}
+
+@media (max-width: 768px) {
+  header {
+    flex-direction: column;
+    gap: 1rem;
+  }
+}
+</style>
+</head>
+
+<body>
+
+<header>
+  <div style="display: flex; align-items: center; gap: 1rem;">
+    <img src="logo.png" alt="شعار مكتب الصفا">
+    <h1>جرد المخزون</h1>
+  </div>
+  <nav>
+    <button onclick="window.location='inventory-management.html'">الرئيسية</button>
+    <button onclick="goBack()">رجوع</button>
+    <button onclick="logout()">تسجيل خروج</button>
+  </nav>
+</header>
+
+<div class="container">
+  <div class="main-content">
+    <!-- Adjustment Form -->
+    <div class="card">
+      <h2>إنشاء عملية جرد</h2>
+      <form id="adjustmentForm">
+        <div class="form-group">
+          <label for="warehouse">المخزن *</label>
+          <select id="warehouse" required>
+            <option value="">اختر المخزن</option>
+          </select>
+        </div>
+        
+        <div class="form-group">
+          <label for="adjustmentDate">التاريخ</label>
+          <input type="date" id="adjustmentDate" required>
+        </div>
+        
+        <div class="form-group">
+          <label for="notes">ملاحظات</label>
+          <textarea id="notes" rows="3" style="width: 100%; padding: 0.75rem; border: 2px solid #e0e0e0; border-radius: 8px; resize: vertical;"></textarea>
+        </div>
+        
+        <!-- Adjustment Items -->
+        <div class="adjustment-items">
+          <h3>الأصناف</h3>
+          <div id="itemsContainer">
+            <div class="item-row">
+              <select class="product-select" onchange="updateProductInfo(this)">
+                <option value="">اختر الصنف</option>
+              </select>
+              <input type="number" class="current-quantity" placeholder="الكمية الحالية" readonly>
+              <input type="number" class="actual-quantity" placeholder="الكمية الفعلية" min="0" onchange="calculateDifference(this)">
+              <input type="number" class="difference" placeholder="الفرق" readonly>
+              <input type="number" class="avg-cost" placeholder="سعر التكلفة" readonly>
+              <button type="button" class="btn btn-icon btn-danger" onclick="removeItem(this)">×</button>
+            </div>
+          </div>
+          
+          <button type="button" class="btn btn-secondary" onclick="addNewItem()">+ إضافة صنف</button>
+        </div>
+        
+        <!-- Summary -->
+        <div class="summary-section">
+          <div class="summary-row">
+            <span>إجمالي الفرق:</span>
+            <span id="totalDifference">0</span>
+          </div>
+          <div class="summary-row">
+            <span>قيمة التعديل:</span>
+            <span id="adjustmentValue">0.00</span>
+          </div>
+        </div>
+        
+        <div style="display: flex; gap: 1rem; margin-top: 1.5rem;">
+          <button type="submit" class="btn btn-success">تنفيذ الجرد</button>
+          <button type="button" class="btn btn-secondary" onclick="resetForm()">إعادة تعيين</button>
+        </div>
+      </form>
+    </div>
+    
+    <!-- Current Stock -->
+    <div class="card">
+      <h2>المخزون الحالي</h2>
+      
+      <div class="form-group">
+        <input type="text" id="stockSearch" placeholder="ابحث عن صنف..." onkeyup="filterStock()">
+      </div>
+      
+      <div class="table-container">
+        <table id="stockTable">
+          <thead>
+            <tr>
+              <th>اسم الصنف</th>
+              <th>الكمية</th>
+              <th>الوحدة</th>
+              <th>سعر التكلفة</th>
+              <th>الإجمالي</th>
+              <th>الإجراء</th>
+            </tr>
+          </thead>
+          <tbody id="stockTableBody">
+            <tr>
+              <td colspan="6" class="loading">
+                <div class="spinner"></div>
+              </td>
+            </tr>
+          </tbody>
+        </table>
+      </div>
+    </div>
+  </div>
+</div>
+
+<script type="module">
+import { auth, db, serverTimestamp, runTransaction } from './firebase-config.js';
+
+// Check authentication
+auth.onAuthStateChanged(user => {
+  if (!user) {
+    window.location = "index.html";
+    return;
+  }
+  
+  // Initialize form
+  initializeForm();
+  loadCurrentStock();
+});
+
+// Global variables
+let products = [];
+let warehouses = [];
+let currentStock = [];
+
+// Initialize form
+async function initializeForm() {
+  try {
+    // Set today's date
+    document.getElementById('adjustmentDate').value = new Date().toISOString().split('T')[0];
+    
+    // Load dropdown data
+    await Promise.all([
+      loadProducts(),
+      loadWarehouses()
+    ]);
+  } catch (error) {
+    console.error('Error initializing form:', error);
+  }
+}
+
+// Load products
+async function loadProducts() {
+  try {
+    const snapshot = await db.collection('products').get();
+    products = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
+    
+    // Update all product selects
+    updateProductSelects();
+  } catch (error) {
+    console.error('Error loading products:', error);
+  }
+}
+
+// Load warehouses
+async function loadWarehouses() {
+  try {
+    const snapshot = await db.collection('warehouses').get();
+    warehouses = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
+    
+    const warehouseSelect = document.getElementById('warehouse');
+    warehouseSelect.innerHTML = '<option value="">اختر المخزن</option>' +
+      warehouses.map(warehouse => `<option value="${warehouse.id}">${warehouse.name}</option>`).join('');
+  } catch (error) {
+    console.error('Error loading warehouses:', error);
+  }
+}
+
+// Load current stock
+async function loadCurrentStock() {
+  try {
+    const snapshot = await db.collection('stock_balances').get();
+    const stockBalances = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
+    
+    // Join with products
+    currentStock = stockBalances.map(stock => {
+      const product = products.find(p => p.id === stock.productId);
+      const warehouse = warehouses.find(w => w.id === stock.warehouseId);
+      
+      return {
+        ...stock,
+        productName: product ? product.name : 'غير معروف',
+        unit: product ? product.unit : 'غير معروف',
+        warehouseName: warehouse ? warehouse.name : 'غير معروف'
+      };
+    });
+    
+    renderStockTable();
+  } catch (error) {
+    console.error('Error loading current stock:', error);
+  }
+}
+
+// Update product selects
+function updateProductSelects() {
+  document.querySelectorAll('.product-select').forEach(select => {
+    const currentValue = select.value;
+    select.innerHTML = '<option value="">اختر الصنف</option>' +
+      products.map(product => `<option value="${product.id}">${product.name}</option>`).join('');
+    select.value = currentValue;
+  });
+}
+
+// Add new item row
+function addNewItem() {
+  const container = document.getElementById('itemsContainer');
+  const itemRow = document.createElement('div');
+  itemRow.className = 'item-row';
+  
+  itemRow.innerHTML = `
+    <select class="product-select" onchange="updateProductInfo(this)">
+      <option value="">اختر الصنف</option>
+      ${products.map(product => `<option value="${product.id}">${product.name}</option>`).join('')}
+    </select>
+    <input type="number" class="current-quantity" placeholder="الكمية الحالية" readonly>
+    <input type="number" class="actual-quantity" placeholder="الكمية الفعلية" min="0" onchange="calculateDifference(this)">
+    <input type="number" class="difference" placeholder="الفرق" readonly>
+    <input type="number" class="avg-cost" placeholder="سعر التكلفة" readonly>
+    <button type="button" class="btn btn-icon btn-danger" onclick="removeItem(this)">×</button>
+  `;
+  
+  container.appendChild(itemRow);
+}
+
+// Remove item row
+function removeItem(button) {
+  const row = button.closest('.item-row');
+  if (document.querySelectorAll('.item-row').length > 1) {
+    row.remove();
+    calculateSummary();
+  }
+}
+
+// Update product info
+function updateProductInfo(select) {
+  const productId = select.value;
+  const warehouseId = document.getElementById('warehouse').value;
+  const row = select.closest('.item-row');
+  
+  if (!productId || !warehouseId) {
+    // Clear row
+    row.querySelector('.current-quantity').value = '';
+    row.querySelector('.actual-quantity').value = '';
+    row.querySelector('.difference').value = '';
+    row.querySelector('.avg-cost').value = '';
+    calculateSummary();
+    return;
+  }
+  
+  // Find current stock
+  const stock = currentStock.find(s => s.productId === productId && s.warehouseId === warehouseId);
+  const product = products.find(p => p.id === productId);
+  
+  if (stock) {
+    row.querySelector('.current-quantity').value = stock.quantity || 0;
+    row.querySelector('.avg-cost').value = stock.avgCost || 0;
+  } else {
+    row.querySelector('.current-quantity').value = 0;
+    row.querySelector('.avg-cost').value = 0;
+  }
+  
+  // Calculate difference if actual quantity is already filled
+  const actualQuantity = parseFloat(row.querySelector('.actual-quantity').value) || 0;
+  if (actualQuantity > 0) {
+    calculateDifference(row.querySelector('.actual-quantity'));
+  }
+}
+
+// Calculate difference
+function calculateDifference(input) {
+  const row = input.closest('.item-row');
+  const currentQuantity = parseFloat(row.querySelector('.current-quantity').value) || 0;
+  const actualQuantity = parseFloat(input.value) || 0;
+  const difference = actualQuantity - currentQuantity;
+  
+  const differenceInput = row.querySelector('.difference');
+  differenceInput.value = difference;
+  
+  // Update styling
+  differenceInput.className = 'difference';
+  if (difference > 0) {
+    differenceInput.classList.add('positive');
+  } else if (difference < 0) {
+    differenceInput.classList.add('negative');
+  } else {
+    differenceInput.classList.add('zero');
+  }
+  
+  calculateSummary();
+}
+
+// Calculate summary
+function calculateSummary() {
+  let totalDifference = 0;
+  let adjustmentValue = 0;
+  
+  document.querySelectorAll('.item-row').forEach(row => {
+    const difference = parseFloat(row.querySelector('.difference').value) || 0;
+    const avgCost = parseFloat(row.querySelector('.avg-cost').value) || 0;
+    
+    totalDifference += difference;
+    adjustmentValue += difference * avgCost;
+  });
+  
+  document.getElementById('totalDifference').textContent = totalDifference;
+  document.getElementById('adjustmentValue').textContent = adjustmentValue.toFixed(2);
+}
+
+// Filter stock table
+function filterStock() {
+  const searchTerm = document.getElementById('stockSearch').value.toLowerCase();
+  const warehouseId = document.getElementById('warehouse').value;
+  
+  const filteredStock = currentStock.filter(stock => {
+    if (warehouseId && stock.warehouseId !== warehouseId) return false;
+    if (searchTerm && !stock.productName.toLowerCase().includes(searchTerm)) return false;
+    return true;
+  });
+  
+  renderStockTable(filteredStock);
+}
+
+// Render stock table
+function renderStockTable(stockData = currentStock) {
+  const tbody = document.getElementById('stockTableBody');
+  
+  if (stockData.length === 0) {
+    tbody.innerHTML = '<tr><td colspan="6" style="text-align: center; padding: 2rem;">لا توجد بيانات</td></tr>';
+    return;
+  }
+  
+  tbody.innerHTML = stockData.map(stock => {
+    const itemTotal = stock.quantity * stock.avgCost;
+    
+    return `
+      <tr>
+        <td>${stock.productName}</td>
+        <td>${stock.quantity}</td>
+        <td>${stock.unit}</td>
+        <td>${stock.avgCost.toFixed(2)}</td>
+        <td>${itemTotal.toFixed(2)}</td>
+        <td>
+          <button class="btn btn-sm btn-primary" onclick="addToAdjustment('${stock.productId}', '${stock.warehouseId}')">إضافة للجرد</button>
+        </td>
+      </tr>
+    `;
+  }).join('');
+}
+
+// Add to adjustment
+function addToAdjustment(productId, warehouseId) {
+  // Set warehouse if not set
+  if (!document.getElementById('warehouse').value) {
+    document.getElementById('warehouse').value = warehouseId;
+  }
+  
+  // Find existing row
+  let existingRow = null;
+  document.querySelectorAll('.item-row').forEach(row => {
+    const select = row.querySelector('.product-select');
+    if (select.value === productId) {
+      existingRow = row;
+    }
+  });
+  
+  if (existingRow) {
+    // Update existing row
+    updateProductInfo(existingRow.querySelector('.product-select'));
+  } else {
+    // Add new row
+    addNewItem();
+    const lastRow = document.querySelector('.item-row:last-child');
+    lastRow.querySelector('.product-select').value = productId;
+    updateProductInfo(lastRow.querySelector('.product-select'));
+  }
+  
+  // Scroll to form
+  document.querySelector('.card').scrollIntoView({ behavior: 'smooth' });
+}
+
+// Form submission
+document.getElementById('adjustmentForm').addEventListener('submit', async (e) => {
+  e.preventDefault();
+  
+  try {
+    const warehouseId = document.getElementById('warehouse').value;
+    const adjustmentDate = new Date(document.getElementById('adjustmentDate').value);
+    const notes = document.getElementById('notes').value;
+    
+    // Collect adjustment items
+    const adjustmentItems = [];
+    document.querySelectorAll('.item-row').forEach(row => {
+      const productId = row.querySelector('.product-select').value;
+      const currentQuantity = parseFloat(row.querySelector('.current-quantity').value) || 0;
+      const actualQuantity = parseFloat(row.querySelector('.actual-quantity').value) || 0;
+      const difference = actualQuantity - currentQuantity;
+      const avgCost = parseFloat(row.querySelector('.avg-cost').value) || 0;
+      
+      if (productId && difference !== 0) {
+        adjustmentItems.push({
+          productId,
+          currentQuantity,
+          actualQuantity,
+          difference,
+          avgCost,
+          totalCost: difference * avgCost
+        });
+      }
+    });
+    
+    if (adjustmentItems.length === 0) {
+      showAlert('يجب إضافة صنف واحد على الأقل بفرق غير صفر', 'error');
+      return;
+    }
+    
+    // Create adjustment with transaction
+    await createAdjustmentWithTransaction(warehouseId, adjustmentDate, notes, adjustmentItems);
+    
+    showAlert('تم تنفيذ الجرد بنجاح', 'success');
+    resetForm();
+    loadCurrentStock();
+  } catch (error) {
+    console.error('Error creating adjustment:', error);
+    showAlert('خطأ في تنفيذ الجرد: ' + error.message, 'error');
+  }
+});
+
+// Create adjustment with transaction
+async function createAdjustmentWithTransaction(warehouseId, adjustmentDate, notes, adjustmentItems) {
+  await runTransaction(db, async (transaction) => {
+    for (const item of adjustmentItems) {
+      // Update stock balance
+      const stockId = `${item.productId}_${warehouseId}`;
+      const stockRef = db.collection('stock_balances').doc(stockId);
+      const stockDoc = await transaction.get(stockRef);
+      
+      let currentQuantity = 0;
+      let currentAvgCost = 0;
+      
+      if (stockDoc.exists) {
+        const stockData = stockDoc.data();
+        currentQuantity = stockData.quantity || 0;
+        currentAvgCost = stockData.avgCost || 0;
+      }
+      
+      const newQuantity = currentQuantity + item.difference;
+      
+      // Update stock balance
+      transaction.set(stockRef, {
+        productId: item.productId,
+        warehouseId: warehouseId,
+        quantity: newQuantity,
+        avgCost: currentAvgCost,
+        updatedAt: serverTimestamp()
+      });
+      
+      // Create stock movement
+      const movementRef = db.collection('stock_movements').doc();
+      transaction.set(movementRef, {
+        type: 'adjustment',
+        productId: item.productId,
+        warehouseId: warehouseId,
+        quantity: item.difference,
+        unitCost: item.avgCost,
+        totalCost: item.totalCost,
+        referenceType: 'stock_adjustment',
+        referenceId: movementRef.id,
+        date: adjustmentDate,
+        notes: notes,
+        createdBy: auth.currentUser.uid,
+        createdAt: serverTimestamp()
+      });
+    }
+  });
+}
+
+// Reset form
+function resetForm() {
+  document.getElementById('adjustmentForm').reset();
+  document.getElementById('adjustmentDate').value = new Date().toISOString().split('T')[0];
+  
+  // Reset items to single row
+  const container = document.getElementById('itemsContainer');
+  container.innerHTML = `
+    <div class="item-row">
+      <select class="product-select" onchange="updateProductInfo(this)">
+        <option value="">اختر الصنف</option>
+        ${products.map(product => `<option value="${product.id}">${product.name}</option>`).join('')}
+      </select>
+      <input type="number" class="current-quantity" placeholder="الكمية الحالية" readonly>
+      <input type="number" class="actual-quantity" placeholder="الكمية الفعلية" min="0" onchange="calculateDifference(this)">
+      <input type="number" class="difference" placeholder="الفرق" readonly>
+      <input type="number" class="avg-cost" placeholder="سعر التكلفة" readonly>
+      <button type="button" class="btn btn-icon btn-danger" onclick="removeItem(this)">×</button>
+    </div>
+  `;
+  
+  calculateSummary();
+}
+
+// Show alert
+function showAlert(message, type) {
+  const alertDiv = document.createElement('div');
+  alertDiv.className = `alert alert-${type}`;
+  alertDiv.textContent = message;
+  
+  document.querySelector('.container').insertBefore(alertDiv, document.querySelector('.main-content'));
+  
+  setTimeout(() => {
+    alertDiv.remove();
+  }, 3000);
+}
+
+// Navigation functions
+function goBack() {
+  window.location = "inventory-management.html";
+}
+
+function logout() {
+  auth.signOut().then(() => {
+    window.location = "index.html";
+  });
+}
+</script>
+
+</body>
+</html>

@@ -1,0 +1,881 @@
+<!DOCTYPE html>
+<html lang="ar" dir="rtl">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>الفواتير - نظام المخازن</title>
+
+<style>
+* {
+  margin: 0;
+  padding: 0;
+  box-sizing: border-box;
+}
+
+body {
+  font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+  background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+  min-height: 100vh;
+}
+
+header {
+  background: rgba(255, 255, 255, 0.95);
+  backdrop-filter: blur(10px);
+  box-shadow: 0 2px 20px rgba(0, 0, 0, 0.1);
+  padding: 1rem 2rem;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  position: sticky;
+  top: 0;
+  z-index: 100;
+}
+
+header img {
+  height: 50px;
+}
+
+header h1 {
+  color: #2c3e50;
+  font-size: 1.8rem;
+}
+
+header nav {
+  display: flex;
+  gap: 1rem;
+}
+
+header nav button {
+  background: #3498db;
+  color: white;
+  border: none;
+  padding: 0.5rem 1rem;
+  border-radius: 8px;
+  cursor: pointer;
+  transition: all 0.3s ease;
+}
+
+header nav button:hover {
+  background: #2980b9;
+  transform: translateY(-2px);
+}
+
+.container {
+  max-width: 1400px;
+  margin: 2rem auto;
+  padding: 0 1rem;
+}
+
+.invoice-type-selector {
+  display: flex;
+  gap: 1rem;
+  margin-bottom: 2rem;
+  justify-content: center;
+}
+
+.type-btn {
+  padding: 1rem 2rem;
+  border: 2px solid #3498db;
+  background: white;
+  border-radius: 12px;
+  cursor: pointer;
+  transition: all 0.3s ease;
+  font-size: 1.1rem;
+  font-weight: 500;
+}
+
+.type-btn.active {
+  background: #3498db;
+  color: white;
+}
+
+.type-btn:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 4px 12px rgba(52, 152, 219, 0.3);
+}
+
+.main-content {
+  display: grid;
+  grid-template-columns: 1fr 2fr;
+  gap: 2rem;
+}
+
+.card {
+  background: rgba(255, 255, 255, 0.95);
+  backdrop-filter: blur(10px);
+  border-radius: 16px;
+  padding: 1.5rem;
+  box-shadow: 0 8px 32px rgba(0, 0, 0, 0.1);
+  border: 1px solid rgba(255, 255, 255, 0.2);
+}
+
+.card h2 {
+  color: #2c3e50;
+  margin-bottom: 1.5rem;
+  font-size: 1.4rem;
+}
+
+.form-group {
+  margin-bottom: 1.5rem;
+}
+
+.form-group label {
+  display: block;
+  margin-bottom: 0.5rem;
+  color: #2c3e50;
+  font-weight: 500;
+}
+
+.form-group input,
+.form-group select {
+  width: 100%;
+  padding: 0.75rem;
+  border: 2px solid #e0e0e0;
+  border-radius: 8px;
+  font-size: 1rem;
+  transition: border-color 0.3s ease;
+}
+
+.form-group input:focus,
+.form-group select:focus {
+  outline: none;
+  border-color: #3498db;
+}
+
+.invoice-items {
+  margin-top: 1.5rem;
+}
+
+.item-row {
+  display: grid;
+  grid-template-columns: 2fr 1fr 1fr 1fr auto;
+  gap: 0.5rem;
+  margin-bottom: 0.5rem;
+  align-items: center;
+}
+
+.item-row input,
+.item-row select {
+  padding: 0.5rem;
+  border: 2px solid #e0e0e0;
+  border-radius: 6px;
+  font-size: 0.9rem;
+}
+
+.btn {
+  padding: 0.75rem 1.5rem;
+  border: none;
+  border-radius: 8px;
+  font-size: 1rem;
+  cursor: pointer;
+  transition: all 0.3s ease;
+  font-weight: 500;
+}
+
+.btn-primary {
+  background: #3498db;
+  color: white;
+}
+
+.btn-primary:hover {
+  background: #2980b9;
+  transform: translateY(-2px);
+}
+
+.btn-success {
+  background: #27ae60;
+  color: white;
+}
+
+.btn-success:hover {
+  background: #229954;
+  transform: translateY(-2px);
+}
+
+.btn-danger {
+  background: #e74c3c;
+  color: white;
+}
+
+.btn-danger:hover {
+  background: #c0392b;
+  transform: translateY(-2px);
+}
+
+.btn-secondary {
+  background: #95a5a6;
+  color: white;
+}
+
+.btn-secondary:hover {
+  background: #7f8c8d;
+  transform: translateY(-2px);
+}
+
+.btn-sm {
+  padding: 0.5rem 1rem;
+  font-size: 0.875rem;
+}
+
+.btn-icon {
+  padding: 0.5rem;
+  border-radius: 50%;
+  width: 32px;
+  height: 32px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.invoice-summary {
+  background: #f8f9fa;
+  padding: 1.5rem;
+  border-radius: 12px;
+  margin-top: 1rem;
+}
+
+.summary-row {
+  display: flex;
+  justify-content: space-between;
+  margin-bottom: 0.5rem;
+  font-size: 1.1rem;
+}
+
+.summary-row.total {
+  font-weight: bold;
+  font-size: 1.3rem;
+  color: #2c3e50;
+  border-top: 2px solid #3498db;
+  padding-top: 0.5rem;
+  margin-top: 0.5rem;
+}
+
+.recent-invoices {
+  max-height: 400px;
+  overflow-y: auto;
+}
+
+.invoice-item {
+  background: #f8f9fa;
+  padding: 1rem;
+  border-radius: 8px;
+  margin-bottom: 0.5rem;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  transition: background 0.2s ease;
+}
+
+.invoice-item:hover {
+  background: #e9ecef;
+}
+
+.invoice-info {
+  flex: 1;
+}
+
+.invoice-id {
+  font-weight: bold;
+  color: #2c3e50;
+}
+
+.invoice-date {
+  font-size: 0.9rem;
+  color: #7f8c8d;
+}
+
+.invoice-total {
+  font-weight: bold;
+  color: #27ae60;
+}
+
+.invoice-type {
+  padding: 0.25rem 0.75rem;
+  border-radius: 20px;
+  font-size: 0.8rem;
+  font-weight: bold;
+}
+
+.type-sale {
+  background: #d4edda;
+  color: #155724;
+}
+
+.type-purchase {
+  background: #cce5ff;
+  color: #004085;
+}
+
+.alert {
+  padding: 1rem;
+  border-radius: 8px;
+  margin-bottom: 1rem;
+}
+
+.alert-success {
+  background: #d4edda;
+  border: 1px solid #c3e6cb;
+  color: #155724;
+}
+
+.alert-error {
+  background: #f8d7da;
+  border: 1px solid #f5c6cb;
+  color: #721c24;
+}
+
+.loading {
+  text-align: center;
+  padding: 2rem;
+}
+
+.spinner {
+  border: 4px solid #f3f3f3;
+  border-top: 4px solid #3498db;
+  border-radius: 50%;
+  width: 40px;
+  height: 40px;
+  animation: spin 1s linear infinite;
+  margin: 0 auto;
+}
+
+@keyframes spin {
+  0% { transform: rotate(0deg); }
+  100% { transform: rotate(360deg); }
+}
+
+@media (max-width: 1024px) {
+  .main-content {
+    grid-template-columns: 1fr;
+  }
+  
+  .item-row {
+    grid-template-columns: 1fr;
+    gap: 0.25rem;
+  }
+}
+
+@media (max-width: 768px) {
+  header {
+    flex-direction: column;
+    gap: 1rem;
+  }
+  
+  .invoice-type-selector {
+    flex-direction: column;
+  }
+}
+</style>
+</head>
+
+<body>
+
+<header>
+  <div style="display: flex; align-items: center; gap: 1rem;">
+    <img src="logo.png" alt="شعار مكتب الصفا">
+    <h1>الفواتير</h1>
+  </div>
+  <nav>
+    <button onclick="window.location='inventory-management.html'">الرئيسية</button>
+    <button onclick="goBack()">رجوع</button>
+    <button onclick="logout()">تسجيل خروج</button>
+  </nav>
+</header>
+
+<div class="container">
+  <!-- Invoice Type Selector -->
+  <div class="invoice-type-selector">
+    <button class="type-btn active" onclick="selectInvoiceType('sale')">فاتورة بيع</button>
+    <button class="type-btn" onclick="selectInvoiceType('purchase')">فاتورة شراء</button>
+  </div>
+
+  <div class="main-content">
+    <!-- Invoice Form -->
+    <div class="card">
+      <h2 id="formTitle">إنشاء فاتورة بيع</h2>
+      <form id="invoiceForm">
+        <input type="hidden" id="invoiceType" value="sale">
+        
+        <div class="form-group">
+          <label for="customerSupplier" id="customerSupplierLabel">العميل *</label>
+          <select id="customerSupplier" required>
+            <option value="">اختر العميل</option>
+          </select>
+        </div>
+        
+        <div class="form-group">
+          <label for="warehouse">المخزن *</label>
+          <select id="warehouse" required>
+            <option value="">اختر المخزن</option>
+          </select>
+        </div>
+        
+        <div class="form-group">
+          <label for="invoiceDate">التاريخ</label>
+          <input type="date" id="invoiceDate" required>
+        </div>
+        
+        <!-- Invoice Items -->
+        <div class="invoice-items">
+          <h3>الأصناف</h3>
+          <div id="itemsContainer">
+            <div class="item-row">
+              <select class="product-select" onchange="updateProductDetails(this)">
+                <option value="">اختر الصنف</option>
+              </select>
+              <input type="number" class="quantity" placeholder="الكمية" min="1" onchange="calculateItemTotal(this)">
+              <input type="number" class="price" placeholder="السعر" step="0.01" min="0" onchange="calculateItemTotal(this)">
+              <input type="number" class="total" placeholder="الإجمالي" readonly>
+              <button type="button" class="btn btn-icon btn-danger" onclick="removeItem(this)">×</button>
+            </div>
+          </div>
+          
+          <button type="button" class="btn btn-secondary" onclick="addNewItem()">+ إضافة صنف</button>
+        </div>
+        
+        <!-- Invoice Summary -->
+        <div class="invoice-summary">
+          <div class="summary-row">
+            <span>المجموع:</span>
+            <span id="subtotal">0.00</span>
+          </div>
+          <div class="summary-row">
+            <span>الضريبة (14%):</span>
+            <span id="tax">0.00</span>
+          </div>
+          <div class="summary-row total">
+            <span>الإجمالي:</span>
+            <span id="total">0.00</span>
+          </div>
+        </div>
+        
+        <div style="display: flex; gap: 1rem; margin-top: 1.5rem;">
+          <button type="submit" class="btn btn-success">حفظ الفاتورة</button>
+          <button type="button" class="btn btn-secondary" onclick="resetForm()">إعادة تعيين</button>
+        </div>
+      </form>
+    </div>
+    
+    <!-- Recent Invoices -->
+    <div class="card">
+      <h2>الفواتير الأخيرة</h2>
+      <div class="recent-invoices" id="recentInvoices">
+        <div class="loading">
+          <div class="spinner"></div>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<script type="module">
+import { auth, db, serverTimestamp, runTransaction } from './firebase-config.js';
+
+// Check authentication
+auth.onAuthStateChanged(user => {
+  if (!user) {
+    window.location = "index.html";
+    return;
+  }
+  
+  // Initialize form
+  initializeForm();
+  loadRecentInvoices();
+});
+
+// Global variables
+let currentInvoiceType = 'sale';
+let products = [];
+let warehouses = [];
+let customersSuppliers = [];
+
+// Initialize form
+async function initializeForm() {
+  try {
+    // Set today's date
+    document.getElementById('invoiceDate').value = new Date().toISOString().split('T')[0];
+    
+    // Load dropdown data
+    await Promise.all([
+      loadProducts(),
+      loadWarehouses(),
+      loadCustomersSuppliers()
+    ]);
+  } catch (error) {
+    console.error('Error initializing form:', error);
+  }
+}
+
+// Load products
+async function loadProducts() {
+  try {
+    const snapshot = await db.collection('products').get();
+    products = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
+    
+    // Update all product selects
+    document.querySelectorAll('.product-select').forEach(select => {
+      const currentValue = select.value;
+      select.innerHTML = '<option value="">اختر الصنف</option>' +
+        products.map(product => `<option value="${product.id}">${product.name}</option>`).join('');
+      select.value = currentValue;
+    });
+  } catch (error) {
+    console.error('Error loading products:', error);
+  }
+}
+
+// Load warehouses
+async function loadWarehouses() {
+  try {
+    const snapshot = await db.collection('warehouses').get();
+    warehouses = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
+    
+    const warehouseSelect = document.getElementById('warehouse');
+    warehouseSelect.innerHTML = '<option value="">اختر المخزن</option>' +
+      warehouses.map(warehouse => `<option value="${warehouse.id}">${warehouse.name}</option>`).join('');
+  } catch (error) {
+    console.error('Error loading warehouses:', error);
+  }
+}
+
+// Load customers/suppliers
+async function loadCustomersSuppliers() {
+  try {
+    const snapshot = await db.collection('customers_suppliers').get();
+    customersSuppliers = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
+    
+    updateCustomerSupplierDropdown();
+  } catch (error) {
+    console.error('Error loading customers/suppliers:', error);
+  }
+}
+
+// Update customer/supplier dropdown
+function updateCustomerSupplierDropdown() {
+  const select = document.getElementById('customerSupplier');
+  const filtered = customersSuppliers.filter(cs => cs.type === currentInvoiceType);
+  
+  select.innerHTML = `<option value="">اختر ${currentInvoiceType === 'sale' ? 'العميل' : 'المورد'}</option>` +
+    filtered.map(cs => `<option value="${cs.id}">${cs.name}</option>`).join('');
+}
+
+// Select invoice type
+function selectInvoiceType(type) {
+  currentInvoiceType = type;
+  
+  // Update UI
+  document.querySelectorAll('.type-btn').forEach(btn => btn.classList.remove('active'));
+  event.target.classList.add('active');
+  
+  document.getElementById('invoiceType').value = type;
+  document.getElementById('formTitle').textContent = type === 'sale' ? 'إنشاء فاتورة بيع' : 'إنشاء فاتورة شراء';
+  document.getElementById('customerSupplierLabel').textContent = type === 'sale' ? 'العميل *' : 'المورد *';
+  
+  updateCustomerSupplierDropdown();
+}
+
+// Add new item row
+function addNewItem() {
+  const container = document.getElementById('itemsContainer');
+  const itemRow = document.createElement('div');
+  itemRow.className = 'item-row';
+  
+  itemRow.innerHTML = `
+    <select class="product-select" onchange="updateProductDetails(this)">
+      <option value="">اختر الصنف</option>
+      ${products.map(product => `<option value="${product.id}">${product.name}</option>`).join('')}
+    </select>
+    <input type="number" class="quantity" placeholder="الكمية" min="1" onchange="calculateItemTotal(this)">
+    <input type="number" class="price" placeholder="السعر" step="0.01" min="0" onchange="calculateItemTotal(this)">
+    <input type="number" class="total" placeholder="الإجمالي" readonly>
+    <button type="button" class="btn btn-icon btn-danger" onclick="removeItem(this)">×</button>
+  `;
+  
+  container.appendChild(itemRow);
+}
+
+// Remove item row
+function removeItem(button) {
+  const row = button.closest('.item-row');
+  if (document.querySelectorAll('.item-row').length > 1) {
+    row.remove();
+    calculateInvoiceTotal();
+  }
+}
+
+// Update product details
+function updateProductDetails(select) {
+  const productId = select.value;
+  const row = select.closest('.item-row');
+  const priceInput = row.querySelector('.price');
+  
+  if (productId) {
+    const product = products.find(p => p.id === productId);
+    if (product) {
+      const price = currentInvoiceType === 'sale' ? product.salePrice : product.purchasePrice;
+      priceInput.value = price || 0;
+      calculateItemTotal(row.querySelector('.quantity'));
+    }
+  } else {
+    priceInput.value = '';
+    row.querySelector('.quantity').value = '';
+    row.querySelector('.total').value = '';
+    calculateInvoiceTotal();
+  }
+}
+
+// Calculate item total
+function calculateItemTotal(input) {
+  const row = input.closest('.item-row');
+  const quantity = parseFloat(row.querySelector('.quantity').value) || 0;
+  const price = parseFloat(row.querySelector('.price').value) || 0;
+  const total = quantity * price;
+  
+  row.querySelector('.total').value = total.toFixed(2);
+  calculateInvoiceTotal();
+}
+
+// Calculate invoice total
+function calculateInvoiceTotal() {
+  let subtotal = 0;
+  
+  document.querySelectorAll('.item-row').forEach(row => {
+    const total = parseFloat(row.querySelector('.total').value) || 0;
+    subtotal += total;
+  });
+  
+  const tax = subtotal * 0.14;
+  const total = subtotal + tax;
+  
+  document.getElementById('subtotal').textContent = subtotal.toFixed(2);
+  document.getElementById('tax').textContent = tax.toFixed(2);
+  document.getElementById('total').textContent = total.toFixed(2);
+}
+
+// Form submission
+document.getElementById('invoiceForm').addEventListener('submit', async (e) => {
+  e.preventDefault();
+  
+  try {
+    const formData = {
+      type: currentInvoiceType,
+      customerSupplierId: document.getElementById('customerSupplier').value,
+      warehouseId: document.getElementById('warehouse').value,
+      date: new Date(document.getElementById('invoiceDate').value),
+      subtotal: parseFloat(document.getElementById('subtotal').textContent),
+      tax: parseFloat(document.getElementById('tax').textContent),
+      total: parseFloat(document.getElementById('total').textContent),
+      items: [],
+      createdAt: serverTimestamp()
+    };
+    
+    // Collect items
+    document.querySelectorAll('.item-row').forEach(row => {
+      const productId = row.querySelector('.product-select').value;
+      const quantity = parseFloat(row.querySelector('.quantity').value) || 0;
+      const price = parseFloat(row.querySelector('.price').value) || 0;
+      const total = parseFloat(row.querySelector('.total').value) || 0;
+      
+      if (productId && quantity > 0) {
+        formData.items.push({
+          productId,
+          quantity,
+          price,
+          total
+        });
+      }
+    });
+    
+    if (formData.items.length === 0) {
+      showAlert('يجب إضافة صنف واحد على الأقل', 'error');
+      return;
+    }
+    
+    // Create invoice with transaction
+    await createInvoiceWithTransaction(formData);
+    
+    showAlert('تم إنشاء الفاتورة بنجاح', 'success');
+    resetForm();
+    loadRecentInvoices();
+  } catch (error) {
+    console.error('Error creating invoice:', error);
+    showAlert('خطأ في إنشاء الفاتورة: ' + error.message, 'error');
+  }
+});
+
+// Create invoice with transaction
+async function createInvoiceWithTransaction(invoiceData) {
+  await runTransaction(db, async (transaction) => {
+    // Create invoice
+    const invoiceRef = db.collection('invoices').doc();
+    transaction.set(invoiceRef, {
+      type: invoiceData.type,
+      customerSupplierId: invoiceData.customerSupplierId,
+      warehouseId: invoiceData.warehouseId,
+      total: invoiceData.total,
+      date: invoiceData.date,
+      status: 'active',
+      createdAt: invoiceData.createdAt
+    });
+    
+    // Create invoice items and update stock
+    for (const item of invoiceData.items) {
+      // Create invoice item
+      const itemRef = db.collection('invoice_items').doc();
+      transaction.set(itemRef, {
+        invoiceId: invoiceRef.id,
+        productId: item.productId,
+        quantity: item.quantity,
+        price: item.price,
+        total: item.total
+      });
+      
+      // Get product info
+      const product = products.find(p => p.id === item.productId);
+      if (!product) continue;
+      
+      // Update stock balance
+      const stockId = `${item.productId}_${invoiceData.warehouseId}`;
+      const stockRef = db.collection('stock_balances').doc(stockId);
+      const stockDoc = await transaction.get(stockRef);
+      
+      let currentQuantity = 0;
+      let currentAvgCost = 0;
+      
+      if (stockDoc.exists) {
+        const stockData = stockDoc.data();
+        currentQuantity = stockData.quantity || 0;
+        currentAvgCost = stockData.avgCost || 0;
+      }
+      
+      let newQuantity = currentQuantity;
+      let newAvgCost = currentAvgCost;
+      
+      if (invoiceData.type === 'sale') {
+        // Sale: decrease quantity
+        if (currentQuantity < item.quantity) {
+          throw new Error(`الكمية المتاحة من ${product.name} غير كافية`);
+        }
+        newQuantity = currentQuantity - item.quantity;
+      } else {
+        // Purchase: increase quantity and update average cost
+        const totalCost = (currentQuantity * currentAvgCost) + (item.quantity * item.price);
+        newQuantity = currentQuantity + item.quantity;
+        newAvgCost = newQuantity > 0 ? totalCost / newQuantity : item.price;
+      }
+      
+      // Update stock balance
+      transaction.set(stockRef, {
+        productId: item.productId,
+        warehouseId: invoiceData.warehouseId,
+        quantity: newQuantity,
+        avgCost: newAvgCost,
+        updatedAt: serverTimestamp()
+      });
+      
+      // Create stock movement
+      const movementRef = db.collection('stock_movements').doc();
+      transaction.set(movementRef, {
+        type: invoiceData.type,
+        productId: item.productId,
+        warehouseId: invoiceData.warehouseId,
+        quantity: invoiceData.type === 'sale' ? -item.quantity : item.quantity,
+        unitCost: item.price,
+        totalCost: item.total,
+        referenceType: 'invoice',
+        referenceId: invoiceRef.id,
+        date: invoiceData.date,
+        createdBy: auth.currentUser.uid,
+        createdAt: serverTimestamp()
+      });
+    }
+  });
+}
+
+// Load recent invoices
+async function loadRecentInvoices() {
+  try {
+    const snapshot = await db.collection('invoices')
+      .orderBy('createdAt', 'desc')
+      .limit(10)
+      .get();
+    
+    const container = document.getElementById('recentInvoices');
+    
+    if (snapshot.empty) {
+      container.innerHTML = '<p style="text-align: center; color: #7f8c8d;">لا توجد فواتير</p>';
+      return;
+    }
+    
+    container.innerHTML = snapshot.docs.map(doc => {
+      const invoice = doc.data();
+      const typeClass = `type-${invoice.type}`;
+      const typeText = invoice.type === 'sale' ? 'بيع' : 'شراء';
+      
+      return `
+        <div class="invoice-item">
+          <div class="invoice-info">
+            <div class="invoice-id">فاتورة ${typeText} #${doc.id.substring(0, 8)}</div>
+            <div class="invoice-date">${new Date(invoice.createdAt.toDate()).toLocaleDateString('ar-EG')}</div>
+          </div>
+          <span class="invoice-type ${typeClass}">${typeText}</span>
+          <span class="invoice-total">${invoice.total.toFixed(2)} ج.م</span>
+        </div>
+      `;
+    }).join('');
+  } catch (error) {
+    console.error('Error loading recent invoices:', error);
+    document.getElementById('recentInvoices').innerHTML = '<p style="color: #e74c3c;">خطأ في تحميل الفواتير</p>';
+  }
+}
+
+// Reset form
+function resetForm() {
+  document.getElementById('invoiceForm').reset();
+  document.getElementById('invoiceDate').value = new Date().toISOString().split('T')[0];
+  
+  // Reset items to single row
+  const container = document.getElementById('itemsContainer');
+  container.innerHTML = `
+    <div class="item-row">
+      <select class="product-select" onchange="updateProductDetails(this)">
+        <option value="">اختر الصنف</option>
+        ${products.map(product => `<option value="${product.id}">${product.name}</option>`).join('')}
+      </select>
+      <input type="number" class="quantity" placeholder="الكمية" min="1" onchange="calculateItemTotal(this)">
+      <input type="number" class="price" placeholder="السعر" step="0.01" min="0" onchange="calculateItemTotal(this)">
+      <input type="number" class="total" placeholder="الإجمالي" readonly>
+      <button type="button" class="btn btn-icon btn-danger" onclick="removeItem(this)">×</button>
+    </div>
+  `;
+  
+  calculateInvoiceTotal();
+}
+
+// Show alert
+function showAlert(message, type) {
+  const alertDiv = document.createElement('div');
+  alertDiv.className = `alert alert-${type}`;
+  alertDiv.textContent = message;
+  
+  document.querySelector('.container').insertBefore(alertDiv, document.querySelector('.invoice-type-selector'));
+  
+  setTimeout(() => {
+    alertDiv.remove();
+  }, 3000);
+}
+
+// Navigation functions
+function goBack() {
+  window.location = "inventory-management.html";
+}
+
+function logout() {
+  auth.signOut().then(() => {
+    window.location = "index.html";
+  });
+}
+</script>
+
+</body>
+</html>

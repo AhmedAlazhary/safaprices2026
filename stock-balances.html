@@ -1,0 +1,653 @@
+<!DOCTYPE html>
+<html lang="ar" dir="rtl">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>أرصدة المخزون - نظام المخازن</title>
+
+<style>
+* {
+  margin: 0;
+  padding: 0;
+  box-sizing: border-box;
+}
+
+body {
+  font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+  background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+  min-height: 100vh;
+}
+
+header {
+  background: rgba(255, 255, 255, 0.95);
+  backdrop-filter: blur(10px);
+  box-shadow: 0 2px 20px rgba(0, 0, 0, 0.1);
+  padding: 1rem 2rem;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  position: sticky;
+  top: 0;
+  z-index: 100;
+}
+
+header img {
+  height: 50px;
+}
+
+header h1 {
+  color: #2c3e50;
+  font-size: 1.8rem;
+}
+
+header nav {
+  display: flex;
+  gap: 1rem;
+}
+
+header nav button {
+  background: #3498db;
+  color: white;
+  border: none;
+  padding: 0.5rem 1rem;
+  border-radius: 8px;
+  cursor: pointer;
+  transition: all 0.3s ease;
+}
+
+header nav button:hover {
+  background: #2980b9;
+  transform: translateY(-2px);
+}
+
+.container {
+  max-width: 1400px;
+  margin: 2rem auto;
+  padding: 0 1rem;
+}
+
+.filters-section {
+  background: rgba(255, 255, 255, 0.95);
+  backdrop-filter: blur(10px);
+  border-radius: 16px;
+  padding: 1.5rem;
+  box-shadow: 0 8px 32px rgba(0, 0, 0, 0.1);
+  margin-bottom: 2rem;
+}
+
+.filters-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+  gap: 1rem;
+  margin-bottom: 1rem;
+}
+
+.form-group {
+  display: flex;
+  flex-direction: column;
+}
+
+.form-group label {
+  margin-bottom: 0.5rem;
+  color: #2c3e50;
+  font-weight: 500;
+}
+
+.form-group input,
+.form-group select {
+  padding: 0.75rem;
+  border: 2px solid #e0e0e0;
+  border-radius: 8px;
+  font-size: 1rem;
+  transition: border-color 0.3s ease;
+}
+
+.form-group input:focus,
+.form-group select:focus {
+  outline: none;
+  border-color: #3498db;
+}
+
+.btn {
+  padding: 0.75rem 1.5rem;
+  border: none;
+  border-radius: 8px;
+  font-size: 1rem;
+  cursor: pointer;
+  transition: all 0.3s ease;
+  font-weight: 500;
+}
+
+.btn-primary {
+  background: #3498db;
+  color: white;
+}
+
+.btn-primary:hover {
+  background: #2980b9;
+  transform: translateY(-2px);
+}
+
+.btn-secondary {
+  background: #95a5a6;
+  color: white;
+}
+
+.btn-secondary:hover {
+  background: #7f8c8d;
+  transform: translateY(-2px);
+}
+
+.stats-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+  gap: 1.5rem;
+  margin-bottom: 2rem;
+}
+
+.stat-card {
+  background: rgba(255, 255, 255, 0.95);
+  backdrop-filter: blur(10px);
+  border-radius: 16px;
+  padding: 1.5rem;
+  box-shadow: 0 8px 32px rgba(0, 0, 0, 0.1);
+  text-align: center;
+}
+
+.stat-value {
+  font-size: 2.5rem;
+  font-weight: bold;
+  margin-bottom: 0.5rem;
+}
+
+.stat-label {
+  color: #7f8c8d;
+  font-size: 1rem;
+}
+
+.stat-value.total-value {
+  color: #27ae60;
+}
+
+.stat-value.low-stock {
+  color: #e74c3c;
+}
+
+.stat-value.out-of-stock {
+  color: #e67e22;
+}
+
+.table-container {
+  background: rgba(255, 255, 255, 0.95);
+  backdrop-filter: blur(10px);
+  border-radius: 16px;
+  padding: 1.5rem;
+  box-shadow: 0 8px 32px rgba(0, 0, 0, 0.1);
+  overflow-x: auto;
+}
+
+table {
+  width: 100%;
+  border-collapse: collapse;
+  background: white;
+}
+
+th {
+  background: #3498db;
+  color: white;
+  padding: 1rem;
+  text-align: right;
+  font-weight: 600;
+  position: sticky;
+  top: 0;
+  z-index: 10;
+}
+
+td {
+  padding: 1rem;
+  border-bottom: 1px solid #ecf0f1;
+  text-align: right;
+}
+
+tr:hover {
+  background: #f8f9fa;
+}
+
+.stock-status {
+  padding: 0.25rem 0.75rem;
+  border-radius: 20px;
+  font-size: 0.8rem;
+  font-weight: bold;
+}
+
+.status-normal {
+  background: #d4edda;
+  color: #155724;
+}
+
+.status-low {
+  background: #fff3cd;
+  color: #856404;
+}
+
+.status-out {
+  background: #f8d7da;
+  color: #721c24;
+}
+
+.alert {
+  padding: 1rem;
+  border-radius: 8px;
+  margin-bottom: 1rem;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+}
+
+.alert-warning {
+  background: #fff3cd;
+  border: 1px solid #ffeaa7;
+  color: #856404;
+}
+
+.alert-danger {
+  background: #f8d7da;
+  border: 1px solid #f5c6cb;
+  color: #721c24;
+}
+
+.loading {
+  text-align: center;
+  padding: 2rem;
+}
+
+.spinner {
+  border: 4px solid #f3f3f3;
+  border-top: 4px solid #3498db;
+  border-radius: 50%;
+  width: 40px;
+  height: 40px;
+  animation: spin 1s linear infinite;
+  margin: 0 auto;
+}
+
+@keyframes spin {
+  0% { transform: rotate(0deg); }
+  100% { transform: rotate(360deg); }
+}
+
+@media (max-width: 768px) {
+  header {
+    flex-direction: column;
+    gap: 1rem;
+  }
+  
+  .filters-grid {
+    grid-template-columns: 1fr;
+  }
+  
+  .stats-grid {
+    grid-template-columns: repeat(2, 1fr);
+  }
+}
+</style>
+</head>
+
+<body>
+
+<header>
+  <div style="display: flex; align-items: center; gap: 1rem;">
+    <img src="logo.png" alt="شعار مكتب الصفا">
+    <h1>أرصدة المخزون</h1>
+  </div>
+  <nav>
+    <button onclick="window.location='inventory-management.html'">الرئيسية</button>
+    <button onclick="goBack()">رجوع</button>
+    <button onclick="logout()">تسجيل خروج</button>
+  </nav>
+</header>
+
+<div class="container">
+  <!-- Statistics Cards -->
+  <div class="stats-grid">
+    <div class="stat-card">
+      <div class="stat-value total-value" id="totalValue">0</div>
+      <div class="stat-label">إجمالي قيمة المخزون</div>
+    </div>
+    <div class="stat-card">
+      <div class="stat-value low-stock" id="lowStockCount">0</div>
+      <div class="stat-label">أصناف منخفضة</div>
+    </div>
+    <div class="stat-card">
+      <div class="stat-value out-of-stock" id="outOfStockCount">0</div>
+      <div class="stat-label">أصناف منتهية</div>
+    </div>
+    <div class="stat-card">
+      <div class="stat-value" id="totalProducts">0</div>
+      <div class="stat-label">إجمالي الأصناف</div>
+    </div>
+  </div>
+
+  <!-- Filters Section -->
+  <div class="filters-section">
+    <h2 style="margin-bottom: 1rem; color: #2c3e50;">الفلاتر</h2>
+    <div class="filters-grid">
+      <div class="form-group">
+        <label for="warehouseFilter">المخزن</label>
+        <select id="warehouseFilter">
+          <option value="">كل المخازن</option>
+        </select>
+      </div>
+      <div class="form-group">
+        <label for="categoryFilter">الفئة</label>
+        <select id="categoryFilter">
+          <option value="">كل الفئات</option>
+          <option value="مواد بناء">مواد بناء</option>
+          <option value="أدوات كهربائية">أدوات كهربائية</option>
+          <option value="أدوات صحية">أدوات صحية</option>
+          <option value="دهانات">دهانات</option>
+          <option value="مواد عزل">مواد عزل</option>
+          <option value="أخشاب">أخشاب</option>
+          <option value="معادن">معادن</option>
+          <option value="أخرى">أخرى</option>
+        </select>
+      </div>
+      <div class="form-group">
+        <label for="statusFilter">الحالة</label>
+        <select id="statusFilter">
+          <option value="">كل الحالات</option>
+          <option value="normal">طبيعي</option>
+          <option value="low">منخفض</option>
+          <option value="out">منتهي</option>
+        </select>
+      </div>
+      <div class="form-group">
+        <label for="searchInput">بحث</label>
+        <input type="text" id="searchInput" placeholder="ابحث عن صنف...">
+      </div>
+    </div>
+    <div style="display: flex; gap: 1rem;">
+      <button class="btn btn-primary" onclick="applyFilters()">تطبيق الفلاتر</button>
+      <button class="btn btn-secondary" onclick="clearFilters()">مسح الفلاتر</button>
+    </div>
+  </div>
+
+  <!-- Low Stock Alerts -->
+  <div id="alertsContainer"></div>
+
+  <!-- Stock Balances Table -->
+  <div class="table-container">
+    <h2 style="margin-bottom: 1rem; color: #2c3e50;">أرصدة المخزون</h2>
+    <table id="stockTable">
+      <thead>
+        <tr>
+          <th>اسم الصنف</th>
+          <th>الفئة</th>
+          <th>المخزن</th>
+          <th>الكمية</th>
+          <th>الوحدة</th>
+          <th>سعر التكلفة</th>
+          <th>الإجمالي</th>
+          <th>الحد الأدنى</th>
+          <th>الحالة</th>
+        </tr>
+      </thead>
+      <tbody id="stockTableBody">
+        <tr>
+          <td colspan="9" class="loading">
+            <div class="spinner"></div>
+          </td>
+        </tr>
+      </tbody>
+    </table>
+  </div>
+</div>
+
+<script type="module">
+import { auth, db, serverTimestamp } from './firebase-config.js';
+
+// Check authentication
+auth.onAuthStateChanged(user => {
+  if (!user) {
+    window.location = "index.html";
+    return;
+  }
+  
+  // Load data
+  loadData();
+});
+
+// Global variables
+let allStockData = [];
+let filteredStockData = [];
+let products = [];
+let warehouses = [];
+
+// Load all data
+async function loadData() {
+  try {
+    await Promise.all([
+      loadProducts(),
+      loadWarehouses(),
+      loadStockBalances()
+    ]);
+    
+    updateStatistics();
+    renderStockTable();
+    showLowStockAlerts();
+  } catch (error) {
+    console.error('Error loading data:', error);
+  }
+}
+
+// Load products
+async function loadProducts() {
+  try {
+    const snapshot = await db.collection('products').get();
+    products = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
+  } catch (error) {
+    console.error('Error loading products:', error);
+  }
+}
+
+// Load warehouses
+async function loadWarehouses() {
+  try {
+    const snapshot = await db.collection('warehouses').get();
+    warehouses = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
+    
+    // Update warehouse filter
+    const warehouseFilter = document.getElementById('warehouseFilter');
+    warehouseFilter.innerHTML = '<option value="">كل المخازن</option>' +
+      warehouses.map(w => `<option value="${w.id}">${w.name}</option>`).join('');
+  } catch (error) {
+    console.error('Error loading warehouses:', error);
+  }
+}
+
+// Load stock balances
+async function loadStockBalances() {
+  try {
+    const snapshot = await db.collection('stock_balances').get();
+    const stockBalances = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
+    
+    // Join with products and warehouses
+    allStockData = stockBalances.map(stock => {
+      const product = products.find(p => p.id === stock.productId);
+      const warehouse = warehouses.find(w => w.id === stock.warehouseId);
+      
+      return {
+        ...stock,
+        productName: product ? product.name : 'غير معروف',
+        category: product ? product.categoryId : 'غير معروف',
+        unit: product ? product.unit : 'غير معروف',
+        minStock: product ? product.minStock : 0,
+        warehouseName: warehouse ? warehouse.name : 'غير معروف'
+      };
+    });
+    
+    filteredStockData = [...allStockData];
+  } catch (error) {
+    console.error('Error loading stock balances:', error);
+  }
+}
+
+// Update statistics
+function updateStatistics() {
+  let totalValue = 0;
+  let lowStockCount = 0;
+  let outOfStockCount = 0;
+  
+  filteredStockData.forEach(stock => {
+    const itemTotal = stock.quantity * stock.avgCost;
+    totalValue += itemTotal;
+    
+    if (stock.quantity <= 0) {
+      outOfStockCount++;
+    } else if (stock.quantity <= stock.minStock) {
+      lowStockCount++;
+    }
+  });
+  
+  document.getElementById('totalValue').textContent = totalValue.toFixed(2);
+  document.getElementById('lowStockCount').textContent = lowStockCount;
+  document.getElementById('outOfStockCount').textContent = outOfStockCount;
+  document.getElementById('totalProducts').textContent = filteredStockData.length;
+}
+
+// Render stock table
+function renderStockTable() {
+  const tbody = document.getElementById('stockTableBody');
+  
+  if (filteredStockData.length === 0) {
+    tbody.innerHTML = '<tr><td colspan="9" style="text-align: center; padding: 2rem;">لا توجد بيانات</td></tr>';
+    return;
+  }
+  
+  tbody.innerHTML = filteredStockData.map(stock => {
+    const status = getStockStatus(stock.quantity, stock.minStock);
+    const statusClass = `status-${status}`;
+    const statusText = status === 'normal' ? 'طبيعي' : status === 'low' ? 'منخفض' : 'منتهي';
+    const itemTotal = stock.quantity * stock.avgCost;
+    
+    return `
+      <tr>
+        <td>${stock.productName}</td>
+        <td>${stock.category}</td>
+        <td>${stock.warehouseName}</td>
+        <td>${stock.quantity}</td>
+        <td>${stock.unit}</td>
+        <td>${stock.avgCost.toFixed(2)}</td>
+        <td>${itemTotal.toFixed(2)}</td>
+        <td>${stock.minStock}</td>
+        <td><span class="stock-status ${statusClass}">${statusText}</span></td>
+      </tr>
+    `;
+  }).join('');
+}
+
+// Get stock status
+function getStockStatus(quantity, minStock) {
+  if (quantity <= 0) return 'out';
+  if (quantity <= minStock) return 'low';
+  return 'normal';
+}
+
+// Show low stock alerts
+function showLowStockAlerts() {
+  const alertsContainer = document.getElementById('alertsContainer');
+  const lowStockItems = filteredStockData.filter(stock => 
+    stock.quantity > 0 && stock.quantity <= stock.minStock
+  );
+  
+  const outOfStockItems = filteredStockData.filter(stock => stock.quantity <= 0);
+  
+  let alertsHTML = '';
+  
+  if (outOfStockItems.length > 0) {
+    alertsHTML += `
+      <div class="alert alert-danger">
+        <span>⚠️ ${outOfStockItems.length} أصناف منتهية من المخزون</span>
+        <button class="btn btn-primary" onclick="filterOutOfStock()">عرض</button>
+      </div>
+    `;
+  }
+  
+  if (lowStockItems.length > 0) {
+    alertsHTML += `
+      <div class="alert alert-warning">
+        <span>⚠️ ${lowStockItems.length} أصناف منخفضة تحتاج إعادة تعبئة</span>
+        <button class="btn btn-primary" onclick="filterLowStock()">عرض</button>
+      </div>
+    `;
+  }
+  
+  alertsContainer.innerHTML = alertsHTML;
+}
+
+// Apply filters
+function applyFilters() {
+  const warehouseFilter = document.getElementById('warehouseFilter').value;
+  const categoryFilter = document.getElementById('categoryFilter').value;
+  const statusFilter = document.getElementById('statusFilter').value;
+  const searchInput = document.getElementById('searchInput').value.toLowerCase();
+  
+  filteredStockData = allStockData.filter(stock => {
+    if (warehouseFilter && stock.warehouseId !== warehouseFilter) return false;
+    if (categoryFilter && stock.category !== categoryFilter) return false;
+    if (statusFilter) {
+      const status = getStockStatus(stock.quantity, stock.minStock);
+      if (status !== statusFilter) return false;
+    }
+    if (searchInput && !stock.productName.toLowerCase().includes(searchInput)) return false;
+    
+    return true;
+  });
+  
+  updateStatistics();
+  renderStockTable();
+  showLowStockAlerts();
+}
+
+// Clear filters
+function clearFilters() {
+  document.getElementById('warehouseFilter').value = '';
+  document.getElementById('categoryFilter').value = '';
+  document.getElementById('statusFilter').value = '';
+  document.getElementById('searchInput').value = '';
+  
+  filteredStockData = [...allStockData];
+  updateStatistics();
+  renderStockTable();
+  showLowStockAlerts();
+}
+
+// Filter out of stock
+function filterOutOfStock() {
+  document.getElementById('statusFilter').value = 'out';
+  applyFilters();
+}
+
+// Filter low stock
+function filterLowStock() {
+  document.getElementById('statusFilter').value = 'low';
+  applyFilters();
+}
+
+// Search on input
+document.getElementById('searchInput').addEventListener('input', applyFilters);
+
+// Navigation functions
+function goBack() {
+  window.location = "inventory-management.html";
+}
+
+function logout() {
+  auth.signOut().then(() => {
+    window.location = "index.html";
+  });
+}
+</script>
+
+</body>
+</html>

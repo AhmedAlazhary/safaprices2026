@@ -1,0 +1,743 @@
+<!DOCTYPE html>
+<html lang="ar" dir="rtl">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>إدارة الأصناف - نظام المخازن</title>
+
+<style>
+* {
+  margin: 0;
+  padding: 0;
+  box-sizing: border-box;
+}
+
+body {
+  font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+  background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+  min-height: 100vh;
+}
+
+header {
+  background: rgba(255, 255, 255, 0.95);
+  backdrop-filter: blur(10px);
+  box-shadow: 0 2px 20px rgba(0, 0, 0, 0.1);
+  padding: 1rem 2rem;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  position: sticky;
+  top: 0;
+  z-index: 100;
+}
+
+header img {
+  height: 50px;
+}
+
+header h1 {
+  color: #2c3e50;
+  font-size: 1.8rem;
+}
+
+header nav {
+  display: flex;
+  gap: 1rem;
+}
+
+header nav button {
+  background: #3498db;
+  color: white;
+  border: none;
+  padding: 0.5rem 1rem;
+  border-radius: 8px;
+  cursor: pointer;
+  transition: all 0.3s ease;
+}
+
+header nav button:hover {
+  background: #2980b9;
+  transform: translateY(-2px);
+}
+
+.container {
+  max-width: 1400px;
+  margin: 2rem auto;
+  padding: 0 1rem;
+}
+
+.main-content {
+  display: grid;
+  grid-template-columns: 1fr 2fr;
+  gap: 2rem;
+}
+
+.card {
+  background: rgba(255, 255, 255, 0.95);
+  backdrop-filter: blur(10px);
+  border-radius: 16px;
+  padding: 1.5rem;
+  box-shadow: 0 8px 32px rgba(0, 0, 0, 0.1);
+  border: 1px solid rgba(255, 255, 255, 0.2);
+}
+
+.card h2 {
+  color: #2c3e50;
+  margin-bottom: 1.5rem;
+  font-size: 1.4rem;
+}
+
+.form-group {
+  margin-bottom: 1.5rem;
+}
+
+.form-group label {
+  display: block;
+  margin-bottom: 0.5rem;
+  color: #2c3e50;
+  font-weight: 500;
+}
+
+.form-group input,
+.form-group select {
+  width: 100%;
+  padding: 0.75rem;
+  border: 2px solid #e0e0e0;
+  border-radius: 8px;
+  font-size: 1rem;
+  transition: border-color 0.3s ease;
+}
+
+.form-group input:focus,
+.form-group select:focus {
+  outline: none;
+  border-color: #3498db;
+}
+
+.form-row {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 1rem;
+}
+
+.btn {
+  padding: 0.75rem 1.5rem;
+  border: none;
+  border-radius: 8px;
+  font-size: 1rem;
+  cursor: pointer;
+  transition: all 0.3s ease;
+  font-weight: 500;
+}
+
+.btn-primary {
+  background: #3498db;
+  color: white;
+}
+
+.btn-primary:hover {
+  background: #2980b9;
+  transform: translateY(-2px);
+}
+
+.btn-success {
+  background: #27ae60;
+  color: white;
+}
+
+.btn-success:hover {
+  background: #229954;
+  transform: translateY(-2px);
+}
+
+.btn-danger {
+  background: #e74c3c;
+  color: white;
+}
+
+.btn-danger:hover {
+  background: #c0392b;
+  transform: translateY(-2px);
+}
+
+.btn-secondary {
+  background: #95a5a6;
+  color: white;
+}
+
+.btn-secondary:hover {
+  background: #7f8c8d;
+  transform: translateY(-2px);
+}
+
+.search-bar {
+  display: flex;
+  gap: 1rem;
+  margin-bottom: 1.5rem;
+}
+
+.search-bar input {
+  flex: 1;
+  padding: 0.75rem;
+  border: 2px solid #e0e0e0;
+  border-radius: 8px;
+  font-size: 1rem;
+}
+
+.table-container {
+  overflow-x: auto;
+  border-radius: 12px;
+  box-shadow: 0 4px 16px rgba(0, 0, 0, 0.1);
+}
+
+table {
+  width: 100%;
+  border-collapse: collapse;
+  background: white;
+}
+
+th {
+  background: #3498db;
+  color: white;
+  padding: 1rem;
+  text-align: right;
+  font-weight: 600;
+  position: sticky;
+  top: 0;
+  z-index: 10;
+}
+
+td {
+  padding: 1rem;
+  border-bottom: 1px solid #ecf0f1;
+  text-align: right;
+}
+
+tr:hover {
+  background: #f8f9fa;
+}
+
+.actions {
+  display: flex;
+  gap: 0.5rem;
+}
+
+.btn-sm {
+  padding: 0.5rem 1rem;
+  font-size: 0.875rem;
+}
+
+.modal {
+  display: none;
+  position: fixed;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  background: rgba(0, 0, 0, 0.5);
+  z-index: 1000;
+  justify-content: center;
+  align-items: center;
+}
+
+.modal-content {
+  background: white;
+  padding: 2rem;
+  border-radius: 16px;
+  max-width: 500px;
+  width: 90%;
+  max-height: 90vh;
+  overflow-y: auto;
+}
+
+.modal-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 1.5rem;
+}
+
+.modal-header h3 {
+  color: #2c3e50;
+}
+
+.close-btn {
+  background: none;
+  border: none;
+  font-size: 1.5rem;
+  cursor: pointer;
+  color: #7f8c8d;
+}
+
+.close-btn:hover {
+  color: #2c3e50;
+}
+
+.alert {
+  padding: 1rem;
+  border-radius: 8px;
+  margin-bottom: 1rem;
+}
+
+.alert-success {
+  background: #d4edda;
+  border: 1px solid #c3e6cb;
+  color: #155724;
+}
+
+.alert-error {
+  background: #f8d7da;
+  border: 1px solid #f5c6cb;
+  color: #721c24;
+}
+
+.loading {
+  text-align: center;
+  padding: 2rem;
+}
+
+.spinner {
+  border: 4px solid #f3f3f3;
+  border-top: 4px solid #3498db;
+  border-radius: 50%;
+  width: 40px;
+  height: 40px;
+  animation: spin 1s linear infinite;
+  margin: 0 auto;
+}
+
+@keyframes spin {
+  0% { transform: rotate(0deg); }
+  100% { transform: rotate(360deg); }
+}
+
+@media (max-width: 1024px) {
+  .main-content {
+    grid-template-columns: 1fr;
+  }
+  
+  .form-row {
+    grid-template-columns: 1fr;
+  }
+}
+
+@media (max-width: 768px) {
+  header {
+    flex-direction: column;
+    gap: 1rem;
+  }
+  
+  .search-bar {
+    flex-direction: column;
+  }
+  
+  .actions {
+    flex-direction: column;
+  }
+}
+</style>
+</head>
+
+<body>
+
+<header>
+  <div style="display: flex; align-items: center; gap: 1rem;">
+    <img src="logo.png" alt="شعار مكتب الصفا">
+    <h1>إدارة الأصناف</h1>
+  </div>
+  <nav>
+    <button onclick="window.location='inventory-management.html'">الرئيسية</button>
+    <button onclick="goBack()">رجوع</button>
+    <button onclick="logout()">تسجيل خروج</button>
+  </nav>
+</header>
+
+<div class="container">
+  <div class="main-content">
+    <!-- Add/Edit Product Form -->
+    <div class="card">
+      <h2 id="formTitle">إضافة صنف جديد</h2>
+      <form id="productForm">
+        <input type="hidden" id="productId">
+        
+        <div class="form-group">
+          <label for="productName">اسم الصنف *</label>
+          <input type="text" id="productName" required>
+        </div>
+        
+        <div class="form-group">
+          <label for="productUnit">الوحدة *</label>
+          <select id="productUnit" required>
+            <option value="">اختر الوحدة</option>
+            <option value="قطعة">قطعة</option>
+            <option value="كيلو">كيلو</option>
+            <option value="متر">متر</option>
+            <option value="لتر">لتر</option>
+            <option value="صندوق">صندوق</option>
+            <option value="طن">طن</option>
+            <option value="متر مربع">متر مربع</option>
+            <option value="متر مكعب">متر مكعب</option>
+          </select>
+        </div>
+        
+        <div class="form-group">
+          <label for="productCategory">الفئة *</label>
+          <select id="productCategory" required>
+            <option value="">اختر الفئة</option>
+            <option value="مواد بناء">مواد بناء</option>
+            <option value="أدوات كهربائية">أدوات كهربائية</option>
+            <option value="أدوات صحية">أدوات صحية</option>
+            <option value="دهانات">دهانات</option>
+            <option value="مواد عزل">مواد عزل</option>
+            <option value="أخشاب">أخشاب</option>
+            <option value="معادن">معادن</option>
+            <option value="أخرى">أخرى</option>
+          </select>
+        </div>
+        
+        <div class="form-row">
+          <div class="form-group">
+            <label for="purchasePrice">سعر الشراء</label>
+            <input type="number" id="purchasePrice" step="0.01" min="0">
+          </div>
+          
+          <div class="form-group">
+            <label for="salePrice">سعر البيع</label>
+            <input type="number" id="salePrice" step="0.01" min="0">
+          </div>
+        </div>
+        
+        <div class="form-group">
+          <label for="minStock">الحد الأدنى للمخزون</label>
+          <input type="number" id="minStock" min="0" placeholder="0">
+        </div>
+        
+        <div style="display: flex; gap: 1rem;">
+          <button type="submit" class="btn btn-primary">حفظ الصنف</button>
+          <button type="button" class="btn btn-secondary" onclick="resetForm()">إعادة تعيين</button>
+        </div>
+      </form>
+    </div>
+    
+    <!-- Products List -->
+    <div class="card">
+      <h2>قائمة الأصناف</h2>
+      
+      <div class="search-bar">
+        <input type="text" id="searchInput" placeholder="ابحث عن صنف...">
+        <button class="btn btn-primary" onclick="searchProducts()">بحث</button>
+        <button class="btn btn-secondary" onclick="clearSearch()">مسح</button>
+      </div>
+      
+      <div class="table-container">
+        <table id="productsTable">
+          <thead>
+            <tr>
+              <th>اسم الصنف</th>
+              <th>الوحدة</th>
+              <th>الفئة</th>
+              <th>سعر الشراء</th>
+              <th>سعر البيع</th>
+              <th>الحد الأدنى</th>
+              <th>الإجراءات</th>
+            </tr>
+          </thead>
+          <tbody id="productsTableBody">
+            <tr>
+              <td colspan="7" class="loading">
+                <div class="spinner"></div>
+              </td>
+            </tr>
+          </tbody>
+        </table>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- Edit Modal -->
+<div id="editModal" class="modal">
+  <div class="modal-content">
+    <div class="modal-header">
+      <h3>تعديل الصنف</h3>
+      <button class="close-btn" onclick="closeEditModal()">&times;</button>
+    </div>
+    <form id="editForm">
+      <input type="hidden" id="editProductId">
+      
+      <div class="form-group">
+        <label for="editProductName">اسم الصنف *</label>
+        <input type="text" id="editProductName" required>
+      </div>
+      
+      <div class="form-group">
+        <label for="editProductUnit">الوحدة *</label>
+        <select id="editProductUnit" required>
+          <option value="">اختر الوحدة</option>
+          <option value="قطعة">قطعة</option>
+          <option value="كيلو">كيلو</option>
+          <option value="متر">متر</option>
+          <option value="لتر">لتر</option>
+          <option value="صندوق">صندوق</option>
+          <option value="طن">طن</option>
+          <option value="متر مربع">متر مربع</option>
+          <option value="متر مكعب">متر مكعب</option>
+        </select>
+      </div>
+      
+      <div class="form-group">
+        <label for="editProductCategory">الفئة *</label>
+        <select id="editProductCategory" required>
+          <option value="">اختر الفئة</option>
+          <option value="مواد بناء">مواد بناء</option>
+          <option value="أدوات كهربائية">أدوات كهربائية</option>
+          <option value="أدوات صحية">أدوات صحية</option>
+          <option value="دهانات">دهانات</option>
+          <option value="مواد عزل">مواد عزل</option>
+          <option value="أخشاب">أخشاب</option>
+          <option value="معادن">معادن</option>
+          <option value="أخرى">أخرى</option>
+        </select>
+      </div>
+      
+      <div class="form-row">
+        <div class="form-group">
+          <label for="editPurchasePrice">سعر الشراء</label>
+          <input type="number" id="editPurchasePrice" step="0.01" min="0">
+        </div>
+        
+        <div class="form-group">
+          <label for="editSalePrice">سعر البيع</label>
+          <input type="number" id="editSalePrice" step="0.01" min="0">
+        </div>
+      </div>
+      
+      <div class="form-group">
+        <label for="editMinStock">الحد الأدنى للمخزون</label>
+        <input type="number" id="editMinStock" min="0">
+      </div>
+      
+      <div style="display: flex; gap: 1rem; justify-content: flex-end;">
+        <button type="button" class="btn btn-secondary" onclick="closeEditModal()">إلغاء</button>
+        <button type="submit" class="btn btn-primary">تحديث</button>
+      </div>
+    </form>
+  </div>
+</div>
+
+<script type="module">
+import { auth, db, serverTimestamp } from './firebase-config.js';
+
+// Check authentication
+auth.onAuthStateChanged(user => {
+  if (!user) {
+    window.location = "index.html";
+    return;
+  }
+  
+  // Load products
+  loadProducts();
+});
+
+// Global variables
+let products = [];
+let editingProduct = null;
+
+// Form submission
+document.getElementById('productForm').addEventListener('submit', async (e) => {
+  e.preventDefault();
+  
+  try {
+    const productData = {
+      name: document.getElementById('productName').value,
+      unit: document.getElementById('productUnit').value,
+      categoryId: document.getElementById('productCategory').value,
+      purchasePrice: parseFloat(document.getElementById('purchasePrice').value) || 0,
+      salePrice: parseFloat(document.getElementById('salePrice').value) || 0,
+      minStock: parseInt(document.getElementById('minStock').value) || 0,
+      createdAt: serverTimestamp(),
+      updatedAt: serverTimestamp()
+    };
+    
+    await db.collection('products').add(productData);
+    
+    showAlert('تم إضافة الصنف بنجاح', 'success');
+    resetForm();
+    loadProducts();
+  } catch (error) {
+    console.error('Error adding product:', error);
+    showAlert('خطأ في إضافة الصنف: ' + error.message, 'error');
+  }
+});
+
+// Edit form submission
+document.getElementById('editForm').addEventListener('submit', async (e) => {
+  e.preventDefault();
+  
+  if (!editingProduct) return;
+  
+  try {
+    const updatedData = {
+      name: document.getElementById('editProductName').value,
+      unit: document.getElementById('editProductUnit').value,
+      categoryId: document.getElementById('editProductCategory').value,
+      purchasePrice: parseFloat(document.getElementById('editPurchasePrice').value) || 0,
+      salePrice: parseFloat(document.getElementById('editSalePrice').value) || 0,
+      minStock: parseInt(document.getElementById('editMinStock').value) || 0,
+      updatedAt: serverTimestamp()
+    };
+    
+    await db.collection('products').doc(editingProduct.id).update(updatedData);
+    
+    showAlert('تم تحديث الصنف بنجاح', 'success');
+    closeEditModal();
+    loadProducts();
+  } catch (error) {
+    console.error('Error updating product:', error);
+    showAlert('خطأ في تحديث الصنف: ' + error.message, 'error');
+  }
+});
+
+// Load products
+async function loadProducts() {
+  try {
+    const snapshot = await db.collection('products').orderBy('createdAt', 'desc').get();
+    products = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
+    renderProductsTable(products);
+  } catch (error) {
+    console.error('Error loading products:', error);
+    showAlert('خطأ في تحميل الأصناف', 'error');
+  }
+}
+
+// Render products table
+function renderProductsTable(productsList) {
+  const tbody = document.getElementById('productsTableBody');
+  
+  if (productsList.length === 0) {
+    tbody.innerHTML = '<tr><td colspan="7" style="text-align: center; padding: 2rem;">لا توجد أصناف</td></tr>';
+    return;
+  }
+  
+  tbody.innerHTML = productsList.map(product => `
+    <tr>
+      <td>${product.name}</td>
+      <td>${product.unit}</td>
+      <td>${product.categoryId}</td>
+      <td>${product.purchasePrice.toFixed(2)}</td>
+      <td>${product.salePrice.toFixed(2)}</td>
+      <td>${product.minStock}</td>
+      <td>
+        <div class="actions">
+          <button class="btn btn-sm btn-primary" onclick="editProduct('${product.id}')">تعديل</button>
+          <button class="btn btn-sm btn-danger" onclick="deleteProduct('${product.id}')">حذف</button>
+        </div>
+      </td>
+    </tr>
+  `).join('');
+}
+
+// Edit product
+function editProduct(productId) {
+  const product = products.find(p => p.id === productId);
+  if (!product) return;
+  
+  editingProduct = product;
+  
+  document.getElementById('editProductId').value = product.id;
+  document.getElementById('editProductName').value = product.name;
+  document.getElementById('editProductUnit').value = product.unit;
+  document.getElementById('editProductCategory').value = product.categoryId;
+  document.getElementById('editPurchasePrice').value = product.purchasePrice;
+  document.getElementById('editSalePrice').value = product.salePrice;
+  document.getElementById('editMinStock').value = product.minStock;
+  
+  document.getElementById('editModal').style.display = 'flex';
+}
+
+// Delete product
+async function deleteProduct(productId) {
+  if (!confirm('هل أنت متأكد من حذف هذا الصنف؟')) return;
+  
+  try {
+    await db.collection('products').doc(productId).delete();
+    showAlert('تم حذف الصنف بنجاح', 'success');
+    loadProducts();
+  } catch (error) {
+    console.error('Error deleting product:', error);
+    showAlert('خطأ في حذف الصنف: ' + error.message, 'error');
+  }
+}
+
+// Search products
+function searchProducts() {
+  const searchTerm = document.getElementById('searchInput').value.toLowerCase();
+  
+  if (!searchTerm) {
+    renderProductsTable(products);
+    return;
+  }
+  
+  const filteredProducts = products.filter(product => 
+    product.name.toLowerCase().includes(searchTerm) ||
+    product.categoryId.toLowerCase().includes(searchTerm) ||
+    product.unit.toLowerCase().includes(searchTerm)
+  );
+  
+  renderProductsTable(filteredProducts);
+}
+
+// Clear search
+function clearSearch() {
+  document.getElementById('searchInput').value = '';
+  renderProductsTable(products);
+}
+
+// Reset form
+function resetForm() {
+  document.getElementById('productForm').reset();
+  document.getElementById('productId').value = '';
+}
+
+// Close edit modal
+function closeEditModal() {
+  document.getElementById('editModal').style.display = 'none';
+  document.getElementById('editForm').reset();
+  editingProduct = null;
+}
+
+// Show alert
+function showAlert(message, type) {
+  const alertDiv = document.createElement('div');
+  alertDiv.className = `alert alert-${type}`;
+  alertDiv.textContent = message;
+  
+  document.querySelector('.container').insertBefore(alertDiv, document.querySelector('.main-content'));
+  
+  setTimeout(() => {
+    alertDiv.remove();
+  }, 3000);
+}
+
+// Navigation functions
+function goBack() {
+  window.location = "inventory-management.html";
+}
+
+function logout() {
+  auth.signOut().then(() => {
+    window.location = "index.html";
+  });
+}
+
+// Close modal on outside click
+window.onclick = function(event) {
+  const modal = document.getElementById('editModal');
+  if (event.target === modal) {
+    closeEditModal();
+  }
+}
+</script>
+
+</body>
+</html>

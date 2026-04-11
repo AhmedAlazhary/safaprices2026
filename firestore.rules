@@ -1,53 +1,182 @@
 rules_version = '2';
 service cloud.firestore {
   match /databases/{database}/documents {
-    function signedIn() {
+    // Helper functions
+    function isAuthenticated() {
       return request.auth != null;
     }
-
+    
     function isAdmin() {
-      return signedIn() && request.auth.token.admin == true;
+      return isAuthenticated() && 
+             request.auth.token.email == 'admin@safa-egypt.com';
     }
-
-    function isManager() {
-      return isAdmin() || (signedIn() && request.auth.token.manager == true);
+    
+    function isValidProduct(data) {
+      return data.keys().hasAll(['name', 'unit', 'categoryId', 'purchasePrice', 'salePrice', 'minStock', 'createdAt']) &&
+             data.name is string &&
+             data.name.size() > 0 &&
+             data.unit is string &&
+             data.unit.size() > 0 &&
+             data.categoryId is string &&
+             data.categoryId.size() > 0 &&
+             data.purchasePrice is number &&
+             data.purchasePrice >= 0 &&
+             data.salePrice is number &&
+             data.salePrice >= 0 &&
+             data.minStock is number &&
+             data.minStock >= 0 &&
+             data.createdAt is timestamp;
     }
-
-    function isMechanic() {
-      return isManager() || (signedIn() && request.auth.token.mechanic == true);
+    
+    function isValidWarehouse(data) {
+      return data.keys().hasAll(['name', 'createdAt']) &&
+             data.name is string &&
+             data.name.size() > 0 &&
+             data.createdAt is timestamp;
     }
-
-    function unchangedFinancialFields() {
-      return request.resource.data.purchasePrice == resource.data.purchasePrice
-        && request.resource.data.sellingPrice == resource.data.sellingPrice
-        && request.resource.data.capitalLocked == resource.data.capitalLocked;
+    
+    function isValidCustomerSupplier(data) {
+      return data.keys().hasAll(['name', 'type', 'createdAt']) &&
+             data.name is string &&
+             data.name.size() > 0 &&
+             data.type in ['customer', 'supplier'] &&
+             data.createdAt is timestamp;
     }
-
+    
+    function isValidInvoice(data) {
+      return data.keys().hasAll(['type', 'customerSupplierId', 'warehouseId', 'total', 'date', 'status', 'createdAt']) &&
+             data.type in ['sale', 'purchase'] &&
+             data.customerSupplierId is string &&
+             data.customerSupplierId.size() > 0 &&
+             data.warehouseId is string &&
+             data.warehouseId.size() > 0 &&
+             data.total is number &&
+             data.total >= 0 &&
+             data.date is timestamp &&
+             data.status in ['active', 'cancelled'] &&
+             data.createdAt is timestamp;
+    }
+    
+    function isValidInvoiceItem(data) {
+      return data.keys().hasAll(['invoiceId', 'productId', 'quantity', 'price', 'total']) &&
+             data.invoiceId is string &&
+             data.invoiceId.size() > 0 &&
+             data.productId is string &&
+             data.productId.size() > 0 &&
+             data.quantity is number &&
+             data.quantity > 0 &&
+             data.price is number &&
+             data.price >= 0 &&
+             data.total is number &&
+             data.total >= 0;
+    }
+    
+    function isValidStockBalance(data) {
+      return data.keys().hasAll(['productId', 'warehouseId', 'quantity', 'avgCost', 'updatedAt']) &&
+             data.productId is string &&
+             data.productId.size() > 0 &&
+             data.warehouseId is string &&
+             data.warehouseId.size() > 0 &&
+             data.quantity is number &&
+             data.avgCost is number &&
+             data.updatedAt is timestamp;
+    }
+    
+    function isValidStockMovement(data) {
+      return data.keys().hasAll(['type', 'productId', 'warehouseId', 'quantity', 'unitCost', 'totalCost', 'date', 'createdBy']) &&
+             data.type in ['sale', 'purchase', 'transfer', 'adjustment'] &&
+             data.productId is string &&
+             data.productId.size() > 0 &&
+             data.warehouseId is string &&
+             data.warehouseId.size() > 0 &&
+             data.quantity is number &&
+             data.unitCost is number &&
+             data.unitCost >= 0 &&
+             data.totalCost is number &&
+             data.totalCost >= 0 &&
+             data.date is timestamp &&
+             data.createdBy is string &&
+             data.createdBy.size() > 0;
+    }
+    
+    // Collections rules
+    
+    // Products collection
+    match /products/{productId} {
+      allow read, write: if isAuthenticated();
+      allow create: if isAuthenticated() && isValidProduct(resource.data);
+      allow update: if isAuthenticated() && isValidProduct(resource.data);
+      allow delete: if isAuthenticated() && isAdmin();
+    }
+    
+    // Warehouses collection
+    match /warehouses/{warehouseId} {
+      allow read, write: if isAuthenticated();
+      allow create: if isAuthenticated() && isValidWarehouse(resource.data);
+      allow update: if isAuthenticated() && isValidWarehouse(resource.data);
+      allow delete: if isAuthenticated() && isAdmin();
+    }
+    
+    // Customers and Suppliers collection
+    match /customers_suppliers/{customerId} {
+      allow read, write: if isAuthenticated();
+      allow create: if isAuthenticated() && isValidCustomerSupplier(resource.data);
+      allow update: if isAuthenticated() && isValidCustomerSupplier(resource.data);
+      allow delete: if isAuthenticated() && isAdmin();
+    }
+    
+    // Invoices collection
+    match /invoices/{invoiceId} {
+      allow read, write: if isAuthenticated();
+      allow create: if isAuthenticated() && isValidInvoice(resource.data);
+      allow update: if isAuthenticated() && isValidInvoice(resource.data);
+      allow delete: if isAuthenticated() && isAdmin();
+    }
+    
+    // Invoice items collection
+    match /invoice_items/{itemId} {
+      allow read, write: if isAuthenticated();
+      allow create: if isAuthenticated() && isValidInvoiceItem(resource.data);
+      allow update: if isAuthenticated() && isValidInvoiceItem(resource.data);
+      allow delete: if isAuthenticated();
+    }
+    
+    // Stock balances collection
+    match /stock_balances/{balanceId} {
+      allow read, write: if isAuthenticated();
+      allow create: if isAuthenticated() && isValidStockBalance(resource.data);
+      allow update: if isAuthenticated() && isValidStockBalance(resource.data);
+      allow delete: if isAuthenticated() && isAdmin();
+    }
+    
+    // Stock movements collection
+    match /stock_movements/{movementId} {
+      allow read, write: if isAuthenticated();
+      allow create: if isAuthenticated() && isValidStockMovement(resource.data);
+      allow update: if isAuthenticated() && isValidStockMovement(resource.data);
+      allow delete: if isAuthenticated() && isAdmin();
+    }
+    
+    // Legacy collections (keep for backward compatibility)
     match /Staff/{userId} {
-      allow read: if signedIn();
+      allow read: if isAuthenticated();
       allow create, update, delete: if isAdmin();
     }
 
     match /Inventory/{itemId} {
-      allow read: if signedIn();
-      allow create, delete: if isManager();
-      allow update: if isManager()
-        || (isMechanic() && unchangedFinancialFields());
+      allow read: if isAuthenticated();
+      allow create, delete: if isAdmin();
+      allow update: if isAuthenticated();
     }
 
     match /JobOrders/{jobOrderId} {
-      allow read: if signedIn();
-      allow create: if isMechanic();
-      allow update: if isMechanic();
-      allow delete: if isManager();
+      allow read: if isAuthenticated();
+      allow create, update, delete: if isAdmin();
     }
 
     match /Expenses/{expenseId} {
-      allow read: if isManager();
-      allow create: if isMechanic()
-        && request.resource.data.workerId is string
-        && request.resource.data.amount is number;
-      allow update, delete: if isManager();
+      allow read: if isAuthenticated();
+      allow create, update, delete: if isAdmin();
     }
   }
 }
