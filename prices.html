@@ -572,7 +572,7 @@ function confirmImport() {
   }, 30000); // 30 seconds timeout
   
   // Load current data from Firebase
-  database.ref('prices').once('value', { timeout: 20000 })
+  database.ref('prices').once('value')
     .then(snapshot => {
       clearTimeout(timeout);
       console.log('Firebase data loaded successfully');
@@ -690,6 +690,42 @@ function checkDuplicateUpload(fileName) {
 function recordUpload(fileName) {
   localStorage.setItem('lastExcelUpload', new Date().toISOString());
   localStorage.setItem('lastExcelFileName', fileName);
+}
+
+// Load data directly from client prices.xlsx file
+function loadExcelDataDirectly() {
+  showLoading('Loading Excel data...');
+  
+  fetch('client prices.xlsx')
+    .then(response => {
+      if (!response.ok) {
+        throw new Error('Excel file not found');
+      }
+      return response.arrayBuffer();
+    })
+    .then(data => {
+      const workbook = XLSX.read(data, { type: 'array' });
+      const firstSheet = workbook.Sheets[workbook.SheetNames[0]];
+      const jsonData = XLSX.utils.sheet_to_json(firstSheet, { header: 1 });
+      
+      console.log('Excel data loaded directly:', jsonData);
+      processExcelData(jsonData);
+    })
+    .catch(error => {
+      console.error('Error loading Excel file:', error);
+      hideLoading();
+      alert('Error loading Excel file: ' + error.message);
+    });
+}
+
+// Add button to load Excel data directly
+function addDirectLoadButton() {
+  const buttonsDiv = document.querySelector('.top-buttons');
+  const loadButton = document.createElement('button');
+  loadButton.className = 'add-btn';
+  loadButton.textContent = 'Load Excel Data';
+  loadButton.onclick = loadExcelDataDirectly;
+  buttonsDiv.appendChild(loadButton);
 }
 
 function syncTableToData() {
@@ -824,6 +860,7 @@ function logout() {
 }
 
 loadData();
+addDirectLoadButton();
 </script>
 
 </body>
