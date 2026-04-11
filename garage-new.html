@@ -477,11 +477,15 @@
             </button>
             <button class="tab-button" onclick="switchTab('balances', event)">
                 <i class="fas fa-balance-scale"></i>
-                الأرصدة
+                <span>Suppliers</span>
+            </button>
+            <button class="tab-button" onclick="switchTab('maintenance', event)">
+                <i class="fas fa-wrench"></i>
+                <span>Maintenance</span>
             </button>
             <button class="tab-button" onclick="switchTab('settings', event)">
                 <i class="fas fa-cog"></i>
-                القوائم
+                <span>Settings</span>
             </button>
         </div>
 
@@ -790,16 +794,50 @@
                     </div>
                 </div>
             </div>
-        </div>
-    </div>
-</div>
 
-<!-- Settings Modal -->
-<div class="modal" id="settingsModal">
-    <div class="modal-content">
-        <div class="modal-header">
-            <h3 class="modal-title">إعدادات</h3>
-            <button class="modal-close" onclick="closeSettingsModal()">&times;</button>
+            <!-- Maintenance Tab -->
+            <div class="tab-content" id="tab-maintenance">
+                <div class="maintenance-container">
+                    <!-- Internal Maintenance -->
+                    <div class="maintenance-section">
+                        <h3 class="section-title">
+                            <i class="fas fa-wrench"></i>
+                            Internal Maintenance
+                        </h3>
+                        <div class="table-container">
+                            <div class="table-header">
+                                <h3 class="table-title">Internal Maintenance Jobs</h3>
+                                <div class="table-actions">
+                                    <button class="btn btn-primary" onclick="addInternalMaintenance()">
+                                        <i class="fas fa-plus"></i>
+                                        Add Internal Maintenance
+                                    </button>
+                                </div>
+                            </div>
+                            
+                            <div class="loading" id="loading-internal-maintenance">
+                                <div class="spinner"></div>
+                                <div>Loading internal maintenance data...</div>
+                            </div>
+                            
+                            <table class="data-table" id="table-internal-maintenance" style="display: none;">
+                                <thead>
+                                    <tr>
+                                        <th>Date</th>
+                                        <th>Job ID</th>
+                                        <th>Car Number</th>
+                                        <th>Technician</th>
+                                        <th>Labor Cost</th>
+                                        <th>Status</th>
+                                        <th>Actions</th>
+                                    </tr>
+                                </thead>
+                                <tbody id="tbody-internal-maintenance">
+                                    <!-- Internal maintenance will be loaded here -->
+                                </tbody>
+                            </table>
+                        </div>
+                    </div>
         </div>
         <div id="settingsContent">
             <!-- Content will be generated dynamically -->
@@ -834,7 +872,12 @@ let garageData = {
     spareParts: [],
     vehicles: [],
     custody: [],
-    expenses: []
+    expenses: [],
+    suppliers: [],
+    maintenance: {
+        internal: [],
+        external: []
+    }
 };
 let masterData = {
     items: [],
@@ -927,6 +970,36 @@ function loadGarageData() {
         }));
         renderExpensesTable();
         updateBalances();
+    });
+
+    // Load Suppliers
+    db.ref('garage/suppliers').on('value', snapshot => {
+        const data = snapshot.val() || {};
+        garageData.suppliers = Object.keys(data).map(key => ({
+            id: key,
+            ...data[key]
+        }));
+        renderSuppliersTable();
+    });
+
+    // Load Internal Maintenance
+    db.ref('garage/maintenance/internal').on('value', snapshot => {
+        const data = snapshot.val() || {};
+        garageData.maintenance.internal = Object.keys(data).map(key => ({
+            id: key,
+            ...data[key]
+        }));
+        renderInternalMaintenanceTable();
+    });
+
+    // Load External Maintenance
+    db.ref('garage/maintenance/external').on('value', snapshot => {
+        const data = snapshot.val() || {};
+        garageData.maintenance.external = Object.keys(data).map(key => ({
+            id: key,
+            ...data[key]
+        }));
+        renderExternalMaintenanceTable();
     });
 }
 
@@ -1275,7 +1348,484 @@ function renderLocationsTable() {
     `).join('');
 }
 
-// Render Accounts Table
+// Render Suppliers Table
+function renderSuppliersTable() {
+    const tbody = document.getElementById('tbody-suppliers');
+    const table = document.getElementById('table-suppliers');
+    const loading = document.getElementById('loading-suppliers');
+    
+    const data = garageData.suppliers || [];
+    
+    // Hide loading, show table
+    loading.style.display = 'none';
+    table.style.display = 'table';
+    
+    if (data.length === 0) {
+        tbody.innerHTML = '<tr><td colspan="5" style="text-align: center; color: var(--muted);">No suppliers found</td></tr>';
+        return;
+    }
+
+    tbody.innerHTML = data.map(supplier => {
+        const totalPurchases = calculateSupplierPurchases(supplier.id);
+        const totalPayments = calculateSupplierPayments(supplier.id);
+        const balance = totalPurchases - totalPayments;
+        
+        return `
+            <tr data-id="${supplier.id}">
+                <td>${supplier.name}</td>
+                <td class="number">${totalPurchases.toFixed(2)}</td>
+                <td class="number">${totalPayments.toFixed(2)}</td>
+                <td class="number ${balance >= 0 ? 'positive' : 'negative'}">${balance.toFixed(2)}</td>
+                <td>
+                    <button class="btn btn-sm btn-primary" onclick="addPurchase('${supplier.id}')">
+                        <i class="fas fa-shopping-cart"></i>
+                        Purchase
+                    </button>
+                    <button class="btn btn-sm btn-success" onclick="addPayment('${supplier.id}')">
+                        <i class="fas fa-money-bill"></i>
+                        Payment
+                    </button>
+                    <button class="btn btn-sm btn-danger" onclick="deleteSupplier('${supplier.id}')">
+                        <i class="fas fa-trash"></i>
+                    </button>
+                </td>
+            </tr>
+        `;
+    }).join('');
+}
+
+// Render Internal Maintenance Table
+function renderInternalMaintenanceTable() {
+    const tbody = document.getElementById('tbody-internal-maintenance');
+    const table = document.getElementById('table-internal-maintenance');
+    const loading = document.getElementById('loading-internal-maintenance');
+    
+    const data = garageData.maintenance.internal || [];
+    
+    // Hide loading, show table
+    loading.style.display = 'none';
+    table.style.display = 'table';
+    
+    if (data.length === 0) {
+        tbody.innerHTML = '<tr><td colspan="7" style="text-align: center; color: var(--muted);">No internal maintenance records found</td></tr>';
+        return;
+    }
+
+    tbody.innerHTML = data.map(maintenance => {
+        return `
+            <tr data-id="${maintenance.id}">
+                <td>${maintenance.date || today}</td>
+                <td>${maintenance.jobId || '-'}</td>
+                <td>${maintenance.carNumber || '-'}</td>
+                <td>${maintenance.technicianName || '-'}</td>
+                <td class="number">${(maintenance.laborCost || 0).toFixed(2)}</td>
+                <td><span class="badge ${getStatusClass(maintenance.status)}">${maintenance.status || 'pending'}</span></td>
+                <td>
+                    <button class="btn btn-sm btn-primary" onclick="editInternalMaintenance('${maintenance.id}')">
+                        <i class="fas fa-edit"></i>
+                    </button>
+                    <button class="btn btn-sm btn-danger" onclick="deleteInternalMaintenance('${maintenance.id}')">
+                        <i class="fas fa-trash"></i>
+                    </button>
+                </td>
+            </tr>
+        `;
+    }).join('');
+}
+
+// Render External Maintenance Table
+function renderExternalMaintenanceTable() {
+    const tbody = document.getElementById('tbody-external-maintenance');
+    const table = document.getElementById('table-external-maintenance');
+    const loading = document.getElementById('loading-external-maintenance');
+    
+    const data = garageData.maintenance.external || [];
+    
+    // Hide loading, show table
+    loading.style.display = 'none';
+    table.style.display = 'table';
+    
+    if (data.length === 0) {
+        tbody.innerHTML = '<tr><td colspan="7" style="text-align: center; color: var(--muted);">No external maintenance records found</td></tr>';
+        return;
+    }
+
+    tbody.innerHTML = data.map(maintenance => {
+        return `
+            <tr data-id="${maintenance.id}">
+                <td>${maintenance.date || today}</td>
+                <td>${maintenance.jobId || '-'}</td>
+                <td>${maintenance.carNumber || '-'}</td>
+                <td>${maintenance.vendorName || '-'}</td>
+                <td class="number">${(maintenance.serviceCost || 0).toFixed(2)}</td>
+                <td><span class="badge ${getStatusClass(maintenance.status)}">${maintenance.status || 'pending'}</span></td>
+                <td>
+                    <button class="btn btn-sm btn-primary" onclick="editExternalMaintenance('${maintenance.id}')">
+                        <i class="fas fa-edit"></i>
+                    </button>
+                    <button class="btn btn-sm btn-danger" onclick="deleteExternalMaintenance('${maintenance.id}')">
+                        <i class="fas fa-trash"></i>
+                    </button>
+                </td>
+            </tr>
+        `;
+    }).join('');
+}
+
+// Helper functions
+function calculateSupplierPurchases(supplierId) {
+    // This would calculate total purchases from purchases collection
+    // For now, return 0 as placeholder
+    return 0;
+}
+
+function calculateSupplierPayments(supplierId) {
+    // This would calculate total payments from payments collection
+    // For now, return 0 as placeholder
+    return 0;
+}
+
+function getStatusClass(status) {
+    switch(status) {
+        case 'completed': return 'success';
+        case 'in_progress': return 'warning';
+        case 'pending': return 'info';
+        case 'cancelled': return 'danger';
+        default: return 'secondary';
+    }
+}
+// Supplier Management Functions
+function addSupplier() {
+    const name = prompt('Enter supplier name:');
+    if (!name) return;
+
+    const supplierData = {
+        name: name,
+        balance: 0,
+        createdAt: new Date().toISOString(),
+        createdBy: currentUser.uid
+    };
+
+    db.ref('garage/suppliers').push(supplierData);
+}
+
+function deleteSupplier(supplierId) {
+    if (!confirm('Are you sure you want to delete this supplier?')) return;
+    
+    db.ref('garage/suppliers/' + supplierId).remove();
+}
+
+function addPurchase(supplierId) {
+    const amount = prompt('Enter purchase amount:');
+    if (!amount || isNaN(amount)) return;
+
+    const purchaseData = {
+        supplierId: supplierId,
+        amount: parseFloat(amount),
+        date: today,
+        type: 'purchase',
+        createdAt: new Date().toISOString(),
+        createdBy: currentUser.uid
+    };
+
+    db.ref('garage/purchases').push(purchaseData);
+}
+
+function addPayment(supplierId) {
+    const amount = prompt('Enter payment amount:');
+    if (!amount || isNaN(amount)) return;
+
+    const paymentData = {
+        supplierId: supplierId,
+        amount: parseFloat(amount),
+        date: today,
+        type: 'payment',
+        createdAt: new Date().toISOString(),
+        createdBy: currentUser.uid
+    };
+
+    db.ref('garage/payments').push(paymentData);
+}
+
+// Maintenance Management Functions
+function addInternalMaintenance() {
+    const jobId = prompt('Enter Job ID:');
+    const carNumber = prompt('Enter Car Number:');
+    const technicianName = prompt('Enter Technician Name:');
+    const laborCost = prompt('Enter Labor Cost:');
+
+    if (!jobId || !carNumber || !technicianName || !laborCost) return;
+
+    const maintenanceData = {
+        jobId: jobId,
+        carNumber: carNumber,
+        technicianName: technicianName,
+        laborCost: parseFloat(laborCost),
+        date: today,
+        type: 'internal',
+        status: 'pending',
+        createdAt: new Date().toISOString(),
+        createdBy: currentUser.uid
+    };
+
+    db.ref('garage/maintenance/internal').push(maintenanceData);
+}
+
+function addExternalMaintenance() {
+    const jobId = prompt('Enter Job ID:');
+    const carNumber = prompt('Enter Car Number:');
+    const vendorName = prompt('Enter Service Provider Name:');
+    const serviceCost = prompt('Enter Service Cost:');
+
+    if (!jobId || !carNumber || !vendorName || !serviceCost) return;
+
+    const maintenanceData = {
+        jobId: jobId,
+        carNumber: carNumber,
+        vendorName: vendorName,
+        serviceCost: parseFloat(serviceCost),
+        date: today,
+        type: 'external',
+        status: 'pending',
+        createdAt: new Date().toISOString(),
+        createdBy: currentUser.uid
+    };
+
+    db.ref('garage/maintenance/external').push(maintenanceData);
+}
+
+function editInternalMaintenance(maintenanceId) {
+    const maintenance = garageData.maintenance.internal.find(m => m.id === maintenanceId);
+    if (!maintenance) return;
+
+    const newStatus = prompt('Enter new status (pending/in_progress/completed/cancelled):', maintenance.status);
+    if (!newStatus) return;
+
+    db.ref('garage/maintenance/internal/' + maintenanceId).update({
+        status: newStatus,
+        updatedAt: new Date().toISOString(),
+        updatedBy: currentUser.uid
+    });
+}
+
+function editExternalMaintenance(maintenanceId) {
+    const maintenance = garageData.maintenance.external.find(m => m.id === maintenanceId);
+    if (!maintenance) return;
+
+    const newStatus = prompt('Enter new status (pending/in_progress/completed/cancelled):', maintenance.status);
+    if (!newStatus) return;
+
+    db.ref('garage/maintenance/external/' + maintenanceId).update({
+        status: newStatus,
+        updatedAt: new Date().toISOString(),
+        updatedBy: currentUser.uid
+    });
+}
+
+function deleteInternalMaintenance(maintenanceId) {
+    if (!confirm('Are you sure you want to delete this maintenance record?')) return;
+    
+    db.ref('garage/maintenance/internal/' + maintenanceId).remove();
+}
+
+function deleteExternalMaintenance(maintenanceId) {
+    if (!confirm('Are you sure you want to delete this maintenance record?')) return;
+    
+    db.ref('garage/maintenance/external/' + maintenanceId).remove();
+}
+
+// Accounting Logic Functions
+function updateSupplierBalance(supplierId, purchaseAmount, paymentAmount) {
+    const supplier = garageData.suppliers.find(s => s.id === supplierId);
+    if (!supplier) return;
+
+    const newBalance = (supplier.balance || 0) + purchaseAmount - paymentAmount;
+    
+    db.ref('garage/suppliers/' + supplierId).update({
+        balance: newBalance,
+        updatedAt: new Date().toISOString(),
+        updatedBy: currentUser.uid
+    });
+}
+
+function validateInventoryQuantity(itemId, requestedQuantity) {
+    const item = garageData.inventory.find(i => i.id === itemId);
+    if (!item) return false;
+    
+    return (item.quantity || 0) >= requestedQuantity;
+}
+
+function processInventoryIssue(itemId, quantity, jobId) {
+    if (!validateInventoryQuantity(itemId, quantity)) {
+        alert('Insufficient inventory quantity!');
+        return false;
+    }
+
+    const item = garageData.inventory.find(i => i.id === itemId);
+    const newQuantity = (item.quantity || 0) - quantity;
+
+    // Update inventory
+    db.ref('garage/inventory/' + itemId).update({
+        quantity: newQuantity,
+        updatedAt: new Date().toISOString(),
+        updatedBy: currentUser.uid
+    });
+
+    // Add to job parts
+    const jobPartData = {
+        jobId: jobId,
+        itemId: itemId,
+        itemName: item.name,
+        quantity: quantity,
+        unitPrice: item.price || 0,
+        totalPrice: quantity * (item.price || 0),
+        date: today,
+        createdAt: new Date().toISOString(),
+        createdBy: currentUser.uid
+    };
+
+    db.ref('garage/jobParts').push(jobPartData);
+
+    return true;
+}
+
+function processPurchase(supplierId, items, totalAmount) {
+    // Update supplier balance
+    updateSupplierBalance(supplierId, totalAmount, 0);
+
+    // Add purchase record
+    const purchaseData = {
+        supplierId: supplierId,
+        items: items,
+        total: totalAmount,
+        date: today,
+        createdAt: new Date().toISOString(),
+        createdBy: currentUser.uid
+    };
+
+    db.ref('garage/purchases').push(purchaseData);
+
+    // Update inventory quantities
+    items.forEach(item => {
+        const inventoryItem = garageData.inventory.find(i => i.id === item.itemId);
+        if (inventoryItem) {
+            const newQuantity = (inventoryItem.quantity || 0) + item.quantity;
+            db.ref('garage/inventory/' + item.itemId).update({
+                quantity: newQuantity,
+                updatedAt: new Date().toISOString(),
+                updatedBy: currentUser.uid
+            });
+        }
+    });
+}
+
+function processPayment(supplierId, amount) {
+    // Update supplier balance
+    updateSupplierBalance(supplierId, 0, amount);
+
+    // Add payment record
+    const paymentData = {
+        supplierId: supplierId,
+        amount: amount,
+        date: today,
+        createdAt: new Date().toISOString(),
+        createdBy: currentUser.uid
+    };
+
+    db.ref('garage/payments').push(paymentData);
+}
+
+function processInternalMaintenance(maintenanceData) {
+    // Add to expenses as labor cost
+    const expenseData = {
+        type: 'maintenance',
+        subtype: 'internal',
+        amount: maintenanceData.laborCost,
+        description: `Internal maintenance for ${maintenanceData.carNumber}`,
+        jobId: maintenanceData.jobId,
+        date: today,
+        createdAt: new Date().toISOString(),
+        createdBy: currentUser.uid
+    };
+
+    db.ref('garage/expenses').push(expenseData);
+}
+
+function processExternalMaintenance(maintenanceData) {
+    // Add to expenses as service cost
+    const expenseData = {
+        type: 'maintenance',
+        subtype: 'external',
+        amount: maintenanceData.serviceCost,
+        description: `External maintenance for ${maintenanceData.carNumber} - ${maintenanceData.vendorName}`,
+        jobId: maintenanceData.jobId,
+        date: today,
+        createdAt: new Date().toISOString(),
+        createdBy: currentUser.uid
+    };
+
+    db.ref('garage/expenses').push(expenseData);
+}
+
+// Operation Logging
+function logOperation(operation, details) {
+    const logData = {
+        operation: operation,
+        details: details,
+        userId: currentUser.uid,
+        userEmail: currentUser.email,
+        timestamp: new Date().toISOString(),
+        ipAddress: 'N/A' // You can implement IP tracking if needed
+    };
+
+    db.ref('garage/operationLogs').push(logData);
+}
+
+// Validation Functions
+function validateSupplierData(data) {
+    if (!data.name || data.name.trim() === '') {
+        alert('Supplier name is required!');
+        return false;
+    }
+    return true;
+}
+
+function validateMaintenanceData(data) {
+    if (!data.jobId || data.jobId.trim() === '') {
+        alert('Job ID is required!');
+        return false;
+    }
+    if (!data.carNumber || data.carNumber.trim() === '') {
+        alert('Car number is required!');
+        return false;
+    }
+    if (data.type === 'internal' && (!data.technicianName || data.technicianName.trim() === '')) {
+        alert('Technician name is required for internal maintenance!');
+        return false;
+    }
+    if (data.type === 'external' && (!data.vendorName || data.vendorName.trim() === '')) {
+        alert('Service provider name is required for external maintenance!');
+        return false;
+    }
+    if (!data.laborCost && !data.serviceCost) {
+        alert('Cost is required!');
+        return false;
+    }
+    return true;
+}
+
+// Enhanced updateField function to handle new data types
+function updateField(collection, id, field, value) {
+    db.ref(`garage/${collection}/${id}/${field}`).set(value)
+        .then(() => {
+            logOperation('update', { collection: collection, id: id, field: field, value: value });
+        })
+        .catch(error => {
+            console.error('Error updating field:', error);
+            alert('Error updating data. Please try again.');
+        });
+}
+
 function renderAccountsTable() {
     const tbody = document.getElementById('tbody-accounts');
     const table = document.getElementById('table-accounts');
