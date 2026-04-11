@@ -275,11 +275,11 @@ header > div {
     <table id="previewTable" style="background: white;">
       <thead>
         <tr>
-          <th>Client Name</th>
-          <th>Place</th>
+          <th>اسم العميل</th>
+          <th>المكان</th>
           <th>20</th>
           <th>40</th>
-          <th>2×20</th>
+          <th>2*20</th>
           <th>Status</th>
         </tr>
       </thead>
@@ -431,6 +431,8 @@ function handleFileSelect(event) {
 
 function processExcelData(jsonData) {
   try {
+    console.log('Processing Excel data, raw data:', jsonData);
+    
     // Skip header row and process data
     const rows = jsonData.slice(1);
     excelPreviewData = [];
@@ -438,28 +440,41 @@ function processExcelData(jsonData) {
     let validCount = 0;
     let invalidCount = 0;
     
+    console.log('Current data for duplicate check:', data);
+    
     rows.forEach((row, index) => {
+      console.log(`Processing row ${index + 2}:`, row);
+      
       if (row.length < 5) {
+        console.log(`Row ${index + 2} invalid: insufficient columns (${row.length})`);
         invalidCount++;
         return;
       }
       
-      const clientName = String(row[0] || '').trim();
-      const place = String(row[1] || '').trim();
-      const c20 = Number(row[2]) || 0;
-      const c40 = Number(row[3]) || 0;
-      const c2x20 = Number(row[4]) || 0;
+      const clientName = String(row[0] || '').trim(); // اسم العميل
+      const place = String(row[1] || '').trim(); // المكان
+      const c20 = Number(row[2]) || 0; // 20
+      const c40 = Number(row[3]) || 0; // 40
+      const c2x20 = Number(row[4]) || 0; // 2*20
+      
+      console.log(`Parsed data - Client: "${clientName}", Place: "${place}", 20: ${c20}, 40: ${c40}, 2x20: ${c2x20}`);
       
       // Validation
       if (!clientName || !place) {
+        console.log(`Row ${index + 2} invalid: missing client name or place`);
         invalidCount++;
         return;
       }
       
       // Check if row already exists in current data
-      const existingIndex = data.findIndex(item => 
-        item.clientName === clientName && item.place === place
-      );
+      let existingIndex = -1;
+      if (data && Array.isArray(data)) {
+        existingIndex = data.findIndex(item => 
+          item && item.clientName === clientName && item.place === place
+        );
+      }
+      
+      console.log(`Found existing index: ${existingIndex}`);
       
       excelPreviewData.push({
         clientName,
@@ -473,12 +488,17 @@ function processExcelData(jsonData) {
       });
       
       validCount++;
+      console.log(`Row ${index + 2} added as ${existingIndex >= 0 ? 'duplicate' : 'new'}`);
     });
+    
+    console.log(`Processing complete. Valid: ${validCount}, Invalid: ${invalidCount}`);
+    console.log('Excel preview data:', excelPreviewData);
     
     hideLoading();
     showImportPreview(validCount, invalidCount);
     
   } catch (error) {
+    console.error('Error in processExcelData:', error);
     hideLoading();
     alert('Error processing Excel data: ' + error.message);
   }
@@ -539,50 +559,99 @@ function confirmImport() {
     return;
   }
   
+  console.log('Starting import process...');
+  console.log('Excel preview data:', excelPreviewData);
+  
   showLoading('Importing data to Firebase...');
   
+  // Add timeout to prevent infinite loading
+  const timeout = setTimeout(() => {
+    console.error('Import timeout reached');
+    hideLoading();
+    alert('Import timed out. Please check your internet connection and try again.');
+  }, 30000); // 30 seconds timeout
+  
   // Load current data from Firebase
-  database.ref('prices').once('value', snapshot => {
-    const currentData = snapshot.val() || [];
-    
-    // Process each row
-    excelPreviewData.forEach(excelRow => {
-      const { clientName, place, c20, c40, c2x20, existingIndex } = excelRow;
+  database.ref('prices').once('value', { timeout: 20000 })
+    .then(snapshot => {
+      clearTimeout(timeout);
+      console.log('Firebase data loaded successfully');
+      let currentData = snapshot.val();
       
-      if (existingIndex >= 0) {
-        // Update existing row - only update client prices
-        currentData[existingIndex].client = {
-          c20: c20,
-          c40: c40,
-          c2x20: c2x20
-        };
-      } else {
-        // Create new row with default values
-        currentData.push({
-          clientName: clientName,
-          place: place,
-          market: { c20: 0, c40: 0, c2x20: 0 },
-          commission: 0,
-          client: { c20: c20, c40: c40, c2x20: c2x20 },
-          notes: ""
-        });
+      // Handle case where data might be null or not an array
+      if (!currentData || !Array.isArray(currentData)) {
+        console.log('Initializing empty data array');
+        currentData = [];
       }
-    });
-    
-    // Save to Firebase
-    database.ref('prices').set(currentData, (error) => {
+      
+      console.log('Current data length:', currentData.length);
+      
+      // Process each row
+      excelPreviewData.forEach(excelRow => {
+        const { clientName, place, c20, c40, c2x20, existingIndex } = excelRow;
+        
+        if (existingIndex >= 0 && existingIndex < currentData.length) {
+          // Update existing row - only update client prices
+          console.log(`Updating existing row: ${clientName} - ${place}`);
+          if (!currentData[existingIndex]) {
+            currentData[existingIndex] = {};
+          }
+          if (!currentData[existingIndex].client) {
+            currentData[existingIndex].client = {};
+          }
+          currentData[existingIndex].client.c20 = c20;
+          currentData[existingIndex].client.c40 = c40;
+          currentData[existingIndex].client.c2x20 = c2x20;
+        } else {
+          // Create new row with default values
+          console.log(`Creating new row: ${clientName} - ${place}`);
+          currentData.push({
+            clientName: clientName,
+            place: place,
+            market: { c20: 0, c40: 0, c2x20: 0 },
+            commission: 0,
+            client: { c20: c20, c40: c40, c2x20: c2x20 },
+            notes: ""
+          });
+        }
+      });
+      
+      console.log('Final data to save:', currentData);
+      
+      // Show progress update
+      showLoading('Saving data to Firebase...');
+      
+      // Save to Firebase with retry mechanism
+      return database.ref('prices').set(currentData);
+    })
+    .then(() => {
+      clearTimeout(timeout);
+      console.log('Data saved successfully to Firebase');
+      hideLoading();
+      alert(`Successfully imported ${excelPreviewData.length} rows!`);
+      recordUpload(currentFileName);
+      cancelImport();
+      // Data will automatically reload via the existing listener
+    })
+    .catch(error => {
+      clearTimeout(timeout);
+      console.error('Firebase error:', error);
       hideLoading();
       
-      if (error) {
-        alert('Error saving data: ' + error.message);
+      // Provide more specific error messages
+      let errorMessage = 'Error saving data: ';
+      if (error.code === 'PERMISSION_DENIED') {
+        errorMessage += 'Permission denied. Check Firebase rules.';
+      } else if (error.code === 'NETWORK_ERROR') {
+        errorMessage += 'Network error. Check your internet connection.';
+      } else if (error.code === 'TIMEOUT') {
+        errorMessage += 'Request timeout. Please try again.';
       } else {
-        alert(`Successfully imported ${excelPreviewData.length} rows!`);
-        recordUpload(currentFileName);
-        cancelImport();
-        // Data will automatically reload via the existing listener
+        errorMessage += error.message || 'Unknown error occurred.';
       }
+      
+      alert(errorMessage);
     });
-  });
 }
 
 function showLoading(text = 'Processing...') {
