@@ -270,6 +270,13 @@ header nav button:hover {
     <h1>نظام إدارة المخازن</h1>
   </div>
   <nav>
+    <button onclick="window.location='products-management.html'">Products</button>
+    <button onclick="window.location='vehicle-dispense.html'">Issue Orders</button>
+    <button onclick="window.location='stock-balances.html'">Stock Balances</button>
+    <button onclick="window.location='stock-movements.html'">Stock Movements</button>
+    <button onclick="window.location='stock-adjustment.html'">Stock Adjustment</button>
+    <button onclick="window.location='scrap-inventory.html'">Scrap Inventory</button>
+    <button onclick="window.location='inventory-reports.html'">Reports</button>
     <button onclick="goBack()">رجوع</button>
     <button onclick="logout()">تسجيل خروج</button>
   </nav>
@@ -304,25 +311,21 @@ header nav button:hover {
         <div class="card-icon" style="background: #3498db; color: white;">⚡</div>
       </div>
       <div class="quick-actions">
-        <a href="products-management.html" class="action-btn">
-          <h4>📦 إدارة الأصناف</h4>
-          <p>إضافة وتعديل الأصناف والأسعار</p>
-        </a>
-        <a href="invoices.html" class="action-btn">
-          <h4>🧾 الفواتير</h4>
-          <p>إنشاء فواتير البيع والشراء</p>
-        </a>
-        <a href="stock-balances.html" class="action-btn">
-          <h4>📊 المخزون</h4>
-          <p>عرض الأرصدة الحالية</p>
-        </a>
-        <a href="stock-movements.html" class="action-btn">
-          <h4>🔄 الحركات</h4>
-          <p>سجل حركات المخزون</p>
-        </a>
-        <a href="stock-adjustment.html" class="action-btn">
-          <h4>🔢 الجرد</h4>
-          <p>تعديل أرصدة المخزون</p>
+        <h2>Quick Actions</h2>
+        <div class="actions-grid">
+          <a href="products-management.html" class="action-card">
+            <div class="action-icon">+</div>
+            <div class="action-text">Add Part</div>
+          </a>
+          <a href="vehicle-dispense.html" class="action-card">
+            <div class="action-icon">+</div>
+            <div class="action-text">Issue Order</div>
+          </a>
+          <a href="stock-adjustment.html" class="action-card">
+            <div class="action-icon">+</div>
+            <div class="action-text">Stock Adjustment</div>
+          </a>
+        </div>
         </a>
         <a href="inventory-reports.html" class="action-btn">
           <h4>📈 التقارير</h4>

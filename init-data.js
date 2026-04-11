@@ -35,143 +35,151 @@ const customersSuppliers = [
   { name: "مورد الأخشاب المستوردة", type: "supplier" }
 ];
 
-// Initial products data
+// Initial products data for garage
 const products = [
   {
-    name: "أسمنت بورتلاند 42.5",
-    unit: "طن",
-    categoryId: "مواد بناء",
-    purchasePrice: 800,
-    salePrice: 950,
-    minStock: 50
-  },
-  {
-    name: "حديد تسليح 12مم",
-    unit: "طن",
-    categoryId: "مواد بناء",
-    purchasePrice: 12000,
-    salePrice: 13500,
-    minStock: 20
-  },
-  {
-    name: "رمل زلط",
-    unit: "متر مكعب",
-    categoryId: "مواد بناء",
+    name: "Brake Pads",
+    unit: "piece",
+    categoryId: "spare_parts",
     purchasePrice: 150,
     salePrice: 200,
-    minStock: 100
-  },
-  {
-    name: "زلط 3/8",
-    unit: "متر مكعب",
-    categoryId: "مواد بناء",
-    purchasePrice: 180,
-    salePrice: 230,
-    minStock: 80
-  },
-  {
-    name: "طوبة حمراء",
-    unit: "ألف",
-    categoryId: "مواد بناء",
-    purchasePrice: 1200,
-    salePrice: 1400,
-    minStock: 10
-  },
-  {
-    name: "بواب حديد",
-    unit: "قطعة",
-    categoryId: "معادن",
-    purchasePrice: 2500,
-    salePrice: 3000,
-    minStock: 5
-  },
-  {
-    name: "شبابيك ألومنيوم",
-    unit: "متر مربع",
-    categoryId: "معادن",
-    purchasePrice: 450,
-    salePrice: 550,
     minStock: 20
   },
   {
-    name: "دهان بلاستيك أبيض",
-    unit: "لتر",
-    categoryId: "دهانات",
+    name: "Oil Filter",
+    unit: "piece",
+    categoryId: "oils_filters",
     purchasePrice: 45,
     salePrice: 65,
-    minStock: 100
+    minStock: 50
   },
   {
-    name: "دهان زيتي",
-    unit: "لتر",
-    categoryId: "دهانات",
+    name: "Air Filter",
+    unit: "piece",
+    categoryId: "oils_filters",
+    purchasePrice: 35,
+    salePrice: 50,
+    minStock: 40
+  },
+  {
+    name: "Engine Oil 5W-30",
+    unit: "liter",
+    categoryId: "oils_filters",
     purchasePrice: 85,
     salePrice: 120,
-    minStock: 50
+    minStock: 30
   },
   {
-    name: "معجون أسمنتي",
-    unit: "كيلو",
-    categoryId: "مواد بناء",
-    purchasePrice: 8,
-    salePrice: 12,
-    minStock: 200
+    name: "Transmission Oil",
+    unit: "liter",
+    categoryId: "oils_filters",
+    purchasePrice: 95,
+    salePrice: 140,
+    minStock: 25
   },
   {
-    name: "أنابيب بلاستيك 4 بوصة",
-    unit: "متر",
-    categoryId: "أدوات صحية",
-    purchasePrice: 25,
-    salePrice: 35,
-    minStock: 150
-  },
-  {
-    name: "حنفية خلاط",
-    unit: "قطعة",
-    categoryId: "أدوات صحية",
-    purchasePrice: 180,
-    salePrice: 250,
-    minStock: 20
-  },
-  {
-    name: "سيراميك أرضي 30x30",
-    unit: "متر مربع",
-    categoryId: "أدوات صحية",
-    purchasePrice: 120,
-    salePrice: 180,
-    minStock: 50
-  },
-  {
-    name: "خشب أباجور",
-    unit: "متر مكعب",
-    categoryId: "أخشاب",
-    purchasePrice: 2500,
-    salePrice: 3200,
+    name: "Car Tire 175/65 R14",
+    unit: "piece",
+    categoryId: "tires",
+    purchasePrice: 450,
+    salePrice: 600,
     minStock: 15
   },
   {
-    name: "خشب موسكى",
-    unit: "متر مكعب",
-    categoryId: "أخشاب",
-    purchasePrice: 2200,
-    salePrice: 2800,
+    name: "Car Tire 185/65 R15",
+    unit: "piece",
+    categoryId: "tires",
+    purchasePrice: 550,
+    salePrice: 750,
+    minStock: 12
+  },
+  {
+    name: "Battery 12V 45Ah",
+    unit: "piece",
+    categoryId: "batteries",
+    purchasePrice: 350,
+    salePrice: 500,
     minStock: 10
   },
   {
-    name: "عازل مائي",
-    unit: "لتر",
-    categoryId: "مواد عزل",
-    purchasePrice: 65,
-    salePrice: 95,
-    minStock: 80
+    name: "Battery 12V 60Ah",
+    unit: "piece",
+    categoryId: "batteries",
+    purchasePrice: 450,
+    salePrice: 650,
+    minStock: 8
   },
   {
-    name: "عازل حراري",
-    unit: "متر مربع",
-    categoryId: "مواد عزل",
-    purchasePrice: 35,
-    salePrice: 50,
+    name: "Spark Plug",
+    unit: "piece",
+    categoryId: "spare_parts",
+    purchasePrice: 25,
+    salePrice: 40,
     minStock: 100
+  },
+  {
+    name: "Headlight Bulb",
+    unit: "piece",
+    categoryId: "spare_parts",
+    purchasePrice: 35,
+    salePrice: 55,
+    minStock: 60
+  },
+  {
+    name: "Alternator Belt",
+    unit: "piece",
+    categoryId: "spare_parts",
+    purchasePrice: 85,
+    salePrice: 120,
+    minStock: 25
+  },
+  {
+    name: "Clutch Plate",
+    unit: "piece",
+    categoryId: "spare_parts",
+    purchasePrice: 250,
+    salePrice: 350,
+    minStock: 15
+  },
+  {
+    name: "Disc Brake",
+    unit: "piece",
+    categoryId: "spare_parts",
+    purchasePrice: 180,
+    salePrice: 280,
+    minStock: 20
+  },
+  {
+    name: "Used Brake Pads",
+    unit: "piece",
+    categoryId: "scrap_used",
+    purchasePrice: 0,
+    salePrice: 0,
+    minStock: 0
+  },
+  {
+    name: "Used Oil Filter",
+    unit: "piece",
+    categoryId: "scrap_used",
+    purchasePrice: 0,
+    salePrice: 0,
+    minStock: 0
+  },
+  {
+    name: "Used Tire",
+    unit: "piece",
+    categoryId: "scrap_used",
+    purchasePrice: 0,
+    salePrice: 0,
+    minStock: 0
+  },
+  {
+    name: "Used Battery",
+    unit: "piece",
+    categoryId: "scrap_used",
+    purchasePrice: 0,
+    salePrice: 0,
+    minStock: 0
   }
 ];
 

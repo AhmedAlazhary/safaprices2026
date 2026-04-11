@@ -370,6 +370,18 @@ tr:hover {
         </div>
         
         <div class="form-group">
+          <label for="categoryFilter">Category</label>
+          <select id="categoryFilter">
+            <option value="">All Categories</option>
+            <option value="spare_parts">Spare Parts</option>
+            <option value="oils_filters">Oils & Filters</option>
+            <option value="tires">Tires</option>
+            <option value="batteries">Batteries</option>
+            <option value="scrap_used">Scrap & Used</option>
+          </select>
+        </div>
+        
+        <div class="form-group">
           <label for="adjustmentDate">التاريخ</label>
           <input type="date" id="adjustmentDate" required>
         </div>
@@ -860,7 +872,7 @@ function showAlert(message, type) {
 
 // Navigation functions
 function goBack() {
-  window.location = "inventory-management.html";
+  window.location.href = "inventory-management.html";
 }
 
 function logout() {

@@ -339,17 +339,14 @@ tr:hover {
         </select>
       </div>
       <div class="form-group">
-        <label for="categoryFilter">الفئة</label>
+        <label for="categoryFilter">Category</label>
         <select id="categoryFilter">
-          <option value="">كل الفئات</option>
-          <option value="مواد بناء">مواد بناء</option>
-          <option value="أدوات كهربائية">أدوات كهربائية</option>
-          <option value="أدوات صحية">أدوات صحية</option>
-          <option value="دهانات">دهانات</option>
-          <option value="مواد عزل">مواد عزل</option>
-          <option value="أخشاب">أخشاب</option>
-          <option value="معادن">معادن</option>
-          <option value="أخرى">أخرى</option>
+          <option value="">All Categories</option>
+          <option value="spare_parts">Spare Parts</option>
+          <option value="oils_filters">Oils & Filters</option>
+          <option value="tires">Tires</option>
+          <option value="batteries">Batteries</option>
+          <option value="scrap_used">Scrap & Used</option>
         </select>
       </div>
       <div class="form-group">
@@ -639,7 +636,7 @@ document.getElementById('searchInput').addEventListener('input', applyFilters);
 
 // Navigation functions
 function goBack() {
-  window.location = "inventory-management.html";
+  window.location.href = "inventory-management.html";
 }
 
 function logout() {

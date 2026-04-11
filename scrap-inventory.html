@@ -1,0 +1,843 @@
+<!DOCTYPE html>
+<html lang="ar" dir="rtl">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Scrap Inventory - Garage System</title>
+
+<style>
+* {
+  margin: 0;
+  padding: 0;
+  box-sizing: border-box;
+}
+
+body {
+  font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+  background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+  min-height: 100vh;
+}
+
+header {
+  background: rgba(255, 255, 255, 0.95);
+  backdrop-filter: blur(10px);
+  box-shadow: 0 2px 20px rgba(0, 0, 0, 0.1);
+  padding: 1rem 2rem;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  position: sticky;
+  top: 0;
+  z-index: 100;
+}
+
+header img {
+  height: 50px;
+}
+
+header h1 {
+  color: #2c3e50;
+  font-size: 1.8rem;
+}
+
+header nav {
+  display: flex;
+  gap: 1rem;
+}
+
+header nav button {
+  background: #3498db;
+  color: white;
+  border: none;
+  padding: 0.5rem 1rem;
+  border-radius: 8px;
+  cursor: pointer;
+  transition: all 0.3s ease;
+}
+
+header nav button:hover {
+  background: #2980b9;
+  transform: translateY(-2px);
+}
+
+.container {
+  max-width: 1400px;
+  margin: 2rem auto;
+  padding: 0 1rem;
+}
+
+.stats-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+  gap: 1.5rem;
+  margin-bottom: 2rem;
+}
+
+.stat-card {
+  background: rgba(255, 255, 255, 0.95);
+  backdrop-filter: blur(10px);
+  border-radius: 16px;
+  padding: 1.5rem;
+  box-shadow: 0 8px 32px rgba(0, 0, 0, 0.1);
+  text-align: center;
+}
+
+.stat-value {
+  font-size: 2.5rem;
+  font-weight: bold;
+  margin-bottom: 0.5rem;
+}
+
+.stat-label {
+  color: #7f8c8d;
+  font-size: 1rem;
+}
+
+.stat-value.total-items {
+  color: #3498db;
+}
+
+.stat-value.total-value {
+  color: #27ae60;
+}
+
+.stat-value.ready-to-sell {
+  color: #f39c12;
+}
+
+.filters-section {
+  background: rgba(255, 255, 255, 0.95);
+  backdrop-filter: blur(10px);
+  border-radius: 16px;
+  padding: 1.5rem;
+  box-shadow: 0 8px 32px rgba(0, 0, 0, 0.1);
+  margin-bottom: 2rem;
+}
+
+.filters-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+  gap: 1rem;
+  margin-bottom: 1rem;
+}
+
+.form-group {
+  display: flex;
+  flex-direction: column;
+}
+
+.form-group label {
+  margin-bottom: 0.5rem;
+  color: #2c3e50;
+  font-weight: 500;
+}
+
+.form-group input,
+.form-group select {
+  padding: 0.75rem;
+  border: 2px solid #e0e0e0;
+  border-radius: 8px;
+  font-size: 1rem;
+  transition: border-color 0.3s ease;
+}
+
+.form-group input:focus,
+.form-group select:focus {
+  outline: none;
+  border-color: #3498db;
+}
+
+.btn {
+  padding: 0.75rem 1.5rem;
+  border: none;
+  border-radius: 8px;
+  font-size: 1rem;
+  cursor: pointer;
+  transition: all 0.3s ease;
+  font-weight: 500;
+}
+
+.btn-primary {
+  background: #3498db;
+  color: white;
+}
+
+.btn-primary:hover {
+  background: #2980b9;
+  transform: translateY(-2px);
+}
+
+.btn-success {
+  background: #27ae60;
+  color: white;
+}
+
+.btn-success:hover {
+  background: #229954;
+  transform: translateY(-2px);
+}
+
+.btn-warning {
+  background: #f39c12;
+  color: white;
+}
+
+.btn-warning:hover {
+  background: #e67e22;
+  transform: translateY(-2px);
+}
+
+.btn-secondary {
+  background: #95a5a6;
+  color: white;
+}
+
+.btn-secondary:hover {
+  background: #7f8c8d;
+  transform: translateY(-2px);
+}
+
+.table-container {
+  background: rgba(255, 255, 255, 0.95);
+  backdrop-filter: blur(10px);
+  border-radius: 16px;
+  padding: 1.5rem;
+  box-shadow: 0 8px 32px rgba(0, 0, 0, 0.1);
+  overflow-x: auto;
+}
+
+table {
+  width: 100%;
+  border-collapse: collapse;
+  background: white;
+}
+
+th {
+  background: #3498db;
+  color: white;
+  padding: 1rem;
+  text-align: right;
+  font-weight: 600;
+  position: sticky;
+  top: 0;
+  z-index: 10;
+}
+
+td {
+  padding: 1rem;
+  border-bottom: 1px solid #ecf0f1;
+  text-align: right;
+}
+
+tr:hover {
+  background: #f8f9fa;
+}
+
+.condition-badge {
+  padding: 0.25rem 0.75rem;
+  border-radius: 20px;
+  font-size: 0.8rem;
+  font-weight: bold;
+}
+
+.condition-good {
+  background: #d4edda;
+  color: #155724;
+}
+
+.condition-fair {
+  background: #fff3cd;
+  color: #856404;
+}
+
+.condition-poor {
+  background: #f8d7da;
+  color: #721c24;
+}
+
+.action-buttons {
+  display: flex;
+  gap: 0.5rem;
+}
+
+.btn-sm {
+  padding: 0.25rem 0.75rem;
+  font-size: 0.875rem;
+}
+
+.loading {
+  text-align: center;
+  padding: 2rem;
+}
+
+.spinner {
+  border: 4px solid #f3f3f3;
+  border-top: 4px solid #3498db;
+  border-radius: 50%;
+  width: 40px;
+  height: 40px;
+  animation: spin 1s linear infinite;
+  margin: 0 auto;
+}
+
+@keyframes spin {
+  0% { transform: rotate(0deg); }
+  100% { transform: rotate(360deg); }
+}
+
+.modal {
+  display: none;
+  position: fixed;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  background: rgba(0, 0, 0, 0.5);
+  z-index: 1000;
+  justify-content: center;
+  align-items: center;
+}
+
+.modal-content {
+  background: white;
+  padding: 2rem;
+  border-radius: 16px;
+  max-width: 500px;
+  width: 90%;
+}
+
+.modal-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 1.5rem;
+}
+
+.modal-header h3 {
+  color: #2c3e50;
+}
+
+.close-btn {
+  background: none;
+  border: none;
+  font-size: 1.5rem;
+  cursor: pointer;
+  color: #7f8c8d;
+}
+
+@media (max-width: 768px) {
+  header {
+    flex-direction: column;
+    gap: 1rem;
+  }
+  
+  .filters-grid {
+    grid-template-columns: 1fr;
+  }
+  
+  .stats-grid {
+    grid-template-columns: repeat(2, 1fr);
+  }
+}
+</style>
+</head>
+
+<body>
+
+<header>
+  <div style="display: flex; align-items: center; gap: 1rem;">
+    <img src="logo.png" alt="Safa Office Logo">
+    <h1>Scrap Inventory</h1>
+  </div>
+  <nav>
+    <button onclick="window.location='inventory-management.html'">Home</button>
+    <button onclick="goBack()">Back</button>
+    <button onclick="logout()">Logout</button>
+  </nav>
+</header>
+
+<div class="container">
+  <!-- Statistics Cards -->
+  <div class="stats-grid">
+    <div class="stat-card">
+      <div class="stat-value total-items" id="totalItems">0</div>
+      <div class="stat-label">Total Scrap Items</div>
+    </div>
+    <div class="stat-card">
+      <div class="stat-value total-value" id="totalValue">0</div>
+      <div class="stat-label">Estimated Value</div>
+    </div>
+    <div class="stat-card">
+      <div class="stat-value ready-to-sell" id="readyToSell">0</div>
+      <div class="stat-label">Ready to Sell</div>
+    </div>
+  </div>
+
+  <!-- Filters Section -->
+  <div class="filters-section">
+    <h2 style="margin-bottom: 1rem; color: #2c3e50;">Filters</h2>
+    <div class="filters-grid">
+      <div class="form-group">
+        <label for="warehouseFilter">Warehouse</label>
+        <select id="warehouseFilter">
+          <option value="">All Warehouses</option>
+        </select>
+      </div>
+      <div class="form-group">
+        <label for="conditionFilter">Condition</label>
+        <select id="conditionFilter">
+          <option value="">All Conditions</option>
+          <option value="good">Good</option>
+          <option value="fair">Fair</option>
+          <option value="poor">Poor</option>
+        </select>
+      </div>
+      <div class="form-group">
+        <label for="searchInput">Search</label>
+        <input type="text" id="searchInput" placeholder="Search scrap items...">
+      </div>
+    </div>
+    <div style="display: flex; gap: 1rem;">
+      <button class="btn btn-primary" onclick="applyFilters()">Apply Filters</button>
+      <button class="btn btn-secondary" onclick="clearFilters()">Clear Filters</button>
+      <button class="btn btn-warning" onclick="sellScrap()">Sell Selected</button>
+    </div>
+  </div>
+
+  <!-- Scrap Inventory Table -->
+  <div class="table-container">
+    <h2 style="margin-bottom: 1rem; color: #2c3e50;">Scrap Inventory</h2>
+    <table id="scrapTable">
+      <thead>
+        <tr>
+          <th><input type="checkbox" id="selectAll" onchange="toggleSelectAll()"></th>
+          <th>Item Name</th>
+          <th>Quantity</th>
+          <th>Condition</th>
+          <th>Est. Value</th>
+          <th>Warehouse</th>
+          <th>Date Received</th>
+          <th>Actions</th>
+        </tr>
+      </thead>
+      <tbody id="scrapTableBody">
+        <tr>
+          <td colspan="8" class="loading">
+            <div class="spinner"></div>
+          </td>
+        </tr>
+      </tbody>
+    </table>
+  </div>
+</div>
+
+<!-- Sell Scrap Modal -->
+<div id="sellModal" class="modal">
+  <div class="modal-content">
+    <div class="modal-header">
+      <h3>Sell Scrap Items</h3>
+      <button class="close-btn" onclick="closeSellModal()">&times;</button>
+    </div>
+    <form id="sellForm">
+      <div class="form-group">
+        <label for="buyerName">Buyer Name *</label>
+        <input type="text" id="buyerName" required placeholder="Enter buyer name">
+      </div>
+      
+      <div class="form-group">
+        <label for="sellPrice">Total Sale Price *</label>
+        <input type="number" id="sellPrice" required step="0.01" min="0" placeholder="Enter sale price">
+      </div>
+      
+      <div class="form-group">
+        <label for="sellDate">Sale Date</label>
+        <input type="date" id="sellDate" required>
+      </div>
+      
+      <div class="form-group">
+        <label for="sellNotes">Notes</label>
+        <textarea id="sellNotes" rows="3" style="width: 100%; padding: 0.75rem; border: 2px solid #e0e0e0; border-radius: 8px; resize: vertical;"></textarea>
+      </div>
+      
+      <div style="display: flex; gap: 1rem; justify-content: flex-end;">
+        <button type="button" class="btn btn-secondary" onclick="closeSellModal()">Cancel</button>
+        <button type="submit" class="btn btn-success">Sell Scrap</button>
+      </div>
+    </form>
+  </div>
+</div>
+
+<script type="module">
+import { auth, db, serverTimestamp, runTransaction } from './firebase-config.js';
+
+// Check authentication
+auth.onAuthStateChanged(user => {
+  if (!user) {
+    window.location = "index.html";
+    return;
+  }
+  
+  // Load data
+  loadData();
+});
+
+// Global variables
+let allScrapData = [];
+let filteredScrapData = [];
+let products = [];
+let warehouses = [];
+let selectedItems = [];
+
+// Load all data
+async function loadData() {
+  try {
+    await Promise.all([
+      loadProducts(),
+      loadWarehouses(),
+      loadScrapInventory()
+    ]);
+    
+    updateStatistics();
+    renderScrapTable();
+  } catch (error) {
+    console.error('Error loading data:', error);
+  }
+}
+
+// Load products
+async function loadProducts() {
+  try {
+    const snapshot = await db.collection('products').get();
+    products = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
+  } catch (error) {
+    console.error('Error loading products:', error);
+  }
+}
+
+// Load warehouses
+async function loadWarehouses() {
+  try {
+    const snapshot = await db.collection('warehouses').get();
+    warehouses = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
+    
+    // Update warehouse filter
+    const warehouseFilter = document.getElementById('warehouseFilter');
+    warehouseFilter.innerHTML = '<option value="">All Warehouses</option>' +
+      warehouses.map(w => `<option value="${w.id}">${w.name}</option>`).join('');
+  } catch (error) {
+    console.error('Error loading warehouses:', error);
+  }
+}
+
+// Load scrap inventory
+async function loadScrapInventory() {
+  try {
+    // Get all scrap products
+    const scrapProducts = products.filter(p => p.categoryId === 'scrap_used');
+    
+    // Get stock balances for scrap products
+    const stockSnapshot = await db.collection('stock_balances').get();
+    const stockBalances = stockSnapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
+    
+    // Get scrap movements for additional info
+    const movementsSnapshot = await db.collection('stock_movements')
+      .where('type', '==', 'scrap_in')
+      .orderBy('date', 'desc')
+      .get();
+    
+    const scrapMovements = movementsSnapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
+    
+    // Combine data
+    allScrapData = [];
+    
+    for (const product of scrapProducts) {
+      const stockBalance = stockBalances.find(s => s.productId === product.id);
+      const relatedMovement = scrapMovements.find(m => m.productId === product.id);
+      
+      if (stockBalance && stockBalance.quantity > 0) {
+        const warehouse = warehouses.find(w => w.id === stockBalance.warehouseId);
+        
+        allScrapData.push({
+          id: product.id,
+          name: product.name,
+          quantity: stockBalance.quantity,
+          condition: relatedMovement?.condition || 'fair',
+          estimatedValue: stockBalance.quantity * 50, // Default estimate
+          warehouseName: warehouse ? warehouse.name : 'Unknown',
+          warehouseId: stockBalance.warehouseId,
+          dateReceived: relatedMovement?.date?.toDate() || new Date(),
+          notes: relatedMovement?.notes || ''
+        });
+      }
+    }
+    
+    filteredScrapData = [...allScrapData];
+  } catch (error) {
+    console.error('Error loading scrap inventory:', error);
+  }
+}
+
+// Update statistics
+function updateStatistics() {
+  const totalItems = filteredScrapData.length;
+  const totalValue = filteredScrapData.reduce((sum, item) => sum + item.estimatedValue, 0);
+  const readyToSell = filteredScrapData.filter(item => item.condition === 'good').length;
+  
+  document.getElementById('totalItems').textContent = totalItems;
+  document.getElementById('totalValue').textContent = totalValue.toFixed(2);
+  document.getElementById('readyToSell').textContent = readyToSell;
+}
+
+// Render scrap table
+function renderScrapTable() {
+  const tbody = document.getElementById('scrapTableBody');
+  
+  if (filteredScrapData.length === 0) {
+    tbody.innerHTML = '<tr><td colspan="8" style="text-align: center; padding: 2rem;">No scrap items found</td></tr>';
+    return;
+  }
+  
+  tbody.innerHTML = filteredScrapData.map(item => {
+    const conditionClass = `condition-${item.condition}`;
+    const conditionText = item.condition.charAt(0).toUpperCase() + item.condition.slice(1);
+    
+    return `
+      <tr>
+        <td><input type="checkbox" class="item-checkbox" value="${item.id}" onchange="updateSelectedItems()"></td>
+        <td>${item.name}</td>
+        <td>${item.quantity}</td>
+        <td><span class="condition-badge ${conditionClass}">${conditionText}</span></td>
+        <td>${item.estimatedValue.toFixed(2)} EGP</td>
+        <td>${item.warehouseName}</td>
+        <td>${new Date(item.dateReceived).toLocaleDateString('ar-EG')}</td>
+        <td>
+          <div class="action-buttons">
+            <button class="btn btn-sm btn-primary" onclick="viewDetails('${item.id}')">View</button>
+            <button class="btn btn-sm btn-warning" onclick="editItem('${item.id}')">Edit</button>
+          </div>
+        </td>
+      </tr>
+    `;
+  }).join('');
+}
+
+// Toggle select all
+function toggleSelectAll() {
+  const selectAll = document.getElementById('selectAll');
+  const checkboxes = document.querySelectorAll('.item-checkbox');
+  
+  checkboxes.forEach(checkbox => {
+    checkbox.checked = selectAll.checked;
+  });
+  
+  updateSelectedItems();
+}
+
+// Update selected items
+function updateSelectedItems() {
+  selectedItems = Array.from(document.querySelectorAll('.item-checkbox:checked'))
+    .map(checkbox => checkbox.value);
+}
+
+// Apply filters
+function applyFilters() {
+  const warehouseFilter = document.getElementById('warehouseFilter').value;
+  const conditionFilter = document.getElementById('conditionFilter').value;
+  const searchInput = document.getElementById('searchInput').value.toLowerCase();
+  
+  filteredScrapData = allScrapData.filter(item => {
+    if (warehouseFilter && item.warehouseId !== warehouseFilter) return false;
+    if (conditionFilter && item.condition !== conditionFilter) return false;
+    if (searchInput && !item.name.toLowerCase().includes(searchInput)) return false;
+    
+    return true;
+  });
+  
+  updateStatistics();
+  renderScrapTable();
+}
+
+// Clear filters
+function clearFilters() {
+  document.getElementById('warehouseFilter').value = '';
+  document.getElementById('conditionFilter').value = '';
+  document.getElementById('searchInput').value = '';
+  
+  filteredScrapData = [...allScrapData];
+  updateStatistics();
+  renderScrapTable();
+}
+
+// Sell scrap
+function sellScrap() {
+  if (selectedItems.length === 0) {
+    alert('Please select at least one item to sell');
+    return;
+  }
+  
+  // Set today's date
+  document.getElementById('sellDate').value = new Date().toISOString().split('T')[0];
+  
+  // Calculate total estimated value
+  const totalEstValue = selectedItems.reduce((sum, itemId) => {
+    const item = allScrapData.find(i => i.id === itemId);
+    return sum + (item ? item.estimatedValue : 0);
+  }, 0);
+  
+  document.getElementById('sellPrice').value = totalEstValue.toFixed(2);
+  
+  // Show modal
+  document.getElementById('sellModal').style.display = 'flex';
+}
+
+// Close sell modal
+function closeSellModal() {
+  document.getElementById('sellModal').style.display = 'none';
+  document.getElementById('sellForm').reset();
+}
+
+// Sell form submission
+document.getElementById('sellForm').addEventListener('submit', async (e) => {
+  e.preventDefault();
+  
+  try {
+    const sellData = {
+      buyerName: document.getElementById('buyerName').value,
+      totalSalePrice: parseFloat(document.getElementById('sellPrice').value),
+      date: new Date(document.getElementById('sellDate').value),
+      notes: document.getElementById('sellNotes').value,
+      items: selectedItems.map(itemId => {
+        const item = allScrapData.find(i => i.id === itemId);
+        return {
+          productId: itemId,
+          name: item.name,
+          quantity: item.quantity,
+          estimatedValue: item.estimatedValue
+        };
+      }),
+      createdAt: serverTimestamp()
+    };
+    
+    // Process sale with transaction
+    await runTransaction(db, async (transaction) => {
+      // Create sale record
+      const saleRef = db.collection('scrap_sales').doc();
+      transaction.set(saleRef, {
+        buyerName: sellData.buyerName,
+        totalSalePrice: sellData.totalSalePrice,
+        date: sellData.date,
+        notes: sellData.notes,
+        status: 'completed',
+        createdAt: sellData.createdAt
+      });
+      
+      // Process each item
+      for (const item of sellData.items) {
+        // Update stock balance (set to 0 since sold)
+        const stockId = `${item.productId}_main_warehouse`; // Assuming main warehouse
+        const stockRef = db.collection('stock_balances').doc(stockId);
+        
+        transaction.update(stockRef, {
+          quantity: 0,
+          updatedAt: serverTimestamp()
+        });
+        
+        // Create sale movement
+        const movementRef = db.collection('stock_movements').doc();
+        transaction.set(movementRef, {
+          type: 'scrap_sale',
+          productId: item.productId,
+          warehouseId: 'main_warehouse',
+          quantity: -item.quantity,
+          unitCost: 0,
+          totalCost: -item.estimatedValue,
+          referenceType: 'scrap_sale',
+          referenceId: saleRef.id,
+          buyerName: sellData.buyerName,
+          date: sellData.date,
+          notes: sellData.notes,
+          createdBy: auth.currentUser.uid,
+          createdAt: serverTimestamp()
+        });
+      }
+    });
+    
+    alert('Scrap sold successfully!');
+    closeSellModal();
+    loadData(); // Reload data
+  } catch (error) {
+    console.error('Error selling scrap:', error);
+    alert('Error selling scrap: ' + error.message);
+  }
+});
+
+// View details
+function viewDetails(itemId) {
+  const item = allScrapData.find(i => i.id === itemId);
+  if (item) {
+    alert(`Item: ${item.name}\nQuantity: ${item.quantity}\nCondition: ${item.condition}\nEstimated Value: ${item.estimatedValue.toFixed(2)} EGP\nNotes: ${item.notes}`);
+  }
+}
+
+// Edit item
+function editItem(itemId) {
+  const item = allScrapData.find(i => i.id === itemId);
+  if (item) {
+    const newCondition = prompt('Update condition (good/fair/poor):', item.condition);
+    if (newCondition && ['good', 'fair', 'poor'].includes(newCondition.toLowerCase())) {
+      // Update condition in database
+      updateItemCondition(itemId, newCondition.toLowerCase());
+    }
+  }
+}
+
+// Update item condition
+async function updateItemCondition(itemId, newCondition) {
+  try {
+    // Find the stock balance
+    const stockSnapshot = await db.collection('stock_balances')
+      .where('productId', '==', itemId)
+      .get();
+    
+    if (!stockSnapshot.empty) {
+      const stockDoc = stockSnapshot.docs[0];
+      await db.collection('stock_balances').doc(stockDoc.id).update({
+        updatedAt: serverTimestamp()
+      });
+      
+      // Update movement record
+      const movementSnapshot = await db.collection('stock_movements')
+        .where('productId', '==', itemId)
+        .where('type', '==', 'scrap_in')
+        .orderBy('date', 'desc')
+        .limit(1)
+        .get();
+      
+      if (!movementSnapshot.empty) {
+        await db.collection('stock_movements').doc(movementSnapshot.docs[0].id).update({
+          condition: newCondition
+        });
+      }
+      
+      loadData(); // Reload data
+    }
+  } catch (error) {
+    console.error('Error updating item condition:', error);
+    alert('Error updating item: ' + error.message);
+  }
+}
+
+// Navigation functions
+function goBack() {
+  window.location.href = "inventory-management.html";
+}
+
+function logout() {
+  auth.signOut().then(() => {
+    window.location = "index.html";
+  });
+}
+</script>
+
+</body>
+</html>
