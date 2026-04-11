@@ -582,20 +582,26 @@ function confirmImport() {
       if (!currentData || !Array.isArray(currentData)) {
         console.log('Initializing empty data array');
         currentData = [];
+      } else {
+        // Filter out undefined elements
+        currentData = currentData.filter(item => item !== undefined && item !== null);
+        console.log('Filtered data length:', currentData.length);
       }
       
       console.log('Current data length:', currentData.length);
       
       // Process each row
       excelPreviewData.forEach(excelRow => {
-        const { clientName, place, c20, c40, c2x20, existingIndex } = excelRow;
+        const { clientName, place, c20, c40, c2x20 } = excelRow;
         
-        if (existingIndex >= 0 && existingIndex < currentData.length) {
+        // Recalculate existingIndex after filtering
+        const existingIndex = currentData.findIndex(item => 
+          item && item.clientName === clientName && item.place === place
+        );
+        
+        if (existingIndex >= 0) {
           // Update existing row - only update client prices
           console.log(`Updating existing row: ${clientName} - ${place}`);
-          if (!currentData[existingIndex]) {
-            currentData[existingIndex] = {};
-          }
           if (!currentData[existingIndex].client) {
             currentData[existingIndex].client = {};
           }
