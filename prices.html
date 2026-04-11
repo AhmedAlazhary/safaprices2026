@@ -257,13 +257,111 @@ header > div {
 <div class="top-buttons">
   <button class="add-btn" onclick="addRow()">إضافة بيانات جديدة</button>
   <button class="save-btn" onclick="saveAll()">حفظ التعديلات</button>
+  <button class="import-btn" onclick="document.getElementById('excelFile').click()">Import Excel</button>
+  <input type="file" id="excelFile" accept=".xlsx,.xls" style="display: none;" onchange="handleFileSelect(event)">
 </div>
+
+<!-- Excel Import Section -->
+<div id="importSection" style="display: none; margin: 20px 0; padding: 20px; background: #f8f9fa; border-radius: 10px; border: 1px solid #dee2e6;">
+  <h3 style="margin-top: 0; color: #2c3e50;">Excel Import Preview</h3>
+  
+  <div id="importInfo" style="margin-bottom: 15px; color: #6c757d;">
+    <p>File: <span id="fileName"></span></p>
+    <p>Total Rows: <span id="totalRows">0</span></p>
+    <p>Valid Rows: <span id="validRows">0</span></p>
+  </div>
+
+  <div class="table-wrap" style="max-height: 400px; overflow-y: auto;">
+    <table id="previewTable" style="background: white;">
+      <thead>
+        <tr>
+          <th>Client Name</th>
+          <th>Place</th>
+          <th>20</th>
+          <th>40</th>
+          <th>2×20</th>
+          <th>Status</th>
+        </tr>
+      </thead>
+      <tbody id="previewBody">
+        <!-- Preview data will be loaded here -->
+      </tbody>
+    </table>
+  </div>
+
+  <div style="margin-top: 15px; display: flex; gap: 10px; justify-content: center;">
+    <button class="save-btn" onclick="confirmImport()">Upload Data</button>
+    <button class="delete-btn" onclick="cancelImport()">Cancel</button>
+  </div>
+</div>
+
+<!-- Loading Indicator -->
+<div id="loadingOverlay" style="display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.5); z-index: 1000; justify-content: center; align-items: center;">
+  <div style="background: white; padding: 30px; border-radius: 10px; text-align: center;">
+    <div style="border: 4px solid #f3f3f3; border-top: 4px solid #3498db; border-radius: 50%; width: 40px; height: 40px; animation: spin 1s linear infinite; margin: 0 auto 15px;"></div>
+    <p id="loadingText">Processing...</p>
+  </div>
+</div>
+
+<style>
+@keyframes spin {
+  0% { transform: rotate(0deg); }
+  100% { transform: rotate(360deg); }
+}
+
+.import-btn {
+  background: #8e44ad;
+  color: white;
+}
+
+.import-btn:hover {
+  background: #7d3c98;
+}
+
+#previewTable {
+  border-collapse: collapse;
+  width: 100%;
+  font-size: 14px;
+}
+
+#previewTable th {
+  background: #3498db;
+  color: white;
+  padding: 10px;
+  text-align: center;
+  position: sticky;
+  top: 0;
+  z-index: 10;
+}
+
+#previewTable td {
+  padding: 8px;
+  border: 1px solid #dee2e6;
+  text-align: center;
+}
+
+.status-valid {
+  background: #d4edda;
+  color: #155724;
+}
+
+.status-invalid {
+  background: #f8d7da;
+  color: #721c24;
+}
+
+.status-duplicate {
+  background: #fff3cd;
+  color: #856404;
+}
+</style>
 
 </div>
 
 <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-app-compat.js"></script>
 <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-auth-compat.js"></script>
 <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-database-compat.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
 
 <script>
 const firebaseConfig = {
@@ -285,6 +383,239 @@ firebase.auth().onAuthStateChanged(user => {
 
 let data = [];
 let filteredData = null;
+let excelPreviewData = [];
+let currentFileName = "";
+
+// Excel Import Functions
+function handleFileSelect(event) {
+  const file = event.target.files[0];
+  if (!file) return;
+
+  // Check file type
+  if (!file.name.match(/\.(xlsx|xls)$/)) {
+    alert('Please select a valid Excel file (.xlsx or .xls)');
+    return;
+  }
+
+  // Check for duplicate upload
+  if (checkDuplicateUpload(file.name)) {
+    if (!confirm('Warning: You uploaded this file recently. Do you want to continue?')) {
+      document.getElementById('excelFile').value = '';
+      return;
+    }
+  }
+
+  currentFileName = file.name;
+  showLoading('Reading Excel file...');
+  
+  const reader = new FileReader();
+  reader.onload = function(e) {
+    try {
+      const data = new Uint8Array(e.target.result);
+      const workbook = XLSX.read(data, { type: 'array' });
+      
+      // Get first worksheet
+      const firstSheet = workbook.Sheets[workbook.SheetNames[0]];
+      const jsonData = XLSX.utils.sheet_to_json(firstSheet, { header: 1 });
+      
+      processExcelData(jsonData);
+    } catch (error) {
+      hideLoading();
+      alert('Error reading Excel file: ' + error.message);
+      document.getElementById('excelFile').value = '';
+    }
+  };
+  
+  reader.readAsArrayBuffer(file);
+}
+
+function processExcelData(jsonData) {
+  try {
+    // Skip header row and process data
+    const rows = jsonData.slice(1);
+    excelPreviewData = [];
+    
+    let validCount = 0;
+    let invalidCount = 0;
+    
+    rows.forEach((row, index) => {
+      if (row.length < 5) {
+        invalidCount++;
+        return;
+      }
+      
+      const clientName = String(row[0] || '').trim();
+      const place = String(row[1] || '').trim();
+      const c20 = Number(row[2]) || 0;
+      const c40 = Number(row[3]) || 0;
+      const c2x20 = Number(row[4]) || 0;
+      
+      // Validation
+      if (!clientName || !place) {
+        invalidCount++;
+        return;
+      }
+      
+      // Check if row already exists in current data
+      const existingIndex = data.findIndex(item => 
+        item.clientName === clientName && item.place === place
+      );
+      
+      excelPreviewData.push({
+        clientName,
+        place,
+        c20,
+        c40,
+        c2x20,
+        existingIndex: existingIndex >= 0 ? existingIndex : null,
+        status: existingIndex >= 0 ? 'duplicate' : 'new',
+        rowIndex: index + 2 // Excel row number (1-indexed + header)
+      });
+      
+      validCount++;
+    });
+    
+    hideLoading();
+    showImportPreview(validCount, invalidCount);
+    
+  } catch (error) {
+    hideLoading();
+    alert('Error processing Excel data: ' + error.message);
+  }
+}
+
+function showImportPreview(validCount, invalidCount) {
+  // Update import info
+  document.getElementById('fileName').textContent = currentFileName;
+  document.getElementById('totalRows').textContent = excelPreviewData.length;
+  document.getElementById('validRows').textContent = validCount;
+  
+  // Render preview table
+  const tbody = document.getElementById('previewBody');
+  tbody.innerHTML = '';
+  
+  excelPreviewData.forEach(row => {
+    const tr = document.createElement('tr');
+    
+    let statusText = '';
+    let statusClass = '';
+    
+    if (row.status === 'new') {
+      statusText = 'New';
+      statusClass = 'status-valid';
+    } else if (row.status === 'duplicate') {
+      statusText = 'Will Update';
+      statusClass = 'status-duplicate';
+    }
+    
+    tr.innerHTML = `
+      <td>${row.clientName}</td>
+      <td>${row.place}</td>
+      <td>${row.c20}</td>
+      <td>${row.c40}</td>
+      <td>${row.c2x20}</td>
+      <td class="${statusClass}">${statusText}</td>
+    `;
+    
+    tbody.appendChild(tr);
+  });
+  
+  // Show import section
+  document.getElementById('importSection').style.display = 'block';
+  
+  // Scroll to import section
+  document.getElementById('importSection').scrollIntoView({ behavior: 'smooth' });
+}
+
+function cancelImport() {
+  document.getElementById('importSection').style.display = 'none';
+  document.getElementById('excelFile').value = '';
+  excelPreviewData = [];
+  currentFileName = '';
+}
+
+function confirmImport() {
+  if (!confirm(`Are you sure you want to import ${excelPreviewData.length} rows? This will update client prices only.`)) {
+    return;
+  }
+  
+  showLoading('Importing data to Firebase...');
+  
+  // Load current data from Firebase
+  database.ref('prices').once('value', snapshot => {
+    const currentData = snapshot.val() || [];
+    
+    // Process each row
+    excelPreviewData.forEach(excelRow => {
+      const { clientName, place, c20, c40, c2x20, existingIndex } = excelRow;
+      
+      if (existingIndex >= 0) {
+        // Update existing row - only update client prices
+        currentData[existingIndex].client = {
+          c20: c20,
+          c40: c40,
+          c2x20: c2x20
+        };
+      } else {
+        // Create new row with default values
+        currentData.push({
+          clientName: clientName,
+          place: place,
+          market: { c20: 0, c40: 0, c2x20: 0 },
+          commission: 0,
+          client: { c20: c20, c40: c40, c2x20: c2x20 },
+          notes: ""
+        });
+      }
+    });
+    
+    // Save to Firebase
+    database.ref('prices').set(currentData, (error) => {
+      hideLoading();
+      
+      if (error) {
+        alert('Error saving data: ' + error.message);
+      } else {
+        alert(`Successfully imported ${excelPreviewData.length} rows!`);
+        recordUpload(currentFileName);
+        cancelImport();
+        // Data will automatically reload via the existing listener
+      }
+    });
+  });
+}
+
+function showLoading(text = 'Processing...') {
+  document.getElementById('loadingText').textContent = text;
+  document.getElementById('loadingOverlay').style.display = 'flex';
+}
+
+function hideLoading() {
+  document.getElementById('loadingOverlay').style.display = 'none';
+}
+
+// Check for duplicate upload prevention
+function checkDuplicateUpload(fileName) {
+  const lastUpload = localStorage.getItem('lastExcelUpload');
+  const lastFileName = localStorage.getItem('lastExcelFileName');
+  
+  if (lastUpload && lastFileName === fileName) {
+    const lastUploadTime = new Date(lastUpload);
+    const now = new Date();
+    const hoursDiff = (now - lastUploadTime) / (1000 * 60 * 60);
+    
+    if (hoursDiff < 1) {
+      return true; // Duplicate upload within 1 hour
+    }
+  }
+  
+  return false;
+}
+
+function recordUpload(fileName) {
+  localStorage.setItem('lastExcelUpload', new Date().toISOString());
+  localStorage.setItem('lastExcelFileName', fileName);
+}
 
 function syncTableToData() {
   const rows = document.querySelectorAll("#tableBody tr");
