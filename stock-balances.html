@@ -385,8 +385,8 @@ tr:hover {
           <th>الوحدة</th>
           <th>سعر التكلفة</th>
           <th>الإجمالي</th>
-          <th>الحد الأدنى</th>
           <th>الحالة</th>
+          <th>تاريخ التحديث</th>
         </tr>
       </thead>
       <tbody id="stockTableBody">
@@ -536,8 +536,8 @@ function renderStockTable() {
         <td>${stock.unit}</td>
         <td>${stock.avgCost.toFixed(2)}</td>
         <td>${itemTotal.toFixed(2)}</td>
-        <td>${stock.minStock}</td>
         <td><span class="stock-status ${statusClass}">${statusText}</span></td>
+        <td>${new Date(stock.updatedAt?.toDate()).toLocaleDateString('ar-EG')}</td>
       </tr>
     `;
   }).join('');
@@ -565,7 +565,7 @@ function showLowStockAlerts() {
     alertsHTML += `
       <div class="alert alert-danger">
         <span>⚠️ ${outOfStockItems.length} أصناف منتهية من المخزون</span>
-        <button class="btn btn-primary" onclick="filterOutOfStock()">عرض</button>
+        <button class="btn btn-sm btn-primary" onclick="adjustStock('${stock.id}')">تعديل</button>
       </div>
     `;
   }

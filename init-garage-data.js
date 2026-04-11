@@ -32,7 +32,6 @@ const products = [
     unit: "piece",
     categoryId: "spare_parts",
     purchasePrice: 150,
-    salePrice: 200,
     minStock: 20
   },
   {
@@ -40,7 +39,6 @@ const products = [
     unit: "piece",
     categoryId: "spare_parts",
     purchasePrice: 120,
-    salePrice: 170,
     minStock: 20
   },
   {
@@ -48,7 +46,6 @@ const products = [
     unit: "piece",
     categoryId: "oils_filters",
     purchasePrice: 45,
-    salePrice: 65,
     minStock: 50
   },
   {
@@ -56,7 +53,6 @@ const products = [
     unit: "piece",
     categoryId: "oils_filters",
     purchasePrice: 35,
-    salePrice: 50,
     minStock: 40
   },
   {
@@ -64,7 +60,6 @@ const products = [
     unit: "piece",
     categoryId: "oils_filters",
     purchasePrice: 55,
-    salePrice: 75,
     minStock: 30
   },
   {
@@ -72,7 +67,6 @@ const products = [
     unit: "liter",
     categoryId: "oils_filters",
     purchasePrice: 85,
-    salePrice: 120,
     minStock: 30
   },
   {
@@ -80,7 +74,6 @@ const products = [
     unit: "liter",
     categoryId: "oils_filters",
     purchasePrice: 75,
-    salePrice: 110,
     minStock: 25
   },
   {
@@ -88,7 +81,6 @@ const products = [
     unit: "liter",
     categoryId: "oils_filters",
     purchasePrice: 95,
-    salePrice: 140,
     minStock: 25
   },
   {
@@ -96,7 +88,6 @@ const products = [
     unit: "liter",
     categoryId: "oils_filters",
     purchasePrice: 105,
-    salePrice: 150,
     minStock: 20
   },
   {
@@ -104,7 +95,6 @@ const products = [
     unit: "piece",
     categoryId: "tires",
     purchasePrice: 450,
-    salePrice: 600,
     minStock: 15
   },
   {
@@ -112,7 +102,6 @@ const products = [
     unit: "piece",
     categoryId: "tires",
     purchasePrice: 550,
-    salePrice: 750,
     minStock: 12
   },
   {
@@ -120,7 +109,6 @@ const products = [
     unit: "piece",
     categoryId: "tires",
     purchasePrice: 650,
-    salePrice: 850,
     minStock: 10
   },
   {
@@ -128,7 +116,6 @@ const products = [
     unit: "piece",
     categoryId: "batteries",
     purchasePrice: 350,
-    salePrice: 500,
     minStock: 10
   },
   {
@@ -136,7 +123,6 @@ const products = [
     unit: "piece",
     categoryId: "batteries",
     purchasePrice: 450,
-    salePrice: 650,
     minStock: 8
   },
   {
@@ -144,7 +130,6 @@ const products = [
     unit: "piece",
     categoryId: "batteries",
     purchasePrice: 550,
-    salePrice: 750,
     minStock: 6
   },
   {
@@ -152,7 +137,6 @@ const products = [
     unit: "piece",
     categoryId: "spare_parts",
     purchasePrice: 25,
-    salePrice: 40,
     minStock: 100
   },
   {
@@ -160,7 +144,6 @@ const products = [
     unit: "piece",
     categoryId: "spare_parts",
     purchasePrice: 35,
-    salePrice: 55,
     minStock: 60
   },
   {
@@ -168,7 +151,6 @@ const products = [
     unit: "piece",
     categoryId: "spare_parts",
     purchasePrice: 85,
-    salePrice: 120,
     minStock: 25
   },
   {
@@ -176,7 +158,6 @@ const products = [
     unit: "piece",
     categoryId: "spare_parts",
     purchasePrice: 150,
-    salePrice: 220,
     minStock: 15
   },
   {
@@ -184,7 +165,6 @@ const products = [
     unit: "piece",
     categoryId: "spare_parts",
     purchasePrice: 250,
-    salePrice: 350,
     minStock: 15
   },
   {
@@ -192,7 +172,6 @@ const products = [
     unit: "piece",
     categoryId: "spare_parts",
     purchasePrice: 180,
-    salePrice: 280,
     minStock: 20
   },
   {
@@ -200,7 +179,6 @@ const products = [
     unit: "piece",
     categoryId: "spare_parts",
     purchasePrice: 160,
-    salePrice: 250,
     minStock: 20
   },
   {
@@ -208,7 +186,6 @@ const products = [
     unit: "piece",
     categoryId: "spare_parts",
     purchasePrice: 220,
-    salePrice: 320,
     minStock: 12
   },
   {
@@ -216,7 +193,6 @@ const products = [
     unit: "piece",
     categoryId: "spare_parts",
     purchasePrice: 200,
-    salePrice: 300,
     minStock: 12
   },
   {
@@ -224,7 +200,6 @@ const products = [
     unit: "piece",
     categoryId: "spare_parts",
     purchasePrice: 65,
-    salePrice: 95,
     minStock: 30
   },
   {
@@ -232,7 +207,6 @@ const products = [
     unit: "piece",
     categoryId: "spare_parts",
     purchasePrice: 180,
-    salePrice: 260,
     minStock: 10
   },
   {
@@ -240,7 +214,6 @@ const products = [
     unit: "piece",
     categoryId: "spare_parts",
     purchasePrice: 45,
-    salePrice: 70,
     minStock: 20
   },
   {
@@ -248,7 +221,6 @@ const products = [
     unit: "piece",
     categoryId: "spare_parts",
     purchasePrice: 280,
-    salePrice: 400,
     minStock: 8
   },
   {
@@ -256,7 +228,6 @@ const products = [
     unit: "piece",
     categoryId: "spare_parts",
     purchasePrice: 320,
-    salePrice: 450,
     minStock: 6
   },
   {
@@ -264,7 +235,6 @@ const products = [
     unit: "piece",
     categoryId: "spare_parts",
     purchasePrice: 450,
-    salePrice: 650,
     minStock: 5
   },
   {
@@ -272,7 +242,6 @@ const products = [
     unit: "piece",
     categoryId: "spare_parts",
     purchasePrice: 550,
-    salePrice: 800,
     minStock: 4
   },
   // Scrap & Used Items
@@ -281,7 +250,6 @@ const products = [
     unit: "piece",
     categoryId: "scrap_used",
     purchasePrice: 0,
-    salePrice: 0,
     minStock: 0
   },
   {
@@ -289,7 +257,6 @@ const products = [
     unit: "piece",
     categoryId: "scrap_used",
     purchasePrice: 0,
-    salePrice: 0,
     minStock: 0
   },
   {
@@ -297,7 +264,6 @@ const products = [
     unit: "piece",
     categoryId: "scrap_used",
     purchasePrice: 0,
-    salePrice: 0,
     minStock: 0
   },
   {
@@ -305,7 +271,6 @@ const products = [
     unit: "piece",
     categoryId: "scrap_used",
     purchasePrice: 0,
-    salePrice: 0,
     minStock: 0
   },
   {
@@ -313,7 +278,6 @@ const products = [
     unit: "piece",
     categoryId: "scrap_used",
     purchasePrice: 0,
-    salePrice: 0,
     minStock: 0
   },
   {
@@ -321,7 +285,6 @@ const products = [
     unit: "piece",
     categoryId: "scrap_used",
     purchasePrice: 0,
-    salePrice: 0,
     minStock: 0
   },
   {
@@ -329,7 +292,6 @@ const products = [
     unit: "piece",
     categoryId: "scrap_used",
     purchasePrice: 0,
-    salePrice: 0,
     minStock: 0
   },
   {
@@ -337,7 +299,6 @@ const products = [
     unit: "piece",
     categoryId: "scrap_used",
     purchasePrice: 0,
-    salePrice: 0,
     minStock: 0
   }
 ];

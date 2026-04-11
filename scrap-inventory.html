@@ -347,7 +347,7 @@ tr:hover {
 <header>
   <div style="display: flex; align-items: center; gap: 1rem;">
     <img src="logo.png" alt="Safa Office Logo">
-    <h1>Scrap Inventory</h1>
+    <h1>مخزون الخردة</h1>
   </div>
   <nav>
     <button onclick="window.location='inventory-management.html'">الرئيسية</button>
@@ -361,30 +361,30 @@ tr:hover {
   <div class="stats-grid">
     <div class="stat-card">
       <div class="stat-value total-items" id="totalItems">0</div>
-      <div class="stat-label">Total Scrap Items</div>
+      <div class="stat-label">إجمالي قطع الخردة</div>
     </div>
     <div class="stat-card">
       <div class="stat-value total-value" id="totalValue">0</div>
-      <div class="stat-label">Estimated Value</div>
+      <div class="stat-label">القيمة المقدرة</div>
     </div>
     <div class="stat-card">
       <div class="stat-value ready-to-sell" id="readyToSell">0</div>
-      <div class="stat-label">Ready to Sell</div>
+      <div class="stat-label">جاهز للبيع</div>
     </div>
   </div>
 
   <!-- Filters Section -->
   <div class="filters-section">
-    <h2 style="margin-bottom: 1rem; color: #2c3e50;">Filters</h2>
+    <h2 style="margin-bottom: 1rem; color: #2c3e50;">الفلاتر</h2>
     <div class="filters-grid">
       <div class="form-group">
-        <label for="warehouseFilter">Warehouse</label>
+        <label for="warehouseFilter">المخزن</label>
         <select id="warehouseFilter">
-          <option value="">All Warehouses</option>
+          <option value="">جميع المخازن</option>
         </select>
       </div>
       <div class="form-group">
-        <label for="conditionFilter">Condition</label>
+        <label for="conditionFilter">الحالة</label>
         <select id="conditionFilter">
           <option value="">All Conditions</option>
           <option value="good">Good</option>
@@ -393,7 +393,7 @@ tr:hover {
         </select>
       </div>
       <div class="form-group">
-        <label for="searchInput">Search</label>
+        <label for="searchInput">بحث</label>
         <input type="text" id="searchInput" placeholder="Search scrap items...">
       </div>
     </div>
@@ -406,18 +406,18 @@ tr:hover {
 
   <!-- Scrap Inventory Table -->
   <div class="table-container">
-    <h2 style="margin-bottom: 1rem; color: #2c3e50;">Scrap Inventory</h2>
+    <h2 style="margin-bottom: 1rem; color: #2c3e50;">مخزون الخردة</h2>
     <table id="scrapTable">
       <thead>
         <tr>
           <th><input type="checkbox" id="selectAll" onchange="toggleSelectAll()"></th>
-          <th>Item Name</th>
-          <th>Quantity</th>
-          <th>Condition</th>
-          <th>Est. Value</th>
-          <th>Warehouse</th>
-          <th>Date Received</th>
-          <th>Actions</th>
+          <th>اسم الصنف</th>
+          <th>الكمية</th>
+          <th>الحالة</th>
+          <th>القيمة المقدرة</th>
+          <th>المخزن</th>
+          <th>تاريخ الاستلام</th>
+          <th>الإجراءات</th>
         </tr>
       </thead>
       <tbody id="scrapTableBody">
@@ -435,27 +435,27 @@ tr:hover {
 <div id="sellModal" class="modal">
   <div class="modal-content">
     <div class="modal-header">
-      <h3>Sell Scrap Items</h3>
+      <h3>بيع قطع الخردة</h3>
       <button class="close-btn" onclick="closeSellModal()">&times;</button>
     </div>
     <form id="sellForm">
       <div class="form-group">
-        <label for="buyerName">Buyer Name *</label>
+        <label for="buyerName">اسم المشتري *</label>
         <input type="text" id="buyerName" required placeholder="Enter buyer name">
       </div>
       
       <div class="form-group">
-        <label for="sellPrice">Total Sale Price *</label>
+        <label for="sellPrice">إجمالي سعر البيع *</label>
         <input type="number" id="sellPrice" required step="0.01" min="0" placeholder="Enter sale price">
       </div>
       
       <div class="form-group">
-        <label for="sellDate">Sale Date</label>
+        <label for="sellDate">تاريخ البيع</label>
         <input type="date" id="sellDate" required>
       </div>
       
       <div class="form-group">
-        <label for="sellNotes">Notes</label>
+        <label for="sellNotes">ملاحظات</label>
         <textarea id="sellNotes" rows="3" style="width: 100%; padding: 0.75rem; border: 2px solid #e0e0e0; border-radius: 8px; resize: vertical;"></textarea>
       </div>
       
@@ -604,7 +604,7 @@ function renderScrapTable() {
         <td>${item.name}</td>
         <td>${item.quantity}</td>
         <td><span class="condition-badge ${conditionClass}">${conditionText}</span></td>
-        <td>${item.estimatedValue.toFixed(2)} EGP</td>
+        <td>${item.estimatedValue.toFixed(2)} ج.م</td>
         <td>${item.warehouseName}</td>
         <td>${new Date(item.dateReceived).toLocaleDateString('ar-EG')}</td>
         <td>

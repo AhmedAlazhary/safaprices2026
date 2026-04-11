@@ -358,6 +358,7 @@ tr:hover {
 
 <div class="container">
   <div class="main-content">
+    <h1>جرد المخزون</h1>
     <!-- Adjustment Form -->
     <div class="card">
       <h2>إنشاء عملية جرد</h2>
@@ -513,7 +514,7 @@ function addNewItem() {
       ${products.map(product => `<option value="${product.id}">${product.name}</option>`).join('')}
     </select>
     <input type="number" class="current-quantity" placeholder="الكمية الحالية" readonly>
-    <input type="number" class="actual-quantity" placeholder="الكمية الفعلية" min="0" onchange="calculateDifference(this)">
+    <input type="number" class="actual-quantity" placeholder="الكمية المعدودة" min="0" onchange="calculateDifference(this)">
     <input type="number" class="difference" placeholder="الفرق" readonly>
     <input type="number" class="avg-cost" placeholder="سعر التكلفة" readonly>
     <button type="button" class="btn btn-icon btn-danger" onclick="removeItem(this)">×</button>

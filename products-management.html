@@ -381,9 +381,9 @@ tr:hover {
         </div>
         
         <div class="form-group">
-          <label for="productCategory">Category *</label>
+          <label for="productCategory">الفئة *</label>
           <select id="productCategory" required>
-            <option value="">Choose Category</option>
+            <option value="">اختر الفئة</option>
             <option value="spare_parts">Spare Parts</option>
             <option value="oils_filters">Oils & Filters</option>
             <option value="tires">Tires</option>
@@ -398,10 +398,6 @@ tr:hover {
             <input type="number" id="purchasePrice" step="0.01" min="0">
           </div>
           
-          <div class="form-group">
-            <label for="salePrice">سعر البيع</label>
-            <input type="number" id="salePrice" step="0.01" min="0">
-          </div>
         </div>
         
         <div class="form-group">
@@ -434,14 +430,13 @@ tr:hover {
               <th>الوحدة</th>
               <th>الفئة</th>
               <th>سعر الشراء</th>
-              <th>سعر البيع</th>
               <th>الحد الأدنى</th>
               <th>الإجراءات</th>
             </tr>
           </thead>
           <tbody id="productsTableBody">
             <tr>
-              <td colspan="7" class="loading">
+              <td colspan="6" class="loading">
                 <div class="spinner"></div>
               </td>
             </tr>
@@ -503,10 +498,6 @@ tr:hover {
           <input type="number" id="editPurchasePrice" step="0.01" min="0">
         </div>
         
-        <div class="form-group">
-          <label for="editSalePrice">سعر البيع</label>
-          <input type="number" id="editSalePrice" step="0.01" min="0">
-        </div>
       </div>
       
       <div class="form-group">
@@ -550,7 +541,6 @@ document.getElementById('productForm').addEventListener('submit', async (e) => {
       unit: document.getElementById('productUnit').value,
       categoryId: document.getElementById('productCategory').value,
       purchasePrice: parseFloat(document.getElementById('purchasePrice').value) || 0,
-      salePrice: parseFloat(document.getElementById('salePrice').value) || 0,
       minStock: parseInt(document.getElementById('minStock').value) || 0,
       createdAt: serverTimestamp(),
       updatedAt: serverTimestamp()
@@ -579,7 +569,6 @@ document.getElementById('editForm').addEventListener('submit', async (e) => {
       unit: document.getElementById('editProductUnit').value,
       categoryId: document.getElementById('editProductCategory').value,
       purchasePrice: parseFloat(document.getElementById('editPurchasePrice').value) || 0,
-      salePrice: parseFloat(document.getElementById('editSalePrice').value) || 0,
       minStock: parseInt(document.getElementById('editMinStock').value) || 0,
       updatedAt: serverTimestamp()
     };
@@ -612,7 +601,7 @@ function renderProductsTable(productsList) {
   const tbody = document.getElementById('productsTableBody');
   
   if (productsList.length === 0) {
-    tbody.innerHTML = '<tr><td colspan="7" style="text-align: center; padding: 2rem;">لا توجد أصناف</td></tr>';
+    tbody.innerHTML = '<tr><td colspan="6" style="text-align: center; padding: 2rem;">لا توجد أصناف</td></tr>';
     return;
   }
   
@@ -620,9 +609,8 @@ function renderProductsTable(productsList) {
     <tr>
       <td>${product.name}</td>
       <td>${product.unit}</td>
-      <td>${product.categoryId}</td>
+      <td>${getCategoryName(product.categoryId)}</td>
       <td>${product.purchasePrice.toFixed(2)}</td>
-      <td>${product.salePrice.toFixed(2)}</td>
       <td>${product.minStock}</td>
       <td>
         <div class="actions">
@@ -714,6 +702,18 @@ function showAlert(message, type) {
   setTimeout(() => {
     alertDiv.remove();
   }, 3000);
+}
+
+// Get category name in Arabic
+function getCategoryName(categoryId) {
+  const categories = {
+    'spare_parts': 'قطع غيار',
+    'oils_filters': 'زيوت وفلاتر',
+    'tires': 'إطارات',
+    'batteries': 'بطاريات',
+    'scrap_used': 'خردة ومستعمل'
+  };
+  return categories[categoryId] || categoryId;
 }
 
 // Navigation functions
