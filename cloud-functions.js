@@ -1,0 +1,698 @@
+/**
+ * Firebase Cloud Functions for Garage System
+ * Smart notifications and automated workflows
+ * 
+ * Features:
+ * - Low stock alerts
+ * - Maintenance reminders
+ * - Daily reports
+ * - Data backups
+ * - Automated cleanup
+ */
+
+const functions = require('firebase-functions');
+const admin = require('firebase-admin');
+const nodemailer = require('nodemailer');
+
+admin.initializeApp();
+
+// Database references
+const db = admin.firestore();
+const storage = admin.storage();
+
+// Email configuration (configure with your email service)
+const transporter = nodemailer.createTransporter({
+  service: 'gmail',
+  auth: {
+    user: functions.config().email.user,
+    pass: functions.config().email.pass
+  }
+});
+
+/**
+ * Low Stock Alert Trigger
+ * Runs when inventory is updated
+ */
+exports.lowStockAlert = functions.firestore
+  .document('inventory/{itemId}')
+  .onWrite(async (change, context) => {
+    const newValue = change.after.data();
+    const previousValue = change.before.data();
+
+    // Check if quantity changed and is below reorder level
+    if (newValue && newValue.availableQty <= newValue.reorderLevel) {
+      const previousQty = previousValue ? previousValue.availableQty : 0;
+      
+      // Only send alert if this is a new low stock situation
+      if (previousQty > newValue.reorderLevel) {
+        await sendLowStockNotification(newValue);
+        await createLowStockTask(newValue);
+      }
+    }
+  });
+
+/**
+ * Maintenance Due Reminder
+ * Runs daily at 8 AM
+ */
+exports.maintenanceDueReminder = functions.pubsub
+  .schedule('0 8 * * *') // Daily at 8 AM
+  .timeZone('Africa/Cairo')
+  .onRun(async (context) => {
+    const today = new Date();
+    const tomorrow = new Date(today);
+    tomorrow.setDate(tomorrow.getDate() + 7); // Check next 7 days
+
+    const vehiclesSnapshot = await db.collection('vehicles')
+      .where('status', '==', 'active')
+      .where('nextMaintenanceDate', '<=', tomorrow)
+      .get();
+
+    const notifications = [];
+
+    for (const doc of vehiclesSnapshot.docs) {
+      const vehicle = doc.data();
+      const daysUntilMaintenance = Math.ceil((vehicle.nextMaintenanceDate.toDate() - today) / (1000 * 60 * 60 * 24));
+      
+      if (daysUntilMaintenance <= 0) {
+        // Overdue maintenance
+        notifications.push({
+          type: 'maintenance_overdue',
+          vehicle: vehicle,
+          message: `Vehicle ${vehicle.plateNumber} is overdue for maintenance`,
+          priority: 'urgent'
+        });
+      } else if (daysUntilMaintenance <= 7) {
+        // Upcoming maintenance
+        notifications.push({
+          type: 'maintenance_due',
+          vehicle: vehicle,
+          message: `Vehicle ${vehicle.plateNumber} is due for maintenance in ${daysUntilMaintenance} days`,
+          priority: 'high'
+        });
+      }
+    }
+
+    // Send notifications to managers and mechanics
+    await sendMaintenanceNotifications(notifications);
+  });
+
+/**
+ * Daily Summary Report
+ * Runs daily at 6 PM
+ */
+exports.dailySummaryReport = functions.pubsub
+  .schedule('0 18 * * *') // Daily at 6 PM
+  .timeZone('Africa/Cairo')
+  .onRun(async (context) => {
+    const today = new Date();
+    const startOfDay = new Date(today.setHours(0, 0, 0, 0));
+    const endOfDay = new Date(today.setHours(23, 59, 59, 999));
+
+    // Get today's operations
+    const operationsSnapshot = await db.collection('operations')
+      .where('createdAt', '>=', startOfDay)
+      .where('createdAt', '<=', endOfDay)
+      .get();
+
+    // Get today's maintenance orders
+    const maintenanceSnapshot = await db.collection('maintenance_orders')
+      .where('createdAt', '>=', startOfDay)
+      .where('createdAt', '<=', endOfDay)
+      .get();
+
+    // Get current inventory status
+    const inventorySnapshot = await db.collection('inventory').get();
+
+    // Calculate statistics
+    const stats = {
+      totalOperations: operationsSnapshot.size,
+      totalIssues: operationsSnapshot.docs.filter(doc => doc.data().type === 'issue').size,
+      totalReceives: operationsSnapshot.docs.filter(doc => doc.data().type === 'receive').size,
+      totalMaintenanceOrders: maintenanceSnapshot.size,
+      completedMaintenanceOrders: maintenanceSnapshot.docs.filter(doc => doc.data().status === 'completed').size,
+      lowStockItems: inventorySnapshot.docs.filter(doc => 
+        doc.data().availableQty <= doc.data().reorderLevel
+      ).size,
+      totalInventoryValue: inventorySnapshot.docs.reduce((sum, doc) => 
+        sum + (doc.data().availableQty * doc.data().purchasePrice), 0
+      )
+    };
+
+    // Send daily report to managers
+    await sendDailyReport(stats);
+  });
+
+/**
+ * Automated Data Backup
+ * Runs weekly on Sunday at 2 AM
+ */
+exports.automatedBackup = functions.pubsub
+  .schedule('0 2 * * 0') // Weekly on Sunday at 2 AM
+  .timeZone('Africa/Cairo')
+  .onRun(async (context) => {
+    const collections = ['vehicles', 'staff', 'inventory', 'operations', 'maintenance_orders', 'audit_trail'];
+    const backupData = {};
+
+    for (const collectionName of collections) {
+      const snapshot = await db.collection(collectionName).get();
+      backupData[collectionName] = snapshot.docs.map(doc => ({
+        id: doc.id,
+        ...doc.data()
+      }));
+    }
+
+    // Save backup to Cloud Storage
+    const backupFileName = `backups/garage_backup_${new Date().toISOString().split('T')[0]}.json`;
+    const backupFile = storage.bucket().file(backupFileName);
+
+    await backupFile.save(JSON.stringify(backupData), {
+      metadata: {
+        contentType: 'application/json',
+        backupDate: new Date().toISOString()
+      }
+    });
+
+    // Clean up old backups (keep last 30 days)
+    await cleanupOldBackups();
+
+    console.log(`Backup completed: ${backupFileName}`);
+  });
+
+/**
+ * User Activity Monitoring
+ * Runs when user performs any action
+ */
+exports.logUserActivity = functions.firestore
+  .document('audit_trail/{auditId}')
+  .onCreate(async (snapshot, context) => {
+    const auditData = snapshot.data();
+    
+    // Check for suspicious activity
+    if (auditData.action === 'inventory_issue' && auditData.newValue.availableQty < 0) {
+      await sendSecurityAlert(auditData, 'Negative inventory detected');
+    }
+
+    // Check for rapid operations (possible automation abuse)
+    const recentOperations = await db.collection('audit_trail')
+      .where('userId', '==', auditData.userId)
+      .where('timestamp', '>=', new Date(Date.now() - 5 * 60 * 1000)) // Last 5 minutes
+      .get();
+
+    if (recentOperations.size > 50) {
+      await sendSecurityAlert(auditData, 'High frequency operations detected');
+    }
+  });
+
+/**
+ * Image Processing and Optimization
+ * Runs when image is uploaded
+ */
+exports.processImageUpload = functions.storage
+  .object()
+  .onFinalize(async (object) => {
+    const filePath = object.name;
+    const contentType = object.contentType;
+
+    // Only process images
+    if (!contentType.startsWith('image/')) {
+      return;
+    }
+
+    // Skip if already processed
+    if (filePath.includes('processed_')) {
+      return;
+    }
+
+    try {
+      // Download image
+      const buffer = await storage.bucket().file(filePath).download();
+      
+      // Process image (resize, compress, etc.)
+      const processedBuffer = await processImage(buffer[0]);
+      
+      // Upload processed version
+      const processedPath = `processed_${filePath}`;
+      await storage.bucket().file(processedPath).save(processedBuffer, {
+        metadata: {
+          contentType: contentType,
+          originalPath: filePath,
+          processedAt: new Date().toISOString()
+        }
+      });
+
+      console.log(`Image processed: ${processedPath}`);
+    } catch (error) {
+      console.error('Image processing error:', error);
+    }
+  });
+
+/**
+ * Send low stock notification
+ */
+async function sendLowStockNotification(item) {
+  const managers = await getManagers();
+  const mechanics = await getMechanics();
+
+  const notification = {
+    title: 'Low Stock Alert',
+    message: `${item.name} is below reorder level (${item.availableQty} <= ${item.reorderLevel})`,
+    data: {
+      itemId: item.id,
+      currentQty: item.availableQty,
+      reorderLevel: item.reorderLevel
+    },
+    priority: 'high'
+  };
+
+  // Send in-app notifications
+  for (const manager of managers) {
+    await createNotification(manager.id, 'low_stock', notification.title, notification.message, notification.data);
+  }
+
+  // Send email notifications
+  for (const manager of managers) {
+    await sendEmail(manager.email, notification.title, notification.message);
+  }
+
+  console.log(`Low stock notification sent for item: ${item.name}`);
+}
+
+/**
+ * Send maintenance notifications
+ */
+async function sendMaintenanceNotifications(notifications) {
+  const managers = await getManagers();
+  const mechanics = await getMechanics();
+
+  for (const notif of notifications) {
+    // Send in-app notifications
+    for (const manager of managers) {
+      await createNotification(manager.id, notif.type, notif.message, '', { vehicle: notif.vehicle });
+    }
+
+    // Send email notifications
+    for (const manager of managers) {
+      await sendEmail(manager.email, 'Maintenance Reminder', notif.message);
+    }
+  }
+
+  console.log(`Sent ${notifications.length} maintenance notifications`);
+}
+
+/**
+ * Send daily report
+ */
+async function sendDailyReport(stats) {
+  const managers = await getManagers();
+
+  const reportHtml = `
+    <h2>Daily Garage Report - ${new Date().toLocaleDateString()}</h2>
+    <h3>Operations Summary</h3>
+    <ul>
+      <li>Total Operations: ${stats.totalOperations}</li>
+      <li>Issues: ${stats.totalIssues}</li>
+      <li>Receives: ${stats.totalReceives}</li>
+    </ul>
+    
+    <h3>Maintenance Summary</h3>
+    <ul>
+      <li>Total Orders: ${stats.totalMaintenanceOrders}</li>
+      <li>Completed: ${stats.completedMaintenanceOrders}</li>
+    </ul>
+    
+    <h3>Inventory Summary</h3>
+    <ul>
+      <li>Low Stock Items: ${stats.lowStockItems}</li>
+      <li>Total Inventory Value: ${stats.totalInventoryValue.toFixed(2)} EGP</li>
+    </ul>
+  `;
+
+  for (const manager of managers) {
+    await sendEmail(manager.email, 'Daily Garage Report', reportHtml, true);
+  }
+
+  console.log('Daily report sent to managers');
+}
+
+/**
+ * Send security alert
+ */
+async function sendSecurityAlert(auditData, alertMessage) {
+  const admins = await getAdmins();
+
+  const notification = {
+    title: 'Security Alert',
+    message: alertMessage,
+    data: {
+      auditId: auditData.id,
+      userId: auditData.userId,
+      action: auditData.action
+    },
+    priority: 'urgent'
+  };
+
+  for (const admin of admins) {
+    await createNotification(admin.id, 'security_alert', notification.title, notification.message, notification.data);
+    await sendEmail(admin.email, 'Security Alert', alertMessage);
+  }
+
+  console.log(`Security alert sent: ${alertMessage}`);
+}
+
+/**
+ * Create notification in Firestore
+ */
+async function createNotification(userId, type, title, message, data = {}) {
+  const notification = {
+    userId: userId,
+    type: type,
+    title: title,
+    message: message,
+    data: data,
+    priority: 'normal',
+    status: 'unread',
+    createdAt: admin.firestore.FieldValue.serverTimestamp()
+  };
+
+  await db.collection('notifications').add(notification);
+}
+
+/**
+ * Create low stock task
+ */
+async function createLowStockTask(item) {
+  const task = {
+    title: `Reorder ${item.name}`,
+    description: `Item is below reorder level. Current: ${item.availableQty}, Reorder at: ${item.reorderLevel}`,
+    priority: 'high',
+    status: 'pending',
+    assignedTo: null,
+    createdBy: 'system',
+    createdAt: admin.firestore.FieldValue.serverTimestamp(),
+    data: {
+      itemId: item.id,
+      itemName: item.name,
+      currentQty: item.availableQty,
+      reorderLevel: item.reorderLevel,
+      suggestedOrderQty: item.reorderLevel * 2 // Suggest ordering double the reorder level
+    }
+  };
+
+  await db.collection('tasks').add(task);
+}
+
+/**
+ * Send email
+ */
+async function sendEmail(to, subject, message, isHtml = false) {
+  const mailOptions = {
+    from: functions.config().email.from,
+    to: to,
+    subject: subject,
+    text: isHtml ? null : message,
+    html: isHtml ? message : null
+  };
+
+  try {
+    await transporter.sendMail(mailOptions);
+    console.log(`Email sent to: ${to}`);
+  } catch (error) {
+    console.error('Email send error:', error);
+  }
+}
+
+/**
+ * Get managers from database
+ */
+async function getManagers() {
+  const snapshot = await db.collection('users')
+    .where('role', '==', 'manager')
+    .get();
+  
+  return snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
+}
+
+/**
+ * Get mechanics from database
+ */
+async function getMechanics() {
+  const snapshot = await db.collection('users')
+    .where('role', '==', 'mechanic')
+    .get();
+  
+  return snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
+}
+
+/**
+ * Get admins from database
+ */
+async function getAdmins() {
+  const snapshot = await db.collection('users')
+    .where('role', '==', 'admin')
+    .get();
+  
+  return snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
+}
+
+/**
+ * Clean up old backups
+ */
+async function cleanupOldBackups() {
+  const cutoffDate = new Date();
+  cutoffDate.setDate(cutoffDate.getDate() - 30); // Keep last 30 days
+
+  const files = await storage.bucket().getFiles({
+    prefix: 'backups/'
+  });
+
+  for (const file of files[0]) {
+    if (file.name.includes('garage_backup_')) {
+      const fileDate = new Date(file.name.match(/garage_backup_(.+)\.json/)[1]);
+      if (fileDate < cutoffDate) {
+        await file.delete();
+        console.log(`Deleted old backup: ${file.name}`);
+      }
+    }
+  }
+}
+
+/**
+ * Process image (resize and compress)
+ */
+async function processImage(buffer) {
+  // This is a placeholder for image processing
+  // In a real implementation, you would use a library like Sharp
+  // to resize, compress, and optimize images
+  
+  // For now, just return the original buffer
+  // In production, implement actual image processing
+  return buffer;
+}
+
+/**
+ * Welcome email for new users
+ */
+exports.sendWelcomeEmail = functions.auth.user().onCreate(async (user) => {
+  const userDoc = await db.collection('users').doc(user.uid).get();
+  
+  if (userDoc.exists) {
+    const userData = userDoc.data();
+    
+    const welcomeMessage = `
+      Welcome to the Garage Management System!
+      
+      Your account has been created with the following details:
+      - Name: ${userData.name}
+      - Email: ${userData.email}
+      - Role: ${userData.role}
+      
+      Please login to get started.
+    `;
+    
+    await sendEmail(user.email, 'Welcome to Garage Management System', welcomeMessage);
+  }
+});
+
+/**
+ * Cleanup old notifications
+ */
+exports.cleanupOldNotifications = functions.pubsub
+  .schedule('0 1 * * *') // Daily at 1 AM
+  .timeZone('Africa/Cairo')
+  .onRun(async (context) => {
+    const cutoffDate = new Date();
+    cutoffDate.setDate(cutoffDate.getDate() - 30); // Delete notifications older than 30 days
+
+    const oldNotifications = await db.collection('notifications')
+      .where('createdAt', '<', cutoffDate)
+      .where('status', '==', 'read')
+      .get();
+
+    const batch = db.batch();
+    oldNotifications.docs.forEach(doc => {
+      batch.delete(doc.ref);
+    });
+
+    await batch.commit();
+    console.log(`Cleaned up ${oldNotifications.size} old notifications`);
+  });
+
+/**
+ * Generate monthly reports
+ */
+exports.monthlyReport = functions.pubsub
+  .schedule('0 8 1 * *') // 1st of each month at 8 AM
+  .timeZone('Africa/Cairo')
+  .onRun(async (context) => {
+    const now = new Date();
+    const firstDayOfMonth = new Date(now.getFullYear(), now.getMonth(), 1);
+    const lastDayOfMonth = new Date(now.getFullYear(), now.getMonth() + 1, 0);
+
+    // Get monthly statistics
+    const operationsSnapshot = await db.collection('operations')
+      .where('createdAt', '>=', firstDayOfMonth)
+      .where('createdAt', '<=', lastDayOfMonth)
+      .get();
+
+    const maintenanceSnapshot = await db.collection('maintenance_orders')
+      .where('createdAt', '>=', firstDayOfMonth)
+      .where('createdAt', '<=', lastDayOfMonth)
+      .get();
+
+    // Generate report
+    const report = {
+      month: now.toLocaleString('default', { month: 'long', year: 'numeric' }),
+      totalOperations: operationsSnapshot.size,
+      totalMaintenanceOrders: maintenanceSnapshot.size,
+      totalRevenue: calculateMonthlyRevenue(operationsSnapshot),
+      totalExpenses: calculateMonthlyExpenses(maintenanceSnapshot),
+      topMechanics: getTopMechanics(maintenanceSnapshot),
+      topItems: getTopItems(operationsSnapshot)
+    };
+
+    // Save report to database
+    await db.collection('monthly_reports').add({
+      ...report,
+      createdAt: admin.firestore.FieldValue.serverTimestamp()
+    });
+
+    // Send report to managers
+    await sendMonthlyReport(report);
+  });
+
+/**
+ * Calculate monthly revenue
+ */
+function calculateMonthlyRevenue(operationsSnapshot) {
+  return operationsSnapshot.docs
+    .filter(doc => doc.data().type === 'issue')
+    .reduce((sum, doc) => sum + (doc.data().totalPrice || 0), 0);
+}
+
+/**
+ * Calculate monthly expenses
+ */
+function calculateMonthlyExpenses(maintenanceSnapshot) {
+  return maintenanceSnapshot.docs
+    .filter(doc => doc.data().actualCost)
+    .reduce((sum, doc) => sum + (doc.data().actualCost || 0), 0);
+}
+
+/**
+ * Get top mechanics
+ */
+function getTopMechanics(maintenanceSnapshot) {
+  const mechanicStats = {};
+  
+  maintenanceSnapshot.docs.forEach(doc => {
+    const order = doc.data();
+    const mechanicId = order.assignedMechanic;
+    
+    if (!mechanicStats[mechanicId]) {
+      mechanicStats[mechanicId] = {
+        id: mechanicId,
+        name: order.mechanicInfo?.name || 'Unknown',
+        orders: 0,
+        revenue: 0
+      };
+    }
+    
+    mechanicStats[mechanicId].orders++;
+    mechanicStats[mechanicId].revenue += order.actualCost || 0;
+  });
+
+  return Object.values(mechanicStats)
+    .sort((a, b) => b.revenue - a.revenue)
+    .slice(0, 5);
+}
+
+/**
+ * Get top items
+ */
+function getTopItems(operationsSnapshot) {
+  const itemStats = {};
+  
+  operationsSnapshot.docs.forEach(doc => {
+    const operation = doc.data();
+    const itemId = operation.itemId;
+    
+    if (!itemStats[itemId]) {
+      itemStats[itemId] = {
+        id: itemId,
+        name: operation.itemName,
+        quantity: 0,
+        revenue: 0
+      };
+    }
+    
+    itemStats[itemId].quantity += operation.quantity;
+    itemStats[itemId].revenue += operation.totalPrice || 0;
+  });
+
+  return Object.values(itemStats)
+    .sort((a, b) => b.revenue - a.revenue)
+    .slice(0, 10);
+}
+
+/**
+ * Send monthly report
+ */
+async function sendMonthlyReport(report) {
+  const managers = await getManagers();
+  
+  const reportHtml = `
+    <h2>Monthly Garage Report - ${report.month}</h2>
+    
+    <h3>Summary</h3>
+    <ul>
+      <li>Total Operations: ${report.totalOperations}</li>
+      <li>Total Maintenance Orders: ${report.totalMaintenanceOrders}</li>
+      <li>Total Revenue: ${report.totalRevenue.toFixed(2)} EGP</li>
+      <li>Total Expenses: ${report.totalExpenses.toFixed(2)} EGP</li>
+      <li>Net Profit: ${(report.totalRevenue - report.totalExpenses).toFixed(2)} EGP</li>
+    </ul>
+    
+    <h3>Top Mechanics</h3>
+    <table>
+      <tr><th>Name</th><th>Orders</th><th>Revenue</th></tr>
+      ${report.topMechanics.map(mech => 
+        `<tr><td>${mech.name}</td><td>${mech.orders}</td><td>${mech.revenue.toFixed(2)} EGP</td></tr>`
+      ).join('')}
+    </table>
+    
+    <h3>Top Items</h3>
+    <table>
+      <tr><th>Item</th><th>Quantity</th><th>Revenue</th></tr>
+      ${report.topItems.map(item => 
+        `<tr><td>${item.name}</td><td>${item.quantity}</td><td>${item.revenue.toFixed(2)} EGP</td></tr>`
+      ).join('')}
+    </table>
+  `;
+
+  for (const manager of managers) {
+    await sendEmail(manager.email, `Monthly Garage Report - ${report.month}`, reportHtml, true);
+  }
+
+  console.log(`Monthly report sent for ${report.month}`);
+}
