@@ -1,0 +1,1349 @@
+<!DOCTYPE html>
+<html lang="ar" dir="rtl">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>نظام إدارة المخزن والأصول - مكتب الصفا</title>
+<style>
+:root {
+  --bg: #eef3f8;
+  --surface: #ffffff;
+  --surface-soft: #f7fbff;
+  --primary: #1f3347;
+  --accent: #2f89d9;
+  --success: #27ae60;
+  --warning: #d97706;
+  --danger: #e74c3c;
+  --text: #152434;
+  --muted: #667789;
+  --border: #d5e1ec;
+  --shadow: 0 18px 40px rgba(31, 51, 71, 0.12);
+}
+
+* {
+  box-sizing: border-box;
+}
+
+body {
+  margin: 0;
+  font-family: "Tahoma", "Segoe UI", Arial, sans-serif;
+  background: linear-gradient(180deg, #f7fafe 0%, var(--bg) 100%);
+  color: var(--text);
+}
+
+header {
+  padding: 18px 22px;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 14px;
+  flex-wrap: wrap;
+  color: #fff;
+  background: linear-gradient(135deg, #1a2b3b 0%, #2c3e50 100%);
+}
+
+.brand {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+
+.brand img {
+  height: 56px;
+}
+
+.brand h1 {
+  margin: 0;
+  font-size: clamp(1.1rem, 2.4vw, 1.55rem);
+}
+
+.header-actions {
+  display: flex;
+  gap: 10px;
+  flex-wrap: wrap;
+}
+
+button {
+  border: none;
+  border-radius: 12px;
+  padding: 11px 16px;
+  cursor: pointer;
+  font-size: 0.98rem;
+  font-weight: 700;
+  transition: transform 0.15s ease, opacity 0.15s ease;
+}
+
+button:hover {
+  transform: translateY(-1px);
+}
+
+.ghost-btn {
+  background: rgba(255, 255, 255, 0.16);
+  color: #fff;
+}
+
+.primary-btn {
+  background: var(--accent);
+  color: white;
+}
+
+.success-btn {
+  background: var(--success);
+  color: white;
+}
+
+.warning-btn {
+  background: var(--warning);
+  color: white;
+}
+
+.danger-btn {
+  background: var(--danger);
+  color: white;
+}
+
+.container {
+  width: min(1240px, calc(100% - 24px));
+  margin: 18px auto 28px;
+}
+
+.tabs {
+  display: flex;
+  gap: 8px;
+  margin-bottom: 24px;
+  border-bottom: 2px solid var(--border);
+  background: var(--surface);
+  border-radius: 16px 16px 0 0;
+  padding: 8px 16px 0;
+}
+
+.tab {
+  padding: 12px 20px;
+  border: none;
+  background: transparent;
+  color: var(--muted);
+  font-weight: 700;
+  cursor: pointer;
+  border-radius: 8px 8px 0 0;
+  transition: all 0.3s ease;
+  position: relative;
+  top: 2px;
+}
+
+.tab.active {
+  background: var(--surface-soft);
+  color: var(--primary);
+  border-bottom: 3px solid var(--accent);
+}
+
+.tab:hover {
+  background: var(--surface-soft);
+  color: var(--primary);
+}
+
+.panel {
+  background: var(--surface);
+  border-radius: 22px;
+  box-shadow: var(--shadow);
+  padding: 22px;
+  margin-bottom: 18px;
+}
+
+.panel h2 {
+  margin: 0 0 18px;
+  color: var(--primary);
+}
+
+.form-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+  gap: 16px;
+  margin-bottom: 20px;
+}
+
+.form-group {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+
+.form-group label {
+  font-weight: 700;
+  color: var(--text);
+  font-size: 0.9rem;
+}
+
+.form-group input,
+.form-group select,
+.form-group textarea {
+  padding: 12px;
+  border: 2px solid var(--border);
+  border-radius: 8px;
+  font-size: 0.98rem;
+  transition: border-color 0.3s ease;
+}
+
+.form-group input:focus,
+.form-group select:focus,
+.form-group textarea:focus {
+  outline: none;
+  border-color: var(--accent);
+}
+
+.table-container {
+  overflow-x: auto;
+  border-radius: 12px;
+  border: 1px solid var(--border);
+}
+
+table {
+  width: 100%;
+  border-collapse: collapse;
+  background: var(--surface);
+}
+
+th {
+  background: var(--surface-soft);
+  padding: 12px;
+  text-align: right;
+  font-weight: 700;
+  color: var(--primary);
+  border-bottom: 2px solid var(--border);
+}
+
+td {
+  padding: 12px;
+  border-bottom: 1px solid var(--border);
+}
+
+tr:hover {
+  background: var(--surface-soft);
+}
+
+.status-badge {
+  display: inline-block;
+  padding: 4px 8px;
+  border-radius: 6px;
+  font-size: 0.8rem;
+  font-weight: 700;
+}
+
+.status-new {
+  background: rgba(39, 174, 96, 0.1);
+  color: var(--success);
+}
+
+.status-used {
+  background: rgba(217, 119, 6, 0.1);
+  color: var(--warning);
+}
+
+.status-scrap {
+  background: rgba(231, 76, 60, 0.1);
+  color: var(--danger);
+}
+
+.filters {
+  display: flex;
+  gap: 12px;
+  margin-bottom: 20px;
+  flex-wrap: wrap;
+}
+
+.filters .form-group {
+  flex: 1;
+  min-width: 200px;
+}
+
+.action-buttons {
+  display: flex;
+  gap: 8px;
+  justify-content: center;
+  margin-top: 16px;
+}
+
+.modal {
+  display: none;
+  position: fixed;
+  z-index: 1000;
+  left: 0;
+  top: 0;
+  width: 100%;
+  height: 100%;
+  background-color: rgba(0, 0, 0, 0.5);
+}
+
+.modal-content {
+  background-color: var(--surface);
+  margin: 5% auto;
+  padding: 24px;
+  border-radius: 16px;
+  width: min(600px, 90%);
+  max-height: 80vh;
+  overflow-y: auto;
+  box-shadow: var(--shadow);
+}
+
+.close-btn {
+  color: var(--muted);
+  float: right;
+  font-size: 28px;
+  font-weight: bold;
+  cursor: pointer;
+}
+
+.close-btn:hover {
+  color: var(--text);
+}
+
+.empty-state {
+  border: 1px dashed var(--border);
+  border-radius: 16px;
+  padding: 22px;
+  text-align: center;
+  color: var(--muted);
+  background: var(--surface-soft);
+}
+
+.alert {
+  padding: 12px 16px;
+  border-radius: 8px;
+  margin-bottom: 16px;
+  font-weight: 700;
+}
+
+.alert-success {
+  background: rgba(39, 174, 96, 0.1);
+  color: var(--success);
+  border: 1px solid rgba(39, 174, 96, 0.3);
+}
+
+.alert-warning {
+  background: rgba(217, 119, 6, 0.1);
+  color: var(--warning);
+  border: 1px solid rgba(217, 119, 6, 0.3);
+}
+
+.alert-danger {
+  background: rgba(231, 76, 60, 0.1);
+  color: var(--danger);
+  border: 1px solid rgba(231, 76, 60, 0.3);
+}
+
+@media (max-width: 768px) {
+  .container {
+    width: calc(100% - 24px);
+  }
+  
+  .form-grid {
+    grid-template-columns: 1fr;
+  }
+  
+  .filters {
+    flex-direction: column;
+  }
+  
+  .filters .form-group {
+    min-width: auto;
+  }
+}
+</style>
+</head>
+<body>
+<header>
+  <div class="brand">
+    <img src="logo.png" alt="logo">
+    <h1>نظام إدارة المخزن والأصول</h1>
+  </div>
+  <div class="header-actions">
+    <button class="ghost-btn" onclick="window.location='dashboard.html'">عودة للداشبورد</button>
+    <button class="ghost-btn" id="logoutBtn">تسجيل خروج</button>
+  </div>
+</header>
+
+<div class="container">
+  <!-- Tabs Navigation -->
+  <div class="tabs">
+    <button class="tab active" onclick="switchTab('inventory')">المخزن</button>
+    <button class="tab" onclick="switchTab('custody')">العهدة والتصفيات</button>
+    <button class="tab" onclick="switchTab('assets')">الجراج/الأصول</button>
+    <button class="tab" onclick="switchTab('reports')">التقارير</button>
+  </div>
+
+  <!-- Inventory Tab -->
+  <div id="inventory-tab" class="tab-content">
+    <div class="panel">
+      <h2>إدارة المخزن</h2>
+      
+      <!-- Filters -->
+      <div class="filters">
+        <div class="form-group">
+          <label>البحث</label>
+          <input type="text" id="inventorySearch" placeholder="ابحث عن صنف...">
+        </div>
+        <div class="form-group">
+          <label>الفئة</label>
+          <select id="categoryFilter">
+            <option value="">جميع الفئات</option>
+            <option value="قطع غيار">قطع غيار</option>
+            <option value="زيوت">زيوت</option>
+            <option value="خردة">خردة</option>
+          </select>
+        </div>
+        <div class="form-group">
+          <label>الحالة</label>
+          <select id="statusFilter">
+            <option value="">جميع الحالات</option>
+            <option value="جديد">جديد</option>
+            <option value="مستعمل">مستعمل</option>
+            <option value="خردة">خردة</option>
+          </select>
+        </div>
+      </div>
+
+      <!-- Actions -->
+      <div style="display: flex; gap: 12px; margin-bottom: 20px;">
+        <button class="primary-btn" onclick="openItemModal()">إضافة صنف جديد</button>
+        <button class="success-btn" onclick="generateInventoryReport()">تقرير جرد</button>
+      </div>
+
+      <!-- Items Table -->
+      <div class="table-container">
+        <table id="inventoryTable">
+          <thead>
+            <tr>
+              <th>اسم الصنف</th>
+              <th>الفئة</th>
+              <th>الوحدة</th>
+              <th>الكمية</th>
+              <th>سعر الوحدة</th>
+              <th>الموقع</th>
+              <th>الحالة</th>
+              <th>الإجراءات</th>
+            </tr>
+          </thead>
+          <tbody id="inventoryTableBody">
+            <tr>
+              <td colspan="8" class="empty-state">جاري تحميل البيانات...</td>
+            </tr>
+          </tbody>
+        </table>
+      </div>
+    </div>
+  </div>
+
+  <!-- Custody Tab -->
+  <div id="custody-tab" class="tab-content" style="display: none;">
+    <div class="panel">
+      <h2>العهدة والتصفيات</h2>
+      
+      <!-- Actions -->
+      <div style="display: flex; gap: 12px; margin-bottom: 20px;">
+        <button class="primary-btn" onclick="openCustodyModal()">إنشاء عهدة جديدة</button>
+        <button class="warning-btn" onclick="openSettlementModal()">تصفية عهدة</button>
+      </div>
+
+      <!-- Custody Table -->
+      <div class="table-container">
+        <table id="custodyTable">
+          <thead>
+            <tr>
+              <th>رقم العهدة</th>
+              <th>اسم الموظف</th>
+              <th>التاريخ</th>
+              <th>المبلغ الإجمالي</th>
+              <th>الحالة</th>
+              <th>الإجراءات</th>
+            </tr>
+          </thead>
+          <tbody id="custodyTableBody">
+            <tr>
+              <td colspan="6" class="empty-state">جاري تحميل البيانات...</td>
+            </tr>
+          </tbody>
+        </table>
+      </div>
+    </div>
+  </div>
+
+  <!-- Assets Tab -->
+  <div id="assets-tab" class="tab-content" style="display: none;">
+    <div class="panel">
+      <h2>الجراج/الأصول</h2>
+      
+      <!-- Actions -->
+      <div style="display: flex; gap: 12px; margin-bottom: 20px;">
+        <button class="primary-btn" onclick="openAssetModal()">إضافة أصل جديد</button>
+      </div>
+
+      <!-- Assets Table -->
+      <div class="table-container">
+        <table id="assetsTable">
+          <thead>
+            <tr>
+              <th>رقم الأصل</th>
+              <th>النوع</th>
+              <th>رقم اللوحة</th>
+              <th>العداد الحالي</th>
+              <th>السائق</th>
+              <th>الحالة</th>
+              <th>القيمة</th>
+              <th>الإجراءات</th>
+            </tr>
+          </thead>
+          <tbody id="assetsTableBody">
+            <tr>
+              <td colspan="8" class="empty-state">جاري تحميل البيانات...</td>
+            </tr>
+          </tbody>
+        </table>
+      </div>
+    </div>
+  </div>
+
+  <!-- Reports Tab -->
+  <div id="reports-tab" class="tab-content" style="display: none;">
+    <div class="panel">
+      <h2>التقارير</h2>
+      
+      <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(300px, 1fr)); gap: 20px;">
+        <div class="panel" style="cursor: pointer;" onclick="generateInventoryReport()">
+          <h3>تقرير جرد المخزن</h3>
+          <p>تقرير شامل بجميع الأصناف والكميات والقيم</p>
+        </div>
+        
+        <div class="panel" style="cursor: pointer;" onclick="generateCustodyReport()">
+          <h3>تقرير العهد</h3>
+          <p>تقرير بجميع العهد المفتوحة والمصفية</p>
+        </div>
+        
+        <div class="panel" style="cursor: pointer;" onclick="generateAssetsReport()">
+          <h3>تقرير الأصول</h3>
+          <p>تقرير بجميع الأصول والسيارات</p>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- Item Modal -->
+<div id="itemModal" class="modal">
+  <div class="modal-content">
+    <span class="close-btn" onclick="closeItemModal()">&times;</span>
+    <h2 id="itemModalTitle">إضافة صنف جديد</h2>
+    <form id="itemForm">
+      <div class="form-grid">
+        <div class="form-group">
+          <label>اسم الصنف *</label>
+          <input type="text" id="itemName" required>
+        </div>
+        <div class="form-group">
+          <label>الفئة *</label>
+          <select id="itemCategory" required>
+            <option value="">اختر الفئة</option>
+            <option value="قطع غيار">قطع غيار</option>
+            <option value="زيوت">زيوت</option>
+            <option value="خردة">خردة</option>
+          </select>
+        </div>
+        <div class="form-group">
+          <label>الوحدة *</label>
+          <input type="text" id="itemUnit" placeholder="مثال: قطعة، لتر، كيلو" required>
+        </div>
+        <div class="form-group">
+          <label>الكمية *</label>
+          <input type="number" id="itemQuantity" min="0" required>
+        </div>
+        <div class="form-group">
+          <label>سعر الوحدة *</label>
+          <input type="number" id="itemUnitPrice" min="0" step="0.01" required>
+        </div>
+        <div class="form-group">
+          <label>الموقع</label>
+          <input type="text" id="itemLocation" placeholder="مثال: المخزن الرئيسي">
+        </div>
+        <div class="form-group">
+          <label>الحالة *</label>
+          <select id="itemStatus" required>
+            <option value="">اختر الحالة</option>
+            <option value="جديد">جديد</option>
+            <option value="مستعمل">مستعمل</option>
+            <option value="خردة">خردة</option>
+          </select>
+        </div>
+      </div>
+      <div class="action-buttons">
+        <button type="button" class="ghost-btn" onclick="closeItemModal()">إلغاء</button>
+        <button type="submit" class="primary-btn">حفظ</button>
+      </div>
+    </form>
+  </div>
+</div>
+
+<!-- Custody Modal -->
+<div id="custodyModal" class="modal">
+  <div class="modal-content">
+    <span class="close-btn" onclick="closeCustodyModal()">&times;</span>
+    <h2>إنشاء عهدة جديدة</h2>
+    <form id="custodyForm">
+      <div class="form-grid">
+        <div class="form-group">
+          <label>اسم الموظف *</label>
+          <input type="text" id="custodyEmployeeName" required>
+        </div>
+        <div class="form-group">
+          <label>المبلغ الإجمالي *</label>
+          <input type="number" id="custodyTotalAmount" min="0" step="0.01" required>
+        </div>
+      </div>
+      <div class="action-buttons">
+        <button type="button" class="ghost-btn" onclick="closeCustodyModal()">إلغاء</button>
+        <button type="submit" class="primary-btn">إنشاء عهدة</button>
+      </div>
+    </form>
+  </div>
+</div>
+
+<!-- Settlement Modal -->
+<div id="settlementModal" class="modal">
+  <div class="modal-content">
+    <span class="close-btn" onclick="closeSettlementModal()">&times;</span>
+    <h2>تصفية عهدة</h2>
+    <form id="settlementForm">
+      <div class="form-grid">
+        <div class="form-group">
+          <label>اختر العهدة *</label>
+          <select id="settlementCustodyId" required>
+            <option value="">اختر العهدة</option>
+          </select>
+        </div>
+        <div class="form-group">
+          <label>البند المحاسبي *</label>
+          <select id="settlementAccountingItem" required>
+            <option value="">اختر البند</option>
+          </select>
+        </div>
+      </div>
+      
+      <!-- Items for Settlement -->
+      <h3>الأصناف المصروفة</h3>
+      <div id="settlementItems">
+        <div class="form-grid">
+          <div class="form-group">
+            <label>الصنف</label>
+            <select id="settlementItemSelect">
+              <option value="">اختر الصنف</option>
+            </select>
+          </div>
+          <div class="form-group">
+            <label>الكمية</label>
+            <input type="number" id="settlementItemQuantity" min="0">
+          </div>
+          <div class="form-group">
+            <label>السعر</label>
+            <input type="number" id="settlementItemPrice" min="0" step="0.01">
+          </div>
+        </div>
+        <button type="button" class="success-btn" onclick="addSettlementItem()">إضافة بند</button>
+      </div>
+      
+      <div class="action-buttons">
+        <button type="button" class="ghost-btn" onclick="closeSettlementModal()">إلغاء</button>
+        <button type="submit" class="warning-btn">تصفية العهدة</button>
+      </div>
+    </form>
+  </div>
+</div>
+
+<!-- Asset Modal -->
+<div id="assetModal" class="modal">
+  <div class="modal-content">
+    <span class="close-btn" onclick="closeAssetModal()">&times;</span>
+    <h2 id="assetModalTitle">إضافة أصل جديد</h2>
+    <form id="assetForm">
+      <div class="form-grid">
+        <div class="form-group">
+          <label>النوع *</label>
+          <select id="assetType" required>
+            <option value="">اختر النوع</option>
+            <option value="سيارة">سيارة</option>
+            <option value="معدة">معدة</option>
+          </select>
+        </div>
+        <div class="form-group">
+          <label>رقم اللوحة</label>
+          <input type="text" id="assetPlateNumber">
+        </div>
+        <div class="form-group">
+          <label>العداد الحالي</label>
+          <input type="number" id="assetCurrentCounter" min="0">
+        </div>
+        <div class="form-group">
+          <label>السائق</label>
+          <input type="text" id="assetDriver">
+        </div>
+        <div class="form-group">
+          <label>الحالة</label>
+          <select id="assetStatus">
+            <option value="">اختر الحالة</option>
+            <option value="نشط">نشط</option>
+            <option value="صيانة">صيانة</option>
+            <option value="متوقف">متوقف</option>
+          </select>
+        </div>
+        <div class="form-group">
+          <label>القيمة</label>
+          <input type="number" id="assetValue" min="0" step="0.01">
+        </div>
+      </div>
+      <div class="action-buttons">
+        <button type="button" class="ghost-btn" onclick="closeAssetModal()">إلغاء</button>
+        <button type="submit" class="primary-btn">حفظ</button>
+      </div>
+    </form>
+  </div>
+</div>
+
+<script type="module">
+import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-app.js";
+import {
+  getAuth,
+  onAuthStateChanged,
+  signOut
+} from "https://www.gstatic.com/firebasejs/10.12.2/firebase-auth.js";
+import {
+  getFirestore,
+  collection,
+  doc,
+  getDoc,
+  getDocs,
+  addDoc,
+  updateDoc,
+  deleteDoc,
+  query,
+  where,
+  orderBy,
+  limit,
+  runTransaction,
+  serverTimestamp
+} from "https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore.js";
+
+// Firebase configuration
+const firebaseConfig = {
+  apiKey: "AIzaSyARqSgfh78TqFQ2hhZaAtUaVQFqlPuRM3w",
+  authDomain: "trialsafaprices2026.firebaseapp.com",
+  projectId: "trialsafaprices2026",
+  storageBucket: "trialsafaprices2026.appspot.com",
+  messagingSenderId: "177091434445",
+  appId: "1:177091434445:web:568b6ae3ba270a21d4d684"
+};
+
+const app = initializeApp(firebaseConfig);
+const auth = getAuth(app);
+const db = getFirestore(app);
+
+// Global variables
+let currentUser = null;
+let currentEditingItem = null;
+let currentEditingAsset = null;
+let settlementItems = [];
+
+// Check authentication
+onAuthStateChanged(auth, user => {
+  if (!user) {
+    window.location.href = "index.html";
+    return;
+  }
+  currentUser = user;
+  initializeApp();
+});
+
+// Initialize app
+function initializeApp() {
+  loadInventory();
+  loadCustody();
+  loadAssets();
+  loadLookups();
+  setupEventListeners();
+}
+
+// Tab switching
+function switchTab(tabName) {
+  // Hide all tabs
+  document.querySelectorAll('.tab-content').forEach(tab => {
+    tab.style.display = 'none';
+  });
+  
+  // Remove active class from all tabs
+  document.querySelectorAll('.tab').forEach(tab => {
+    tab.classList.remove('active');
+  });
+  
+  // Show selected tab
+  document.getElementById(`${tabName}-tab`).style.display = 'block';
+  
+  // Add active class to clicked tab
+  event.target.classList.add('active');
+}
+
+// Setup event listeners
+function setupEventListeners() {
+  // Item form
+  document.getElementById('itemForm').addEventListener('submit', handleItemSubmit);
+  
+  // Custody form
+  document.getElementById('custodyForm').addEventListener('submit', handleCustodySubmit);
+  
+  // Settlement form
+  document.getElementById('settlementForm').addEventListener('submit', handleSettlementSubmit);
+  
+  // Asset form
+  document.getElementById('assetForm').addEventListener('submit', handleAssetSubmit);
+  
+  // Search and filters
+  document.getElementById('inventorySearch').addEventListener('input', filterInventory);
+  document.getElementById('categoryFilter').addEventListener('change', filterInventory);
+  document.getElementById('statusFilter').addEventListener('change', filterInventory);
+  
+  // Logout
+  document.getElementById('logoutBtn').addEventListener('click', async () => {
+    await signOut(auth);
+    window.location.href = "index.html";
+  });
+}
+
+// Load inventory items
+async function loadInventory() {
+  try {
+    const querySnapshot = await getDocs(collection(db, 'Items'));
+    const items = [];
+    querySnapshot.forEach((doc) => {
+      items.push({ id: doc.id, ...doc.data() });
+    });
+    
+    displayInventory(items);
+    updateLookups(items);
+  } catch (error) {
+    console.error('Error loading inventory:', error);
+    showAlert('خطأ في تحميل المخزون', 'danger');
+  }
+}
+
+// Display inventory items
+function displayInventory(items) {
+  const tbody = document.getElementById('inventoryTableBody');
+  
+  if (items.length === 0) {
+    tbody.innerHTML = '<tr><td colspan="8" class="empty-state">لا توجد أصناف</td></tr>';
+    return;
+  }
+  
+  tbody.innerHTML = items.map(item => `
+    <tr>
+      <td>${item.name}</td>
+      <td>${item.categoryId}</td>
+      <td>${item.unit}</td>
+      <td>${item.quantity}</td>
+      <td>${item.unitPrice?.toFixed(2) || '0.00'}</td>
+      <td>${item.location || '-'}</td>
+      <td><span class="status-badge status-${item.status}">${item.status}</span></td>
+      <td>
+        <button class="primary-btn" onclick="editItem('${item.id}')">تعديل</button>
+        <button class="danger-btn" onclick="deleteItem('${item.id}')">حذف</button>
+      </td>
+    </tr>
+  `).join('');
+}
+
+// Load custody records
+async function loadCustody() {
+  try {
+    const querySnapshot = await getDocs(collection(db, 'Custody'));
+    const custodyRecords = [];
+    querySnapshot.forEach((doc) => {
+      custodyRecords.push({ id: doc.id, ...doc.data() });
+    });
+    
+    displayCustody(custodyRecords);
+    updateCustodySelect(custodyRecords);
+  } catch (error) {
+    console.error('Error loading custody:', error);
+    showAlert('خطأ في تحميل العهد', 'danger');
+  }
+}
+
+// Display custody records
+function displayCustody(custodyRecords) {
+  const tbody = document.getElementById('custodyTableBody');
+  
+  if (custodyRecords.length === 0) {
+    tbody.innerHTML = '<tr><td colspan="6" class="empty-state">لا توجد عهد</td></tr>';
+    return;
+  }
+  
+  tbody.innerHTML = custodyRecords.map(record => `
+    <tr>
+      <td>${record.custodyId}</td>
+      <td>${record.employeeName}</td>
+      <td>${new Date(record.date).toLocaleDateString('ar-EG')}</td>
+      <td>${record.totalAmount?.toFixed(2) || '0.00'}</td>
+      <td><span class="status-badge status-${record.status === 'Open' ? 'new' : 'used'}">${record.status}</span></td>
+      <td>
+        <button class="warning-btn" onclick="settleCustody('${record.id}')">تصفية</button>
+      </td>
+    </tr>
+  `).join('');
+}
+
+// Load assets
+async function loadAssets() {
+  try {
+    const querySnapshot = await getDocs(collection(db, 'Assets'));
+    const assets = [];
+    querySnapshot.forEach((doc) => {
+      assets.push({ id: doc.id, ...doc.data() });
+    });
+    
+    displayAssets(assets);
+  } catch (error) {
+    console.error('Error loading assets:', error);
+    showAlert('خطأ في تحميل الأصول', 'danger');
+  }
+}
+
+// Display assets
+function displayAssets(assets) {
+  const tbody = document.getElementById('assetsTableBody');
+  
+  if (assets.length === 0) {
+    tbody.innerHTML = '<tr><td colspan="8" class="empty-state">لا توجد أصول</td></tr>';
+    return;
+  }
+  
+  tbody.innerHTML = assets.map(asset => `
+    <tr>
+      <td>${asset.assetId}</td>
+      <td>${asset.type}</td>
+      <td>${asset.plateNumber || '-'}</td>
+      <td>${asset.currentCounter || '-'}</td>
+      <td>${asset.driver || '-'}</td>
+      <td><span class="status-badge status-${asset.status === 'نشط' ? 'new' : 'used'}">${asset.status}</span></td>
+      <td>${asset.value?.toFixed(2) || '0.00'}</td>
+      <td>
+        <button class="primary-btn" onclick="editAsset('${asset.id}')">تعديل</button>
+        <button class="danger-btn" onclick="deleteAsset('${asset.id}')">حذف</button>
+      </td>
+    </tr>
+  `).join('');
+}
+
+// Load lookups
+async function loadLookups() {
+  try {
+    const querySnapshot = await getDocs(collection(db, 'Lookups'));
+    const lookups = {};
+    querySnapshot.forEach((doc) => {
+      lookups[doc.id] = doc.data();
+    });
+    
+    updateAccountingItemsSelect(lookups.accountingItems || []);
+  } catch (error) {
+    console.error('Error loading lookups:', error);
+  }
+}
+
+// Update lookups dynamically
+function updateLookups(items) {
+  const categories = [...new Set(items.map(item => item.categoryId))];
+  const accountingItems = [...new Set(items.map(item => item.name))];
+  
+  // Update category filter
+  const categoryFilter = document.getElementById('categoryFilter');
+  categories.forEach(category => {
+    if (!Array.from(categoryFilter.options).some(option => option.value === category)) {
+      const option = document.createElement('option');
+      option.value = category;
+      option.textContent = category;
+      categoryFilter.appendChild(option);
+    }
+  });
+  
+  // Update item category select
+  const itemCategory = document.getElementById('itemCategory');
+  categories.forEach(category => {
+    if (!Array.from(itemCategory.options).some(option => option.value === category)) {
+      const option = document.createElement('option');
+      option.value = category;
+      option.textContent = category;
+      itemCategory.appendChild(option);
+    }
+  });
+  
+  // Auto-sync to Lookups collection
+  syncToLookups('categories', categories);
+  syncToLookups('accountingItems', accountingItems);
+}
+
+// Sync to Lookups collection
+async function syncToLookups(type, items) {
+  try {
+    const lookupDoc = doc(db, 'Lookups', type);
+    const lookupSnap = await getDoc(lookupDoc);
+    
+    if (!lookupSnap.exists()) {
+      await setDoc(lookupDoc, { items });
+    } else {
+      const existingItems = lookupSnap.data().items || [];
+      const newItems = items.filter(item => !existingItems.includes(item));
+      
+      if (newItems.length > 0) {
+        await updateDoc(lookupDoc, { 
+          items: [...existingItems, ...newItems] 
+        });
+      }
+    }
+  } catch (error) {
+    console.error('Error syncing to lookups:', error);
+  }
+}
+
+// Handle item form submission
+async function handleItemSubmit(e) {
+  e.preventDefault();
+  
+  const itemData = {
+    name: document.getElementById('itemName').value,
+    categoryId: document.getElementById('itemCategory').value,
+    unit: document.getElementById('itemUnit').value,
+    quantity: parseInt(document.getElementById('itemQuantity').value),
+    unitPrice: parseFloat(document.getElementById('itemUnitPrice').value),
+    location: document.getElementById('itemLocation').value,
+    status: document.getElementById('itemStatus').value,
+    createdAt: serverTimestamp(),
+    updatedAt: serverTimestamp()
+  };
+  
+  try {
+    if (currentEditingItem) {
+      await updateDoc(doc(db, 'Items', currentEditingItem), itemData);
+      showAlert('تم تحديث الصنف بنجاح', 'success');
+    } else {
+      await addDoc(collection(db, 'Items'), itemData);
+      showAlert('تم إضافة الصنف بنجاح', 'success');
+    }
+    
+    closeItemModal();
+    loadInventory();
+  } catch (error) {
+    console.error('Error saving item:', error);
+    showAlert('خطأ في حفظ الصنف', 'danger');
+  }
+}
+
+// Handle custody form submission
+async function handleCustodySubmit(e) {
+  e.preventDefault();
+  
+  const custodyData = {
+    custodyId: generateCustodyId(),
+    employeeName: document.getElementById('custodyEmployeeName').value,
+    date: new Date().toISOString(),
+    totalAmount: parseFloat(document.getElementById('custodyTotalAmount').value),
+    status: 'Open',
+    items: [],
+    createdAt: serverTimestamp(),
+    updatedAt: serverTimestamp()
+  };
+  
+  try {
+    await addDoc(collection(db, 'Custody'), custodyData);
+    showAlert('تم إنشاء العهدة بنجاح', 'success');
+    closeCustodyModal();
+    loadCustody();
+  } catch (error) {
+    console.error('Error creating custody:', error);
+    showAlert('خطأ في إنشاء العهدة', 'danger');
+  }
+}
+
+// Handle settlement form submission
+async function handleSettlementSubmit(e) {
+  e.preventDefault();
+  
+  const custodyId = document.getElementById('settlementCustodyId').value;
+  const accountingItem = document.getElementById('settlementAccountingItem').value;
+  
+  try {
+    await runTransaction(db, async (transaction) => {
+      const custodyDoc = doc(db, 'Custody', custodyId);
+      const custodySnap = await transaction.get(custodyDoc);
+      
+      if (!custodySnap.exists()) {
+        throw new Error('العهدة غير موجودة');
+      }
+      
+      const custodyData = custodySnap.data();
+      
+      // Validate inventory quantities
+      for (const item of settlementItems) {
+        const itemDoc = doc(db, 'Items', item.itemId);
+        const itemSnap = await transaction.get(itemDoc);
+        
+        if (!itemSnap.exists()) {
+          throw new Error(`الصنف ${item.itemId} غير موجود`);
+        }
+        
+        const currentQuantity = itemSnap.data().quantity;
+        if (currentQuantity < item.quantity) {
+          throw new Error(`الكمية المطلوبة من ${itemSnap.data().name} غير متوفرة`);
+        }
+        
+        // Update inventory
+        transaction.update(itemDoc, {
+          quantity: currentQuantity - item.quantity,
+          updatedAt: serverTimestamp()
+        });
+      }
+      
+      // Update custody status
+      transaction.update(custodyDoc, {
+        status: 'Closed',
+        linkedCashId: generateCashId(),
+        items: settlementItems,
+        accountingItem: accountingItem,
+        updatedAt: serverTimestamp()
+      });
+    });
+    
+    showAlert('تم تصفية العهدة بنجاح', 'success');
+    closeSettlementModal();
+    loadCustody();
+    loadInventory();
+  } catch (error) {
+    console.error('Error settling custody:', error);
+    showAlert(error.message || 'خطأ في تصفية العهدة', 'danger');
+  }
+}
+
+// Handle asset form submission
+async function handleAssetSubmit(e) {
+  e.preventDefault();
+  
+  const assetData = {
+    assetId: generateAssetId(),
+    type: document.getElementById('assetType').value,
+    plateNumber: document.getElementById('assetPlateNumber').value,
+    currentCounter: parseInt(document.getElementById('assetCurrentCounter').value) || 0,
+    driver: document.getElementById('assetDriver').value,
+    status: document.getElementById('assetStatus').value || 'نشط',
+    value: parseFloat(document.getElementById('assetValue').value) || 0,
+    createdAt: serverTimestamp(),
+    updatedAt: serverTimestamp()
+  };
+  
+  try {
+    if (currentEditingAsset) {
+      await updateDoc(doc(db, 'Assets', currentEditingAsset), assetData);
+      showAlert('تم تحديث الأصل بنجاح', 'success');
+    } else {
+      await addDoc(collection(db, 'Assets'), assetData);
+      showAlert('تم إضافة الأصل بنجاح', 'success');
+    }
+    
+    closeAssetModal();
+    loadAssets();
+  } catch (error) {
+    console.error('Error saving asset:', error);
+    showAlert('خطأ في حفظ الأصل', 'danger');
+  }
+}
+
+// Modal functions
+function openItemModal() {
+  currentEditingItem = null;
+  document.getElementById('itemModalTitle').textContent = 'إضافة صنف جديد';
+  document.getElementById('itemForm').reset();
+  document.getElementById('itemModal').style.display = 'block';
+}
+
+function closeItemModal() {
+  document.getElementById('itemModal').style.display = 'none';
+}
+
+function openCustodyModal() {
+  document.getElementById('custodyForm').reset();
+  document.getElementById('custodyModal').style.display = 'block';
+}
+
+function closeCustodyModal() {
+  document.getElementById('custodyModal').style.display = 'none';
+}
+
+function openSettlementModal() {
+  settlementItems = [];
+  document.getElementById('settlementForm').reset();
+  document.getElementById('settlementModal').style.display = 'block';
+}
+
+function closeSettlementModal() {
+  document.getElementById('settlementModal').style.display = 'none';
+}
+
+function openAssetModal() {
+  currentEditingAsset = null;
+  document.getElementById('assetModalTitle').textContent = 'إضافة أصل جديد';
+  document.getElementById('assetForm').reset();
+  document.getElementById('assetModal').style.display = 'block';
+}
+
+function closeAssetModal() {
+  document.getElementById('assetModal').style.display = 'none';
+}
+
+// Utility functions
+function generateCustodyId() {
+  return 'CUST-' + Date.now();
+}
+
+function generateCashId() {
+  return 'CASH-' + Date.now();
+}
+
+function generateAssetId() {
+  return 'ASSET-' + Date.now();
+}
+
+function showAlert(message, type) {
+  // Create alert element
+  const alert = document.createElement('div');
+  alert.className = `alert alert-${type}`;
+  alert.textContent = message;
+  
+  // Insert at the top of the container
+  const container = document.querySelector('.container');
+  container.insertBefore(alert, container.firstChild);
+  
+  // Remove after 5 seconds
+  setTimeout(() => {
+    alert.remove();
+  }, 5000);
+}
+
+function filterInventory() {
+  const searchTerm = document.getElementById('inventorySearch').value.toLowerCase();
+  const categoryFilter = document.getElementById('categoryFilter').value;
+  const statusFilter = document.getElementById('statusFilter').value;
+  
+  // This would filter the displayed items
+  // Implementation depends on the current data structure
+  loadInventory();
+}
+
+// Report generation functions
+function generateInventoryReport() {
+  showAlert('جاري إنشاء تقرير الجرد...', 'success');
+  // Implementation for inventory report
+}
+
+function generateCustodyReport() {
+  showAlert('جاري إنشاء تقرير العهد...', 'success');
+  // Implementation for custody report
+}
+
+function generateAssetsReport() {
+  showAlert('جاري إنشاء تقرير الأصول...', 'success');
+  // Implementation for assets report
+}
+
+// Additional functions for edit/delete operations
+async function editItem(itemId) {
+  currentEditingItem = itemId;
+  // Load item data and populate form
+  // Implementation depends on data structure
+}
+
+async function deleteItem(itemId) {
+  if (confirm('هل أنت متأكد من حذف هذا الصنف؟')) {
+    try {
+      await deleteDoc(doc(db, 'Items', itemId));
+      showAlert('تم حذف الصنف بنجاح', 'success');
+      loadInventory();
+    } catch (error) {
+      console.error('Error deleting item:', error);
+      showAlert('خطأ في حذف الصنف', 'danger');
+    }
+  }
+}
+
+async function editAsset(assetId) {
+  currentEditingAsset = assetId;
+  // Load asset data and populate form
+  // Implementation depends on data structure
+}
+
+async function deleteAsset(assetId) {
+  if (confirm('هل أنت متأكد من حذف هذا الأصل؟')) {
+    try {
+      await deleteDoc(doc(db, 'Assets', assetId));
+      showAlert('تم حذف الأصل بنجاح', 'success');
+      loadAssets();
+    } catch (error) {
+      console.error('Error deleting asset:', error);
+      showAlert('خطأ في حذف الأصل', 'danger');
+    }
+  }
+}
+
+function updateCustodySelect(custodyRecords) {
+  const select = document.getElementById('settlementCustodyId');
+  select.innerHTML = '<option value="">اختر العهدة</option>';
+  
+  custodyRecords
+    .filter(record => record.status === 'Open')
+    .forEach(record => {
+      const option = document.createElement('option');
+      option.value = record.id;
+      option.textContent = `${record.custodyId} - ${record.employeeName}`;
+      select.appendChild(option);
+    });
+}
+
+function updateAccountingItemsSelect(accountingItems) {
+  const select = document.getElementById('settlementAccountingItem');
+  select.innerHTML = '<option value="">اختر البند</option>';
+  
+  accountingItems.forEach(item => {
+    const option = document.createElement('option');
+    option.value = item;
+    option.textContent = item;
+    select.appendChild(option);
+  });
+}
+
+function addSettlementItem() {
+  const itemId = document.getElementById('settlementItemSelect').value;
+  const quantity = parseInt(document.getElementById('settlementItemQuantity').value);
+  const price = parseFloat(document.getElementById('settlementItemPrice').value);
+  
+  if (!itemId || !quantity || !price) {
+    showAlert('يرجى ملء جميع حقول البند', 'warning');
+    return;
+  }
+  
+  settlementItems.push({ itemId, quantity, price });
+  
+  // Clear form
+  document.getElementById('settlementItemSelect').value = '';
+  document.getElementById('settlementItemQuantity').value = '';
+  document.getElementById('settlementItemPrice').value = '';
+  
+  showAlert('تم إضافة البند', 'success');
+}
+
+function settleCustody(custodyId) {
+  document.getElementById('settlementCustodyId').value = custodyId;
+  openSettlementModal();
+}
+</script>
+</body>
+</html>
