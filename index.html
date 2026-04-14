@@ -138,7 +138,7 @@ button:hover {
 
 <script>
 const firebaseConfig = {
-  apiKey: "AIzaSyARqSgfh78TqFQ2hhZaAtUaVQFqlPuRM3w",
+  apiKey: process.env.FIREBASE_API_KEY || "AIzaSyARqSgfh78TqFQ2hhZaAtUaVQFqlPuRM3w",
   authDomain: "trialsafaprices2026.firebaseapp.com",
   projectId: "trialsafaprices2026",
   storageBucket: "trialsafaprices2026.appspot.com",
