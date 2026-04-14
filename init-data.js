@@ -4,14 +4,16 @@
 import { initializeApp } from "https://www.gstatic.com/firebasejs/9.23.0/firebase-app.js";
 import { getFirestore, collection, doc, setDoc, serverTimestamp } from "https://www.gstatic.com/firebasejs/9.23.0/firebase-firestore.js";
 
+// ⚠️ SECURITY WARNING: API key is exposed for development only
+// In production, use environment variables instead
 const firebaseConfig = {
-  apiKey: process.env.FIREBASE_API_KEY || "AIzaSyARqSgfh78TqFQ2hhZaAtUaVQFqlPuRM3w",
-  authDomain: process.env.FIREBASE_AUTH_DOMAIN || "trialsafaprices2026.firebaseapp.com",
-  databaseURL: process.env.FIREBASE_DATABASE_URL || "https://trialsafaprices2026-default-rtdb.firebaseio.com",
-  projectId: process.env.FIREBASE_PROJECT_ID || "trialsafaprices2026",
-  storageBucket: process.env.FIREBASE_STORAGE_BUCKET || "trialsafaprices2026.appspot.com",
-  messagingSenderId: process.env.FIREBASE_MESSAGING_SENDER_ID || "177091434445",
-  appId: process.env.FIREBASE_APP_ID || "1:177091434445:web:568b6ae3ba270a21d4d684"
+  apiKey: "AIzaSyARqSgfh78TqFQ2hhZaAtUaVQFqlPuRM3w",
+  authDomain: "trialsafaprices2026.firebaseapp.com",
+  databaseURL: "https://trialsafaprices2026-default-rtdb.firebaseio.com",
+  projectId: "trialsafaprices2026",
+  storageBucket: "trialsafaprices2026.appspot.com",
+  messagingSenderId: "177091434445",
+  appId: "1:177091434445:web:568b6ae3ba270a21d4d684"
 };
 
 const app = initializeApp(firebaseConfig);
