@@ -1,0 +1,168 @@
+<!DOCTYPE html>
+<html lang="ar" dir="rtl">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>system Treasury - Office Safa</title>
+<style>
+:root {
+  --bg: #eef3f8;
+  --surface: #ffffff;
+  --primary: #1f3347;
+  --accent: #2f89d9;
+  --success: #27ae60;
+  --warning: #d97706;
+  --text: #152434;
+  --muted: #667789;
+  --border: #d5e1ec;
+}
+
+* {
+  box-sizing: border-box;
+}
+
+body {
+  margin: 0;
+  font-family: "Tahoma", "Segoe UI", Arial, sans-serif;
+  background: linear-gradient(180deg, #f7fafe 0%, var(--bg) 100%);
+  color: var(--text);
+}
+
+header {
+  padding: 18px 22px;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 14px;
+  flex-wrap: wrap;
+  color: #fff;
+  background: linear-gradient(135deg, #1a2b3b 0%, #2c3e50 100%);
+}
+
+.brand {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+
+.brand img {
+  height: 56px;
+}
+
+.brand h1 {
+  margin: 0;
+  font-size: clamp(1.1rem, 2.4vw, 1.55rem);
+}
+
+.header-actions {
+  display: flex;
+  gap: 10px;
+  flex-wrap: wrap;
+}
+
+button {
+  border: none;
+  border-radius: 12px;
+  padding: 11px 16px;
+  cursor: pointer;
+  font-size: 0.98rem;
+  font-weight: 700;
+  transition: transform 0.15s ease, opacity 0.15s ease;
+}
+
+button:hover {
+  transform: translateY(-1px);
+}
+
+.ghost-btn {
+  background: rgba(255, 255, 255, 0.16);
+  color: #fff;
+}
+
+.container {
+  width: min(1240px, calc(100% - 24px));
+  margin: 18px auto 28px;
+}
+
+.panel {
+  background: var(--surface);
+  border-radius: 22px;
+  box-shadow: 0 18px 40px rgba(31, 51, 71, 0.12);
+  padding: 22px;
+}
+
+.panel h2 {
+  margin: 0 0 18px;
+  color: var(--primary);
+}
+
+.empty-state {
+  border: 1px dashed var(--border);
+  border-radius: 16px;
+  padding: 22px;
+  text-align: center;
+  color: var(--muted);
+  background: #fbfdff;
+}
+</style>
+</head>
+<body>
+<header>
+  <div class="brand">
+    <img src="logo.png" alt="logo">
+    <h1>system Treasury - Office Safa</h1>
+  </div>
+  <div class="header-actions">
+    <button class="ghost-btn" onclick="window.location='dashboard.html'">Back to Dashboard</button>
+    <button class="ghost-btn" id="logoutBtn">Logout</button>
+  </div>
+</header>
+
+<div class="container">
+  <section class="panel">
+    <h2>Treasury Management System</h2>
+    <div class="empty-state">
+      <p>Treasury system is under development</p>
+      <p>This page will contain cash management, financial operations, and reporting features</p>
+    </div>
+  </section>
+</div>
+
+<script type="module">
+import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-app.js";
+import {
+  getAuth,
+  onAuthStateChanged,
+  signOut
+} from "https://www.gstatic.com/firebasejs/10.12.2/firebase-auth.js";
+
+// Firebase configuration
+const firebaseConfig = {
+  apiKey: "AIzaSyARqSgfh78TqFQ2hhZaAtUaVQFqlPuRM3w",
+  authDomain: "trialsafaprices2026.firebaseapp.com",
+  projectId: "trialsafaprices2026",
+  storageBucket: "trialsafaprices2026.appspot.com",
+  messagingSenderId: "177091434445",
+  appId: "1:177091434445:web:568b6ae3ba270a21d4d684"
+};
+
+const app = initializeApp(firebaseConfig);
+const auth = getAuth(app);
+
+// Check authentication
+onAuthStateChanged(auth, user => {
+  if (!user) {
+    window.location.href = "index.html";
+    return;
+  }
+  console.log('Treasury system loaded for user:', user.email);
+});
+
+// Logout functionality
+document.getElementById("logoutBtn").addEventListener("click", async () => {
+  await signOut(auth);
+  window.location.href = "index.html";
+});
+</script>
+</body>
+</html>
