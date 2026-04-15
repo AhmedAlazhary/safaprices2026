@@ -842,19 +842,6 @@ async function loadInventory() {
   }
 }
 
-// Show initialization option when no data exists
-function showInitializationOption() {
-  const tbody = document.getElementById('inventoryTableBody');
-  tbody.innerHTML = `
-    <tr>
-      <td colspan="8" class="empty-state">
-        <p>No inventory data found</p>
-        <button class="primary-btn" onclick="initializeSampleData()">Initialize Sample Data</button>
-        <button class="success-btn" onclick="window.open('init-inventory-assets-data.js', '_blank')">Open Data Setup</button>
-      </td>
-    </tr>
-  `;
-}
 
 // Initialize sample data for testing
 async function initializeSampleData() {
@@ -1494,5 +1481,6 @@ function settleCustody(custodyId) {
   document.getElementById('settlementCustodyId').value = custodyId;
   openSettlementModal();
 }
+</script>
 </body>
 </html>
