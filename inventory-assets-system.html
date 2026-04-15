@@ -720,6 +720,7 @@ import {
   addDoc,
   updateDoc,
   deleteDoc,
+  setDoc,
   query,
   where,
   orderBy,
@@ -1266,6 +1267,64 @@ function openAssetModal() {
 
 function closeAssetModal() {
   document.getElementById('assetModal').style.display = 'none';
+}
+
+// Report functions
+function generateInventoryReport() {
+  showAlert('جاري إنشاء تقرير المخزون...', 'success');
+  // Implementation for inventory report
+}
+
+function generateCustodyReport() {
+  showAlert('جاري إنشاء تقرير العهد...', 'success');
+  // Implementation for custody report
+}
+
+function generateAssetsReport() {
+  showAlert('جاري إنشاء تقرير الأصول...', 'success');
+  // Implementation for assets report
+}
+
+// Initialize sample data function
+async function initializeSampleData() {
+  try {
+    showAlert('Initializing sample data...', 'success');
+    
+    const sampleItems = [
+      {
+        name: "Sample Item 1",
+        categoryId: "sample",
+        unit: "piece",
+        quantity: 10,
+        unitPrice: 50.00,
+        location: "Main Store",
+        status: "new",
+        createdAt: serverTimestamp(),
+        updatedAt: serverTimestamp()
+      },
+      {
+        name: "Sample Item 2",
+        categoryId: "sample",
+        unit: "piece",
+        quantity: 20,
+        unitPrice: 75.00,
+        location: "Main Store",
+        status: "new",
+        createdAt: serverTimestamp(),
+        updatedAt: serverTimestamp()
+      }
+    ];
+    
+    for (const item of sampleItems) {
+      await addDoc(collection(db, 'Items'), item);
+    }
+    
+    showAlert('Sample data initialized successfully!', 'success');
+    loadInventory(); // Reload the data
+  } catch (error) {
+    console.error('Error initializing sample data:', error);
+    showAlert('Error initializing sample data: ' + error.message, 'danger');
+  }
 }
 
 // Utility functions
