@@ -755,12 +755,12 @@ onAuthStateChanged(auth, user => {
     return;
   }
   currentUser = user;
-  initializeApp();
+  initializeInventorySystem();
 });
 
-// Initialize app
-function initializeApp() {
-  console.log('Initializing app...');
+// Initialize inventory system
+function initializeInventorySystem() {
+  console.log('Initializing inventory system...');
   setupEventListeners();
   loadInventory();
   loadCustody();
@@ -1257,9 +1257,20 @@ function closeSettlementModal() {
   document.getElementById('settlementModal').style.display = 'none';
 }
 
+function openItemModal() {
+  currentEditingItem = null;
+  document.getElementById('itemModalTitle').textContent = 'Add New Item';
+  document.getElementById('itemForm').reset();
+  document.getElementById('itemModal').style.display = 'block';
+}
+
+function closeItemModal() {
+  document.getElementById('itemModal').style.display = 'none';
+}
+
 function openAssetModal() {
   currentEditingAsset = null;
-  document.getElementById('assetModalTitle').textContent = 'إضافة أصل جديد';
+  document.getElementById('assetModalTitle').textContent = 'Add New Asset';
   document.getElementById('assetForm').reset();
   document.getElementById('assetModal').style.display = 'block';
 }
