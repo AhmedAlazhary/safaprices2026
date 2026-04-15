@@ -364,10 +364,10 @@ tr:hover {
 <div class="container">
   <!-- Tabs Navigation -->
   <div class="tabs">
-    <button class="tab active" onclick="switchTab('inventory')">المخزن</button>
-    <button class="tab" onclick="switchTab('custody')">العهدة والتصفيات</button>
-    <button class="tab" onclick="switchTab('assets')">الجراج/الأصول</button>
-    <button class="tab" onclick="switchTab('reports')">التقارير</button>
+    <button class="tab active" onclick="switchTab('inventory', event)">المخزن</button>
+    <button class="tab" onclick="switchTab('custody', event)">العهدة والتصفيات</button>
+    <button class="tab" onclick="switchTab('assets', event)">الجراج/الأصول</button>
+    <button class="tab" onclick="switchTab('reports', event)">التقارير</button>
   </div>
 
   <!-- Inventory Tab -->
@@ -769,7 +769,7 @@ function initializeApp() {
 }
 
 // Tab switching
-function switchTab(tabName) {
+function switchTab(tabName, event) {
   // Hide all tabs
   document.querySelectorAll('.tab-content').forEach(tab => {
     tab.style.display = 'none';
@@ -784,7 +784,9 @@ function switchTab(tabName) {
   document.getElementById(`${tabName}-tab`).style.display = 'block';
   
   // Add active class to clicked tab
-  event.target.classList.add('active');
+  if (event && event.target) {
+    event.target.classList.add('active');
+  }
 }
 
 // Setup event listeners
@@ -1234,6 +1236,36 @@ function openItemModal() {
 
 function closeItemModal() {
   document.getElementById('itemModal').style.display = 'none';
+}
+
+function openCustodyModal() {
+  document.getElementById('custodyForm').reset();
+  document.getElementById('custodyModal').style.display = 'block';
+}
+
+function closeCustodyModal() {
+  document.getElementById('custodyModal').style.display = 'none';
+}
+
+function openSettlementModal() {
+  settlementItems = [];
+  document.getElementById('settlementForm').reset();
+  document.getElementById('settlementModal').style.display = 'block';
+}
+
+function closeSettlementModal() {
+  document.getElementById('settlementModal').style.display = 'none';
+}
+
+function openAssetModal() {
+  currentEditingAsset = null;
+  document.getElementById('assetModalTitle').textContent = 'إضافة أصل جديد';
+  document.getElementById('assetForm').reset();
+  document.getElementById('assetModal').style.display = 'block';
+}
+
+function closeAssetModal() {
+  document.getElementById('assetModal').style.display = 'none';
 }
 
 function openCustodyModal() {
