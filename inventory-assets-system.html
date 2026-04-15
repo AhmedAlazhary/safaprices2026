@@ -760,11 +760,12 @@ onAuthStateChanged(auth, user => {
 
 // Initialize app
 function initializeApp() {
+  console.log('Initializing app...');
+  setupEventListeners();
   loadInventory();
   loadCustody();
   loadAssets();
   loadLookups();
-  setupEventListeners();
 }
 
 // Tab switching
@@ -815,17 +816,82 @@ function setupEventListeners() {
 // Load inventory items
 async function loadInventory() {
   try {
+    console.log('Loading inventory from Firestore...');
     const querySnapshot = await getDocs(collection(db, 'Items'));
     const items = [];
     querySnapshot.forEach((doc) => {
       items.push({ id: doc.id, ...doc.data() });
     });
     
+    console.log('Loaded items:', items);
     displayInventory(items);
     updateLookups(items);
+    
+    // If no items exist, show initialization option
+    if (items.length === 0) {
+      showInitializationOption();
+    }
   } catch (error) {
     console.error('Error loading inventory:', error);
-    showAlert('خطأ في تحميل المخزون', 'danger');
+    showAlert('Error loading inventory: ' + error.message, 'danger');
+    // Show initialization option on error
+    showInitializationOption();
+  }
+}
+
+// Show initialization option when no data exists
+function showInitializationOption() {
+  const tbody = document.getElementById('inventoryTableBody');
+  tbody.innerHTML = `
+    <tr>
+      <td colspan="8" class="empty-state">
+        <p>No inventory data found</p>
+        <button class="primary-btn" onclick="initializeSampleData()">Initialize Sample Data</button>
+        <button class="success-btn" onclick="window.open('init-inventory-assets-data.js', '_blank')">Open Data Setup</button>
+      </td>
+    </tr>
+  `;
+}
+
+// Initialize sample data for testing
+async function initializeSampleData() {
+  try {
+    showAlert('Initializing sample data...', 'success');
+    
+    const sampleItems = [
+      {
+        name: "Sample Item 1",
+        categoryId: "sample",
+        unit: "piece",
+        quantity: 10,
+        unitPrice: 50.00,
+        location: "Main Store",
+        status: "new",
+        createdAt: serverTimestamp(),
+        updatedAt: serverTimestamp()
+      },
+      {
+        name: "Sample Item 2",
+        categoryId: "sample",
+        unit: "piece",
+        quantity: 20,
+        unitPrice: 75.00,
+        location: "Main Store",
+        status: "new",
+        createdAt: serverTimestamp(),
+        updatedAt: serverTimestamp()
+      }
+    ];
+    
+    for (const item of sampleItems) {
+      await addDoc(collection(db, 'Items'), item);
+    }
+    
+    showAlert('Sample data initialized successfully!', 'success');
+    loadInventory(); // Reload the data
+  } catch (error) {
+    console.error('Error initializing sample data:', error);
+    showAlert('Error initializing sample data: ' + error.message, 'danger');
   }
 }
 
@@ -1257,9 +1323,31 @@ function generateAssetsReport() {
 
 // Additional functions for edit/delete operations
 async function editItem(itemId) {
-  currentEditingItem = itemId;
-  // Load item data and populate form
-  // Implementation depends on data structure
+  try {
+    const itemDoc = doc(db, 'Items', itemId);
+    const itemSnap = await getDoc(itemDoc);
+    
+    if (itemSnap.exists()) {
+      const itemData = itemSnap.data();
+      currentEditingItem = itemId;
+      
+      // Populate form
+      document.getElementById('itemModalTitle').textContent = 'Edit Item';
+      document.getElementById('itemName').value = itemData.name;
+      document.getElementById('itemCategory').value = itemData.categoryId;
+      document.getElementById('itemUnit').value = itemData.unit;
+      document.getElementById('itemQuantity').value = itemData.quantity;
+      document.getElementById('itemUnitPrice').value = itemData.unitPrice;
+      document.getElementById('itemLocation').value = itemData.location || '';
+      document.getElementById('itemStatus').value = itemData.status;
+      
+      // Open modal
+      document.getElementById('itemModal').style.display = 'block';
+    }
+  } catch (error) {
+    console.error('Error loading item for edit:', error);
+    showAlert('Error loading item data', 'danger');
+  }
 }
 
 async function deleteItem(itemId) {
