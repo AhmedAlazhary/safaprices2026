@@ -1257,40 +1257,6 @@ function closeSettlementModal() {
   document.getElementById('settlementModal').style.display = 'none';
 }
 
-function closeItemModal() {
-  document.getElementById('itemModal').style.display = 'none';
-}
-
-function openAssetModal() {
-  currentEditingAsset = null;
-  document.getElementById('assetModalTitle').textContent = 'Add New Asset';
-  document.getElementById('assetForm').reset();
-  document.getElementById('assetModal').style.display = 'block';
-}
-
-function closeAssetModal() {
-  document.getElementById('assetModal').style.display = 'none';
-}
-
-function openCustodyModal() {
-  document.getElementById('custodyForm').reset();
-  document.getElementById('custodyModal').style.display = 'block';
-}
-
-function closeCustodyModal() {
-  document.getElementById('custodyModal').style.display = 'none';
-}
-
-function openSettlementModal() {
-  settlementItems = [];
-  document.getElementById('settlementForm').reset();
-  document.getElementById('settlementModal').style.display = 'block';
-}
-
-function closeSettlementModal() {
-  document.getElementById('settlementModal').style.display = 'none';
-}
-
 function openAssetModal() {
   currentEditingAsset = null;
   document.getElementById('assetModalTitle').textContent = 'إضافة أصل جديد';
