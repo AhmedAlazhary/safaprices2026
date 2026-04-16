@@ -318,6 +318,103 @@ tr:hover {
   color: var(--accent);
   border: 1px solid rgba(47, 137, 217, 0.3);
 }
+
+/* Excel Table Styles */
+.table-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 20px;
+  padding-bottom: 12px;
+  border-bottom: 2px solid var(--border);
+}
+
+.table-title {
+  font-size: 1.3rem;
+  font-weight: 700;
+  color: var(--primary);
+}
+
+.excel-table {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: 0.95rem;
+}
+
+.excel-table th {
+  background: linear-gradient(180deg, #f8fbff 0%, #e8f4fd 100%);
+  color: var(--primary);
+  font-weight: 700;
+  padding: 12px 8px;
+  text-align: center;
+  border: 1px solid var(--border);
+  font-size: 0.9rem;
+  position: sticky;
+  top: 0;
+  z-index: 10;
+}
+
+.excel-table td {
+  padding: 8px;
+  border: 1px solid var(--border);
+  vertical-align: middle;
+}
+
+.excel-table input {
+  width: 100%;
+  border: none;
+  padding: 6px 8px;
+  background: transparent;
+  font-family: inherit;
+  font-size: inherit;
+  text-align: inherit;
+}
+
+.excel-table input:focus {
+  outline: 2px solid var(--accent);
+  background: rgba(47, 137, 217, 0.05);
+  border-radius: 4px;
+}
+
+.add-row-btn {
+  width: 100%;
+  padding: 12px;
+  background: linear-gradient(135deg, var(--success) 0%, #229954 100%);
+  color: white;
+  border: none;
+  border-radius: 8px;
+  font-weight: 700;
+  cursor: pointer;
+  transition: all 0.3s ease;
+  margin-top: 10px;
+}
+
+.add-row-btn:hover {
+  transform: translateY(-1px);
+  box-shadow: 0 4px 12px rgba(39, 174, 96, 0.3);
+}
+
+.delete-btn {
+  background: var(--danger);
+  color: white;
+  border: none;
+  padding: 4px 8px;
+  border-radius: 4px;
+  cursor: pointer;
+  font-size: 0.8rem;
+  font-weight: 700;
+}
+
+.delete-btn:hover {
+  background: #c0392b;
+}
+
+.table-wrapper {
+  max-height: 400px;
+  overflow-y: auto;
+  border: 1px solid var(--border);
+  border-radius: 8px;
+}
 </style>
 </head>
 <body>
@@ -403,35 +500,63 @@ tr:hover {
   <!-- Custody Tab -->
   <div id="custody-tab" class="tab-content">
     <div class="panel">
-      <h2>العهدة والتصفيات</h2>
+      <h2>Custody & Settlements</h2>
       
-      <!-- Actions -->
-      <div style="display: flex; gap: 12px; margin-bottom: 20px;">
-        <button class="primary-btn" onclick="openCustodyModal()">إنشاء عهدة جديدة</button>
-        <button class="warning-btn" onclick="openSettlementModal()">تصفية عهدة</button>
+      <!-- Excel-like Custody Tables -->
+      <!-- Alexandria Table -->
+      <div class="table-container" style="margin-bottom: 30px;">
+        <div class="table-header">
+          <h2 class="table-title">Custody - Alexandria</h2>
+          <span style="color: var(--muted); font-size: 0.9rem;">Excel-like Grid System</span>
+        </div>
+        <div class="table-wrapper">
+          <table class="excel-table" id="alexandriaCustodyTable">
+            <thead>
+              <tr>
+                <th>DATE</th>
+                <th>DESCRIPTION</th>
+                <th>CUSTODY IN</th>
+                <th>CLEARANCE OUT</th>
+                <th>NOTES</th>
+                <th>ACTIONS</th>
+              </tr>
+            </thead>
+            <tbody id="alexandriaCustodyTableBody">
+              <tr class="loading">
+                <td colspan="6">Loading data...</td>
+              </tr>
+            </tbody>
+          </table>
+          <button class="add-row-btn" onclick="addCustodyRow('alexandria')">+ Add New Row</button>
+        </div>
       </div>
-      
-      <!-- Custody Table -->
+
+      <!-- Dekkela Table -->
       <div class="table-container">
-        <table>
-          <thead>
-            <tr>
-              <th>رقم العهدة</th>
-              <th>الموظف</th>
-              <th>التاريخ</th>
-              <th>المبلغ الإجمالي</th>
-              <th>الحالة</th>
-              <th>الإجراءات</th>
-            </tr>
-          </thead>
-          <tbody id="custodyTableBody">
-            <tr>
-              <td colspan="6" style="text-align: center; padding: 40px;">
-                جاري تحميل البيانات...
-              </td>
-            </tr>
-          </tbody>
-        </table>
+        <div class="table-header">
+          <h2 class="table-title">Custody - Dekkela</h2>
+          <span style="color: var(--muted); font-size: 0.9rem;">Excel-like Grid System</span>
+        </div>
+        <div class="table-wrapper">
+          <table class="excel-table" id="dekkelaCustodyTable">
+            <thead>
+              <tr>
+                <th>DATE</th>
+                <th>DESCRIPTION</th>
+                <th>CUSTODY IN</th>
+                <th>CLEARANCE OUT</th>
+                <th>NOTES</th>
+                <th>ACTIONS</th>
+              </tr>
+            </thead>
+            <tbody id="dekkelaCustodyTableBody">
+              <tr class="loading">
+                <td colspan="6">Loading data...</td>
+              </tr>
+            </tbody>
+          </table>
+          <button class="add-row-btn" onclick="addCustodyRow('dekkela')">+ Add New Row</button>
+        </div>
       </div>
     </div>
   </div>
@@ -523,30 +648,6 @@ tr:hover {
           </div>
           <div id="statusesList" style="max-height: 200px; overflow-y: auto;">
             <!-- Statuses will be loaded here -->
-          </div>
-        </div>
-        
-        <!-- Accounting Items List -->
-        <div class="panel">
-          <h3>بنود المحاسبة</h3>
-          <div style="display: flex; gap: 12px; margin-bottom: 16px;">
-            <input type="text" id="newAccountingItem" placeholder="إضافة بند محاسبي جديد" style="flex: 1; padding: 8px; border: 1px solid var(--border); border-radius: 6px;">
-            <button class="primary-btn" onclick="addAccountingItem()">إضافة</button>
-          </div>
-          <div id="accountingItemsList" style="max-height: 200px; overflow-y: auto;">
-            <!-- Accounting items will be loaded here -->
-          </div>
-        </div>
-        
-        <!-- Asset Types List -->
-        <div class="panel">
-          <h3>أنواع الأصول</h3>
-          <div style="display: flex; gap: 12px; margin-bottom: 16px;">
-            <input type="text" id="newAssetType" placeholder="إضافة نوع أصل جديد" style="flex: 1; padding: 8px; border: 1px solid var(--border); border-radius: 6px;">
-            <button class="primary-btn" onclick="addAssetType()">إضافة</button>
-          </div>
-          <div id="assetTypesList" style="max-height: 200px; overflow-y: auto;">
-            <!-- Asset types will be loaded here -->
           </div>
         </div>
       </div>
@@ -824,7 +925,7 @@ function initializeInventorySystem() {
   console.log('Initializing inventory system...');
   setupEventListeners();
   loadInventory();
-  loadCustody();
+  loadCustodyTables();
   loadAssets();
   loadLookups();
   loadLists();
@@ -1182,7 +1283,44 @@ function filterInventory() {
 // Handle item submit
 async function handleItemSubmit(e) {
   e.preventDefault();
-  // Implementation for item submission
+  
+  try {
+    const formData = {
+      name: document.getElementById('itemName').value.trim(),
+      categoryId: document.getElementById('itemCategory').value,
+      unit: document.getElementById('itemUnit').value,
+      quantity: parseFloat(document.getElementById('itemQuantity').value),
+      unitPrice: parseFloat(document.getElementById('itemUnitPrice').value),
+      location: document.getElementById('itemLocation').value,
+      status: document.getElementById('itemStatus').value,
+      updatedAt: serverTimestamp()
+    };
+
+    // Validation
+    if (!formData.name || !formData.categoryId || !formData.unit || isNaN(formData.quantity) || isNaN(formData.unitPrice) || !formData.status) {
+      showAlert('Please fill all required fields', 'danger');
+      return;
+    }
+
+    if (currentEditingItem) {
+      // Update existing item
+      await updateDoc(doc(db, 'Items', currentEditingItem), formData);
+      showAlert('Item updated successfully', 'success');
+    } else {
+      // Add new item
+      await addDoc(collection(db, 'Items'), {
+        ...formData,
+        createdAt: serverTimestamp()
+      });
+      showAlert('Item added successfully', 'success');
+    }
+
+    closeItemModal();
+    loadInventory();
+  } catch (error) {
+    console.error('Error saving item:', error);
+    showAlert('Error saving item: ' + error.message, 'danger');
+  }
 }
 
 // Handle custody submit
@@ -1257,6 +1395,67 @@ function addSettlementItem() {
   // Implementation for adding settlement items
 }
 
+// Custody table functions
+function addCustodyRow(location) {
+  const tbody = document.getElementById(`${location}CustodyTableBody`);
+  const newRow = document.createElement('tr');
+  const today = new Date().toISOString().split('T')[0];
+  
+  newRow.innerHTML = `
+    <td><input type="date" value="${today}" /></td>
+    <td><input type="text" placeholder="Enter description" /></td>
+    <td><input type="number" placeholder="0.00" step="0.01" /></td>
+    <td><input type="number" placeholder="0.00" step="0.01" /></td>
+    <td><input type="text" placeholder="Notes" /></td>
+    <td><button class="delete-btn" onclick="this.closest('tr').remove()">Delete</button></td>
+  `;
+  
+  tbody.appendChild(newRow);
+}
+
+// Load custody data
+async function loadCustodyTables() {
+  try {
+    // Load Alexandria custody data
+    const alexQuery = query(collection(db, 'Custody'), where('location', '==', 'alexandria'), orderBy('date', 'desc'));
+    const alexSnapshot = await getDocs(alexQuery);
+    displayCustodyTable('alexandria', alexSnapshot.docs);
+    
+    // Load Dekkela custody data
+    const dekQuery = query(collection(db, 'Custody'), where('location', '==', 'dekkela'), orderBy('date', 'desc'));
+    const dekSnapshot = await getDocs(dekQuery);
+    displayCustodyTable('dekkela', dekSnapshot.docs);
+  } catch (error) {
+    console.error('Error loading custody tables:', error);
+    // Show empty tables on error
+    displayCustodyTable('alexandria', []);
+    displayCustodyTable('dekkela', []);
+  }
+}
+
+function displayCustodyTable(location, docs) {
+  const tbody = document.getElementById(`${location}CustodyTableBody`);
+  
+  if (docs.length === 0) {
+    tbody.innerHTML = '<tr><td colspan="6" style="text-align: center; padding: 20px;">No data found</td></tr>';
+    return;
+  }
+  
+  tbody.innerHTML = docs.map(doc => {
+    const data = doc.data();
+    return `
+      <tr>
+        <td><input type="date" value="${data.date || ''}" /></td>
+        <td><input type="text" value="${data.description || ''}" /></td>
+        <td><input type="number" value="${data.custodyIn || 0}" step="0.01" /></td>
+        <td><input type="number" value="${data.clearanceOut || 0}" step="0.01" /></td>
+        <td><input type="text" value="${data.notes || ''}" /></td>
+        <td><button class="delete-btn" onclick="this.closest('tr').remove()">Delete</button></td>
+      </tr>
+    `;
+  }).join('');
+}
+
 // Lists management functions
 async function loadLists() {
   try {
@@ -1268,8 +1467,6 @@ async function loadLists() {
       displayUnits(lookups.units || []);
       displayLocations(lookups.locations || []);
       displayStatuses(lookups.statuses || []);
-      displayAccountingItems(lookups.accountingItems || []);
-      displayAssetTypes(lookups.assetTypes || []);
     }
   } catch (error) {
     console.error('Error loading lists:', error);
@@ -1729,10 +1926,6 @@ window.addLocation = addLocation;
 window.removeLocation = removeLocation;
 window.addStatus = addStatus;
 window.removeStatus = removeStatus;
-window.addAccountingItem = addAccountingItem;
-window.removeAccountingItem = removeAccountingItem;
-window.addAssetType = addAssetType;
-window.removeAssetType = removeAssetType;
 </script>
 </body>
 </html>
