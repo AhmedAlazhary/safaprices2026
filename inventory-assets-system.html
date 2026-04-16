@@ -475,15 +475,15 @@ tr:hover {
   <!-- Lists Tab -->
   <div id="lists-tab" class="tab-content">
     <div class="panel">
-      <h2>Manage Lists</h2>
+      <h2>إدارة القوائم</h2>
       
       <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(400px, 1fr)); gap: 20px;">
         <!-- Categories List -->
         <div class="panel">
-          <h3>Categories</h3>
+          <h3>الفئات</h3>
           <div style="display: flex; gap: 12px; margin-bottom: 16px;">
-            <input type="text" id="newCategory" placeholder="Add new category" style="flex: 1; padding: 8px; border: 1px solid var(--border); border-radius: 6px;">
-            <button class="primary-btn" onclick="addCategory()">Add</button>
+            <input type="text" id="newCategory" placeholder="إضافة فئة جديدة" style="flex: 1; padding: 8px; border: 1px solid var(--border); border-radius: 6px;">
+            <button class="primary-btn" onclick="addCategory()">إضافة</button>
           </div>
           <div id="categoriesList" style="max-height: 200px; overflow-y: auto;">
             <!-- Categories will be loaded here -->
@@ -492,10 +492,10 @@ tr:hover {
         
         <!-- Units List -->
         <div class="panel">
-          <h3>Units</h3>
+          <h3>الوحدات</h3>
           <div style="display: flex; gap: 12px; margin-bottom: 16px;">
-            <input type="text" id="newUnit" placeholder="Add new unit" style="flex: 1; padding: 8px; border: 1px solid var(--border); border-radius: 6px;">
-            <button class="primary-btn" onclick="addUnit()">Add</button>
+            <input type="text" id="newUnit" placeholder="إضافة وحدة جديدة" style="flex: 1; padding: 8px; border: 1px solid var(--border); border-radius: 6px;">
+            <button class="primary-btn" onclick="addUnit()">إضافة</button>
           </div>
           <div id="unitsList" style="max-height: 200px; overflow-y: auto;">
             <!-- Units will be loaded here -->
@@ -504,10 +504,10 @@ tr:hover {
         
         <!-- Locations List -->
         <div class="panel">
-          <h3>Locations</h3>
+          <h3>المواقع</h3>
           <div style="display: flex; gap: 12px; margin-bottom: 16px;">
-            <input type="text" id="newLocation" placeholder="Add new location" style="flex: 1; padding: 8px; border: 1px solid var(--border); border-radius: 6px;">
-            <button class="primary-btn" onclick="addLocation()">Add</button>
+            <input type="text" id="newLocation" placeholder="إضافة موقع جديد" style="flex: 1; padding: 8px; border: 1px solid var(--border); border-radius: 6px;">
+            <button class="primary-btn" onclick="addLocation()">إضافة</button>
           </div>
           <div id="locationsList" style="max-height: 200px; overflow-y: auto;">
             <!-- Locations will be loaded here -->
@@ -516,10 +516,10 @@ tr:hover {
         
         <!-- Statuses List -->
         <div class="panel">
-          <h3>Item Statuses</h3>
+          <h3>حالات الأصناف</h3>
           <div style="display: flex; gap: 12px; margin-bottom: 16px;">
-            <input type="text" id="newStatus" placeholder="Add new status" style="flex: 1; padding: 8px; border: 1px solid var(--border); border-radius: 6px;">
-            <button class="primary-btn" onclick="addStatus()">Add</button>
+            <input type="text" id="newStatus" placeholder="إضافة حالة جديدة" style="flex: 1; padding: 8px; border: 1px solid var(--border); border-radius: 6px;">
+            <button class="primary-btn" onclick="addStatus()">إضافة</button>
           </div>
           <div id="statusesList" style="max-height: 200px; overflow-y: auto;">
             <!-- Statuses will be loaded here -->
@@ -528,10 +528,10 @@ tr:hover {
         
         <!-- Accounting Items List -->
         <div class="panel">
-          <h3>Accounting Items</h3>
+          <h3>بنود المحاسبة</h3>
           <div style="display: flex; gap: 12px; margin-bottom: 16px;">
-            <input type="text" id="newAccountingItem" placeholder="Add new accounting item" style="flex: 1; padding: 8px; border: 1px solid var(--border); border-radius: 6px;">
-            <button class="primary-btn" onclick="addAccountingItem()">Add</button>
+            <input type="text" id="newAccountingItem" placeholder="إضافة بند محاسبي جديد" style="flex: 1; padding: 8px; border: 1px solid var(--border); border-radius: 6px;">
+            <button class="primary-btn" onclick="addAccountingItem()">إضافة</button>
           </div>
           <div id="accountingItemsList" style="max-height: 200px; overflow-y: auto;">
             <!-- Accounting items will be loaded here -->
@@ -540,10 +540,10 @@ tr:hover {
         
         <!-- Asset Types List -->
         <div class="panel">
-          <h3>Asset Types</h3>
+          <h3>أنواع الأصول</h3>
           <div style="display: flex; gap: 12px; margin-bottom: 16px;">
-            <input type="text" id="newAssetType" placeholder="Add new asset type" style="flex: 1; padding: 8px; border: 1px solid var(--border); border-radius: 6px;">
-            <button class="primary-btn" onclick="addAssetType()">Add</button>
+            <input type="text" id="newAssetType" placeholder="إضافة نوع أصل جديد" style="flex: 1; padding: 8px; border: 1px solid var(--border); border-radius: 6px;">
+            <button class="primary-btn" onclick="addAssetType()">إضافة</button>
           </div>
           <div id="assetTypesList" style="max-height: 200px; overflow-y: auto;">
             <!-- Asset types will be loaded here -->
@@ -1281,7 +1281,7 @@ function displayCategories(categories) {
   container.innerHTML = categories.map((cat, index) => `
     <div style="display: flex; justify-content: space-between; align-items: center; padding: 8px; border-bottom: 1px solid var(--border);">
       <span>${cat}</span>
-      <button class="danger-btn" onclick="removeCategory('${cat}')" style="padding: 4px 8px; font-size: 12px;">Delete</button>
+      <button class="danger-btn" onclick="removeCategory('${cat}')" style="padding: 4px 8px; font-size: 12px;">حذف</button>
     </div>
   `).join('');
 }
@@ -1291,7 +1291,7 @@ function displayUnits(units) {
   container.innerHTML = units.map((unit, index) => `
     <div style="display: flex; justify-content: space-between; align-items: center; padding: 8px; border-bottom: 1px solid var(--border);">
       <span>${unit}</span>
-      <button class="danger-btn" onclick="removeUnit('${unit}')" style="padding: 4px 8px; font-size: 12px;">Delete</button>
+      <button class="danger-btn" onclick="removeUnit('${unit}')" style="padding: 4px 8px; font-size: 12px;">حذف</button>
     </div>
   `).join('');
 }
@@ -1301,7 +1301,7 @@ function displayLocations(locations) {
   container.innerHTML = locations.map((loc, index) => `
     <div style="display: flex; justify-content: space-between; align-items: center; padding: 8px; border-bottom: 1px solid var(--border);">
       <span>${loc}</span>
-      <button class="danger-btn" onclick="removeLocation('${loc}')" style="padding: 4px 8px; font-size: 12px;">Delete</button>
+      <button class="danger-btn" onclick="removeLocation('${loc}')" style="padding: 4px 8px; font-size: 12px;">حذف</button>
     </div>
   `).join('');
 }
@@ -1311,7 +1311,7 @@ function displayStatuses(statuses) {
   container.innerHTML = statuses.map((status, index) => `
     <div style="display: flex; justify-content: space-between; align-items: center; padding: 8px; border-bottom: 1px solid var(--border);">
       <span>${status}</span>
-      <button class="danger-btn" onclick="removeStatus('${status}')" style="padding: 4px 8px; font-size: 12px;">Delete</button>
+      <button class="danger-btn" onclick="removeStatus('${status}')" style="padding: 4px 8px; font-size: 12px;">حذف</button>
     </div>
   `).join('');
 }
@@ -1321,7 +1321,7 @@ function displayAccountingItems(items) {
   container.innerHTML = items.map((item, index) => `
     <div style="display: flex; justify-content: space-between; align-items: center; padding: 8px; border-bottom: 1px solid var(--border);">
       <span>${item}</span>
-      <button class="danger-btn" onclick="removeAccountingItem('${item}')" style="padding: 4px 8px; font-size: 12px;">Delete</button>
+      <button class="danger-btn" onclick="removeAccountingItem('${item}')" style="padding: 4px 8px; font-size: 12px;">حذف</button>
     </div>
   `).join('');
 }
@@ -1331,7 +1331,7 @@ function displayAssetTypes(types) {
   container.innerHTML = types.map((type, index) => `
     <div style="display: flex; justify-content: space-between; align-items: center; padding: 8px; border-bottom: 1px solid var(--border);">
       <span>${type}</span>
-      <button class="danger-btn" onclick="removeAssetType('${type}')" style="padding: 4px 8px; font-size: 12px;">Delete</button>
+      <button class="danger-btn" onclick="removeAssetType('${type}')" style="padding: 4px 8px; font-size: 12px;">حذف</button>
     </div>
   `).join('');
 }
@@ -1369,7 +1369,7 @@ async function addCategory() {
 }
 
 async function removeCategory(category) {
-  if (!confirm(`Are you sure you want to delete "${category}"?`)) return;
+  if (!confirm(`هل أنت متأكد من حذف "${category}"؟`)) return;
   
   try {
     const lookupsDoc = await getDoc(doc(db, 'Lookups', 'all'));
@@ -1420,7 +1420,7 @@ async function addUnit() {
 }
 
 async function removeUnit(unit) {
-  if (!confirm(`Are you sure you want to delete "${unit}"?`)) return;
+  if (!confirm(`هل أنت متأكد من حذف "${unit}"؟`)) return;
   
   try {
     const lookupsDoc = await getDoc(doc(db, 'Lookups', 'all'));
@@ -1470,7 +1470,7 @@ async function addLocation() {
 }
 
 async function removeLocation(location) {
-  if (!confirm(`Are you sure you want to delete "${location}"?`)) return;
+  if (!confirm(`هل أنت متأكد من حذف "${location}"؟`)) return;
   
   try {
     const lookupsDoc = await getDoc(doc(db, 'Lookups', 'all'));
@@ -1520,7 +1520,7 @@ async function addStatus() {
 }
 
 async function removeStatus(status) {
-  if (!confirm(`Are you sure you want to delete "${status}"?`)) return;
+  if (!confirm(`هل أنت متأكد من حذف "${status}"؟`)) return;
   
   try {
     const lookupsDoc = await getDoc(doc(db, 'Lookups', 'all'));
@@ -1569,7 +1569,7 @@ async function addAccountingItem() {
 }
 
 async function removeAccountingItem(item) {
-  if (!confirm(`Are you sure you want to delete "${item}"?`)) return;
+  if (!confirm(`هل أنت متأكد من حذف "${item}"؟`)) return;
   
   try {
     const lookupsDoc = await getDoc(doc(db, 'Lookups', 'all'));
@@ -1618,7 +1618,7 @@ async function addAssetType() {
 }
 
 async function removeAssetType(type) {
-  if (!confirm(`Are you sure you want to delete "${type}"?`)) return;
+  if (!confirm(`هل أنت متأكد من حذف "${type}"؟`)) return;
   
   try {
     const lookupsDoc = await getDoc(doc(db, 'Lookups', 'all'));
