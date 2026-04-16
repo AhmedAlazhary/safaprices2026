@@ -338,6 +338,7 @@ tr:hover {
     <button class="tab active" onclick="switchTab('inventory', event)">المخزن</button>
     <button class="tab" onclick="switchTab('custody', event)">العهدة والتصفيات</button>
     <button class="tab" onclick="switchTab('assets', event)">الجراج/الأصول</button>
+    <button class="tab" onclick="switchTab('lists', event)">القوائم</button>
     <button class="tab" onclick="switchTab('reports', event)">التقارير</button>
   </div>
 
@@ -467,6 +468,87 @@ tr:hover {
             </tr>
           </tbody>
         </table>
+      </div>
+    </div>
+  </div>
+
+  <!-- Lists Tab -->
+  <div id="lists-tab" class="tab-content">
+    <div class="panel">
+      <h2>Manage Lists</h2>
+      
+      <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(400px, 1fr)); gap: 20px;">
+        <!-- Categories List -->
+        <div class="panel">
+          <h3>Categories</h3>
+          <div style="display: flex; gap: 12px; margin-bottom: 16px;">
+            <input type="text" id="newCategory" placeholder="Add new category" style="flex: 1; padding: 8px; border: 1px solid var(--border); border-radius: 6px;">
+            <button class="primary-btn" onclick="addCategory()">Add</button>
+          </div>
+          <div id="categoriesList" style="max-height: 200px; overflow-y: auto;">
+            <!-- Categories will be loaded here -->
+          </div>
+        </div>
+        
+        <!-- Units List -->
+        <div class="panel">
+          <h3>Units</h3>
+          <div style="display: flex; gap: 12px; margin-bottom: 16px;">
+            <input type="text" id="newUnit" placeholder="Add new unit" style="flex: 1; padding: 8px; border: 1px solid var(--border); border-radius: 6px;">
+            <button class="primary-btn" onclick="addUnit()">Add</button>
+          </div>
+          <div id="unitsList" style="max-height: 200px; overflow-y: auto;">
+            <!-- Units will be loaded here -->
+          </div>
+        </div>
+        
+        <!-- Locations List -->
+        <div class="panel">
+          <h3>Locations</h3>
+          <div style="display: flex; gap: 12px; margin-bottom: 16px;">
+            <input type="text" id="newLocation" placeholder="Add new location" style="flex: 1; padding: 8px; border: 1px solid var(--border); border-radius: 6px;">
+            <button class="primary-btn" onclick="addLocation()">Add</button>
+          </div>
+          <div id="locationsList" style="max-height: 200px; overflow-y: auto;">
+            <!-- Locations will be loaded here -->
+          </div>
+        </div>
+        
+        <!-- Statuses List -->
+        <div class="panel">
+          <h3>Item Statuses</h3>
+          <div style="display: flex; gap: 12px; margin-bottom: 16px;">
+            <input type="text" id="newStatus" placeholder="Add new status" style="flex: 1; padding: 8px; border: 1px solid var(--border); border-radius: 6px;">
+            <button class="primary-btn" onclick="addStatus()">Add</button>
+          </div>
+          <div id="statusesList" style="max-height: 200px; overflow-y: auto;">
+            <!-- Statuses will be loaded here -->
+          </div>
+        </div>
+        
+        <!-- Accounting Items List -->
+        <div class="panel">
+          <h3>Accounting Items</h3>
+          <div style="display: flex; gap: 12px; margin-bottom: 16px;">
+            <input type="text" id="newAccountingItem" placeholder="Add new accounting item" style="flex: 1; padding: 8px; border: 1px solid var(--border); border-radius: 6px;">
+            <button class="primary-btn" onclick="addAccountingItem()">Add</button>
+          </div>
+          <div id="accountingItemsList" style="max-height: 200px; overflow-y: auto;">
+            <!-- Accounting items will be loaded here -->
+          </div>
+        </div>
+        
+        <!-- Asset Types List -->
+        <div class="panel">
+          <h3>Asset Types</h3>
+          <div style="display: flex; gap: 12px; margin-bottom: 16px;">
+            <input type="text" id="newAssetType" placeholder="Add new asset type" style="flex: 1; padding: 8px; border: 1px solid var(--border); border-radius: 6px;">
+            <button class="primary-btn" onclick="addAssetType()">Add</button>
+          </div>
+          <div id="assetTypesList" style="max-height: 200px; overflow-y: auto;">
+            <!-- Asset types will be loaded here -->
+          </div>
+        </div>
       </div>
     </div>
   </div>
@@ -745,6 +827,7 @@ function initializeInventorySystem() {
   loadCustody();
   loadAssets();
   loadLookups();
+  loadLists();
 }
 
 // Tab switching
@@ -826,9 +909,8 @@ function showInitializationOption() {
   tbody.innerHTML = `
     <tr>
       <td colspan="8" class="empty-state">
-        <p>لا توجد أصناف</p>
-        <button class="primary-btn" onclick="initializeSampleData()">Initialize Sample Data</button>
-        <button class="success-btn" onclick="window.open('init-inventory-assets-data.js', '_blank')">Open Data Setup</button>
+        <p>No inventory data found</p>
+        <p>Use the "Lists" tab to add categories and other options</p>
       </td>
     </tr>
   `;
@@ -1175,6 +1257,453 @@ function addSettlementItem() {
   // Implementation for adding settlement items
 }
 
+// Lists management functions
+async function loadLists() {
+  try {
+    // Load all lookups
+    const lookupsDoc = await getDoc(doc(db, 'Lookups', 'all'));
+    if (lookupsDoc.exists()) {
+      const lookups = lookupsDoc.data();
+      displayCategories(lookups.categories || []);
+      displayUnits(lookups.units || []);
+      displayLocations(lookups.locations || []);
+      displayStatuses(lookups.statuses || []);
+      displayAccountingItems(lookups.accountingItems || []);
+      displayAssetTypes(lookups.assetTypes || []);
+    }
+  } catch (error) {
+    console.error('Error loading lists:', error);
+  }
+}
+
+function displayCategories(categories) {
+  const container = document.getElementById('categoriesList');
+  container.innerHTML = categories.map((cat, index) => `
+    <div style="display: flex; justify-content: space-between; align-items: center; padding: 8px; border-bottom: 1px solid var(--border);">
+      <span>${cat}</span>
+      <button class="danger-btn" onclick="removeCategory('${cat}')" style="padding: 4px 8px; font-size: 12px;">Delete</button>
+    </div>
+  `).join('');
+}
+
+function displayUnits(units) {
+  const container = document.getElementById('unitsList');
+  container.innerHTML = units.map((unit, index) => `
+    <div style="display: flex; justify-content: space-between; align-items: center; padding: 8px; border-bottom: 1px solid var(--border);">
+      <span>${unit}</span>
+      <button class="danger-btn" onclick="removeUnit('${unit}')" style="padding: 4px 8px; font-size: 12px;">Delete</button>
+    </div>
+  `).join('');
+}
+
+function displayLocations(locations) {
+  const container = document.getElementById('locationsList');
+  container.innerHTML = locations.map((loc, index) => `
+    <div style="display: flex; justify-content: space-between; align-items: center; padding: 8px; border-bottom: 1px solid var(--border);">
+      <span>${loc}</span>
+      <button class="danger-btn" onclick="removeLocation('${loc}')" style="padding: 4px 8px; font-size: 12px;">Delete</button>
+    </div>
+  `).join('');
+}
+
+function displayStatuses(statuses) {
+  const container = document.getElementById('statusesList');
+  container.innerHTML = statuses.map((status, index) => `
+    <div style="display: flex; justify-content: space-between; align-items: center; padding: 8px; border-bottom: 1px solid var(--border);">
+      <span>${status}</span>
+      <button class="danger-btn" onclick="removeStatus('${status}')" style="padding: 4px 8px; font-size: 12px;">Delete</button>
+    </div>
+  `).join('');
+}
+
+function displayAccountingItems(items) {
+  const container = document.getElementById('accountingItemsList');
+  container.innerHTML = items.map((item, index) => `
+    <div style="display: flex; justify-content: space-between; align-items: center; padding: 8px; border-bottom: 1px solid var(--border);">
+      <span>${item}</span>
+      <button class="danger-btn" onclick="removeAccountingItem('${item}')" style="padding: 4px 8px; font-size: 12px;">Delete</button>
+    </div>
+  `).join('');
+}
+
+function displayAssetTypes(types) {
+  const container = document.getElementById('assetTypesList');
+  container.innerHTML = types.map((type, index) => `
+    <div style="display: flex; justify-content: space-between; align-items: center; padding: 8px; border-bottom: 1px solid var(--border);">
+      <span>${type}</span>
+      <button class="danger-btn" onclick="removeAssetType('${type}')" style="padding: 4px 8px; font-size: 12px;">Delete</button>
+    </div>
+  `).join('');
+}
+
+async function addCategory() {
+  const input = document.getElementById('newCategory');
+  const value = input.value.trim();
+  if (!value) return;
+  
+  try {
+    const lookupsDoc = await getDoc(doc(db, 'Lookups', 'all'));
+    let categories = [];
+    if (lookupsDoc.exists()) {
+      categories = lookupsDoc.data().categories || [];
+    }
+    
+    if (!categories.includes(value)) {
+      categories.push(value);
+      await setDoc(doc(db, 'Lookups', 'all'), {
+        categories,
+        units: lookupsDoc.exists() ? lookupsDoc.data().units || [] : [],
+        locations: lookupsDoc.exists() ? lookupsDoc.data().locations || [] : [],
+        statuses: lookupsDoc.exists() ? lookupsDoc.data().statuses || [] : [],
+        accountingItems: lookupsDoc.exists() ? lookupsDoc.data().accountingItems || [] : [],
+        assetTypes: lookupsDoc.exists() ? lookupsDoc.data().assetTypes || [] : [],
+        updatedAt: serverTimestamp()
+      });
+      input.value = '';
+      displayCategories(categories);
+      updateItemFormOptions();
+    }
+  } catch (error) {
+    console.error('Error adding category:', error);
+  }
+}
+
+async function removeCategory(category) {
+  if (!confirm(`Are you sure you want to delete "${category}"?`)) return;
+  
+  try {
+    const lookupsDoc = await getDoc(doc(db, 'Lookups', 'all'));
+    if (lookupsDoc.exists()) {
+      const categories = lookupsDoc.data().categories || [];
+      const updatedCategories = categories.filter(cat => cat !== category);
+      
+      await setDoc(doc(db, 'Lookups', 'all'), {
+        ...lookupsDoc.data(),
+        categories: updatedCategories,
+        updatedAt: serverTimestamp()
+      });
+      displayCategories(updatedCategories);
+      updateItemFormOptions();
+    }
+  } catch (error) {
+    console.error('Error removing category:', error);
+  }
+}
+
+// Similar functions for other lists
+async function addUnit() {
+  const input = document.getElementById('newUnit');
+  const value = input.value.trim();
+  if (!value) return;
+  
+  try {
+    const lookupsDoc = await getDoc(doc(db, 'Lookups', 'all'));
+    let units = [];
+    if (lookupsDoc.exists()) {
+      units = lookupsDoc.data().units || [];
+    }
+    
+    if (!units.includes(value)) {
+      units.push(value);
+      await setDoc(doc(db, 'Lookups', 'all'), {
+        ...lookupsDoc.data(),
+        units,
+        updatedAt: serverTimestamp()
+      });
+      input.value = '';
+      displayUnits(units);
+      updateItemFormOptions();
+    }
+  } catch (error) {
+    console.error('Error adding unit:', error);
+  }
+}
+
+async function removeUnit(unit) {
+  if (!confirm(`Are you sure you want to delete "${unit}"?`)) return;
+  
+  try {
+    const lookupsDoc = await getDoc(doc(db, 'Lookups', 'all'));
+    if (lookupsDoc.exists()) {
+      const units = lookupsDoc.data().units || [];
+      const updatedUnits = units.filter(u => u !== unit);
+      
+      await setDoc(doc(db, 'Lookups', 'all'), {
+        ...lookupsDoc.data(),
+        units: updatedUnits,
+        updatedAt: serverTimestamp()
+      });
+      displayUnits(updatedUnits);
+      updateItemFormOptions();
+    }
+  } catch (error) {
+    console.error('Error removing unit:', error);
+  }
+}
+
+async function addLocation() {
+  const input = document.getElementById('newLocation');
+  const value = input.value.trim();
+  if (!value) return;
+  
+  try {
+    const lookupsDoc = await getDoc(doc(db, 'Lookups', 'all'));
+    let locations = [];
+    if (lookupsDoc.exists()) {
+      locations = lookupsDoc.data().locations || [];
+    }
+    
+    if (!locations.includes(value)) {
+      locations.push(value);
+      await setDoc(doc(db, 'Lookups', 'all'), {
+        ...lookupsDoc.data(),
+        locations,
+        updatedAt: serverTimestamp()
+      });
+      input.value = '';
+      displayLocations(locations);
+      updateItemFormOptions();
+    }
+  } catch (error) {
+    console.error('Error adding location:', error);
+  }
+}
+
+async function removeLocation(location) {
+  if (!confirm(`Are you sure you want to delete "${location}"?`)) return;
+  
+  try {
+    const lookupsDoc = await getDoc(doc(db, 'Lookups', 'all'));
+    if (lookupsDoc.exists()) {
+      const locations = lookupsDoc.data().locations || [];
+      const updatedLocations = locations.filter(loc => loc !== location);
+      
+      await setDoc(doc(db, 'Lookups', 'all'), {
+        ...lookupsDoc.data(),
+        locations: updatedLocations,
+        updatedAt: serverTimestamp()
+      });
+      displayLocations(updatedLocations);
+      updateItemFormOptions();
+    }
+  } catch (error) {
+    console.error('Error removing location:', error);
+  }
+}
+
+async function addStatus() {
+  const input = document.getElementById('newStatus');
+  const value = input.value.trim();
+  if (!value) return;
+  
+  try {
+    const lookupsDoc = await getDoc(doc(db, 'Lookups', 'all'));
+    let statuses = [];
+    if (lookupsDoc.exists()) {
+      statuses = lookupsDoc.data().statuses || [];
+    }
+    
+    if (!statuses.includes(value)) {
+      statuses.push(value);
+      await setDoc(doc(db, 'Lookups', 'all'), {
+        ...lookupsDoc.data(),
+        statuses,
+        updatedAt: serverTimestamp()
+      });
+      input.value = '';
+      displayStatuses(statuses);
+      updateItemFormOptions();
+    }
+  } catch (error) {
+    console.error('Error adding status:', error);
+  }
+}
+
+async function removeStatus(status) {
+  if (!confirm(`Are you sure you want to delete "${status}"?`)) return;
+  
+  try {
+    const lookupsDoc = await getDoc(doc(db, 'Lookups', 'all'));
+    if (lookupsDoc.exists()) {
+      const statuses = lookupsDoc.data().statuses || [];
+      const updatedStatuses = statuses.filter(s => s !== status);
+      
+      await setDoc(doc(db, 'Lookups', 'all'), {
+        ...lookupsDoc.data(),
+        statuses: updatedStatuses,
+        updatedAt: serverTimestamp()
+      });
+      displayStatuses(updatedStatuses);
+      updateItemFormOptions();
+    }
+  } catch (error) {
+    console.error('Error removing status:', error);
+  }
+}
+
+async function addAccountingItem() {
+  const input = document.getElementById('newAccountingItem');
+  const value = input.value.trim();
+  if (!value) return;
+  
+  try {
+    const lookupsDoc = await getDoc(doc(db, 'Lookups', 'all'));
+    let accountingItems = [];
+    if (lookupsDoc.exists()) {
+      accountingItems = lookupsDoc.data().accountingItems || [];
+    }
+    
+    if (!accountingItems.includes(value)) {
+      accountingItems.push(value);
+      await setDoc(doc(db, 'Lookups', 'all'), {
+        ...lookupsDoc.data(),
+        accountingItems,
+        updatedAt: serverTimestamp()
+      });
+      input.value = '';
+      displayAccountingItems(accountingItems);
+    }
+  } catch (error) {
+    console.error('Error adding accounting item:', error);
+  }
+}
+
+async function removeAccountingItem(item) {
+  if (!confirm(`Are you sure you want to delete "${item}"?`)) return;
+  
+  try {
+    const lookupsDoc = await getDoc(doc(db, 'Lookups', 'all'));
+    if (lookupsDoc.exists()) {
+      const accountingItems = lookupsDoc.data().accountingItems || [];
+      const updatedItems = accountingItems.filter(i => i !== item);
+      
+      await setDoc(doc(db, 'Lookups', 'all'), {
+        ...lookupsDoc.data(),
+        accountingItems: updatedItems,
+        updatedAt: serverTimestamp()
+      });
+      displayAccountingItems(updatedItems);
+    }
+  } catch (error) {
+    console.error('Error removing accounting item:', error);
+  }
+}
+
+async function addAssetType() {
+  const input = document.getElementById('newAssetType');
+  const value = input.value.trim();
+  if (!value) return;
+  
+  try {
+    const lookupsDoc = await getDoc(doc(db, 'Lookups', 'all'));
+    let assetTypes = [];
+    if (lookupsDoc.exists()) {
+      assetTypes = lookupsDoc.data().assetTypes || [];
+    }
+    
+    if (!assetTypes.includes(value)) {
+      assetTypes.push(value);
+      await setDoc(doc(db, 'Lookups', 'all'), {
+        ...lookupsDoc.data(),
+        assetTypes,
+        updatedAt: serverTimestamp()
+      });
+      input.value = '';
+      displayAssetTypes(assetTypes);
+      updateAssetFormOptions();
+    }
+  } catch (error) {
+    console.error('Error adding asset type:', error);
+  }
+}
+
+async function removeAssetType(type) {
+  if (!confirm(`Are you sure you want to delete "${type}"?`)) return;
+  
+  try {
+    const lookupsDoc = await getDoc(doc(db, 'Lookups', 'all'));
+    if (lookupsDoc.exists()) {
+      const assetTypes = lookupsDoc.data().assetTypes || [];
+      const updatedTypes = assetTypes.filter(t => t !== type);
+      
+      await setDoc(doc(db, 'Lookups', 'all'), {
+        ...lookupsDoc.data(),
+        assetTypes: updatedTypes,
+        updatedAt: serverTimestamp()
+      });
+      displayAssetTypes(updatedTypes);
+      updateAssetFormOptions();
+    }
+  } catch (error) {
+    console.error('Error removing asset type:', error);
+  }
+}
+
+// Update form options when lists change
+async function updateItemFormOptions() {
+  try {
+    const lookupsDoc = await getDoc(doc(db, 'Lookups', 'all'));
+    if (lookupsDoc.exists()) {
+      const lookups = lookupsDoc.data();
+      
+      // Update category select
+      const categorySelect = document.getElementById('itemCategory');
+      categorySelect.innerHTML = '<option value="">Select Category</option>';
+      (lookups.categories || []).forEach(cat => {
+        categorySelect.innerHTML += `<option value="${cat}">${cat}</option>`;
+      });
+      
+      // Update unit select
+      const unitSelect = document.getElementById('itemUnit');
+      unitSelect.innerHTML = '<option value="">Select Unit</option>';
+      (lookups.units || []).forEach(unit => {
+        unitSelect.innerHTML += `<option value="${unit}">${unit}</option>`;
+      });
+      
+      // Update location select
+      const locationSelect = document.getElementById('itemLocation');
+      locationSelect.innerHTML = '<option value="">Select Location</option>';
+      (lookups.locations || []).forEach(loc => {
+        locationSelect.innerHTML += `<option value="${loc}">${loc}</option>`;
+      });
+      
+      // Update status select
+      const statusSelect = document.getElementById('itemStatus');
+      statusSelect.innerHTML = '<option value="">Select Status</option>';
+      (lookups.statuses || []).forEach(status => {
+        statusSelect.innerHTML += `<option value="${status}">${status}</option>`;
+      });
+    }
+  } catch (error) {
+    console.error('Error updating form options:', error);
+  }
+}
+
+async function updateAssetFormOptions() {
+  try {
+    const lookupsDoc = await getDoc(doc(db, 'Lookups', 'all'));
+    if (lookupsDoc.exists()) {
+      const lookups = lookupsDoc.data();
+      
+      // Update asset type select
+      const assetTypeSelect = document.getElementById('assetType');
+      assetTypeSelect.innerHTML = '<option value="">Select Type</option>';
+      (lookups.assetTypes || []).forEach(type => {
+        assetTypeSelect.innerHTML += `<option value="${type}">${type}</option>`;
+      });
+      
+      // Update asset status select
+      const assetStatusSelect = document.getElementById('assetStatus');
+      assetStatusSelect.innerHTML = '<option value="">Select Status</option>';
+      (lookups.assetStatuses || []).forEach(status => {
+        assetStatusSelect.innerHTML += `<option value="${status}">${status}</option>`;
+      });
+    }
+  } catch (error) {
+    console.error('Error updating asset form options:', error);
+  }
+}
+
 // Make functions globally accessible
 window.openItemModal = openItemModal;
 window.closeItemModal = closeItemModal;
@@ -1192,6 +1721,18 @@ window.generateAssetsReport = generateAssetsReport;
 window.editItem = editItem;
 window.deleteItem = deleteItem;
 window.settleCustody = settleCustody;
+window.addCategory = addCategory;
+window.removeCategory = removeCategory;
+window.addUnit = addUnit;
+window.removeUnit = removeUnit;
+window.addLocation = addLocation;
+window.removeLocation = removeLocation;
+window.addStatus = addStatus;
+window.removeStatus = removeStatus;
+window.addAccountingItem = addAccountingItem;
+window.removeAccountingItem = removeAccountingItem;
+window.addAssetType = addAssetType;
+window.removeAssetType = removeAssetType;
 </script>
 </body>
 </html>
