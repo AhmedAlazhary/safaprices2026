@@ -1514,16 +1514,84 @@ function addGarageCustodyRow() {
   const today = new Date().toISOString().split('T')[0];
   
   newRow.innerHTML = `
-    <td><input type="date" value="${today}" onchange="calculateCustodyBalance(this.closest('tr'))" /></td>
+    <td><input type="date" value="${today}" onchange="calculateCustodyBalance(this.closest('tr')); updateTotalsFromTable()" /></td>
     <td><input type="text" placeholder="أدخل البيان" /></td>
-    <td><input type="number" placeholder="0.00" step="0.01" onchange="calculateCustodyBalance(this.closest('tr'))" /></td>
-    <td><input type="number" placeholder="0.00" step="0.01" onchange="calculateCustodyBalance(this.closest('tr'))" /></td>
+    <td><input type="number" placeholder="0.00" step="0.01" onchange="calculateCustodyBalance(this.closest('tr')); updateTotalsFromTable()" /></td>
+    <td><input type="number" placeholder="0.00" step="0.01" onchange="calculateCustodyBalance(this.closest('tr')); updateTotalsFromTable()" /></td>
     <td><input type="number" readonly value="0.00" step="0.01" style="background: #f8f9fa;" /></td>
     <td><input type="text" placeholder="ملاحظات" /></td>
-    <td><button class="delete-btn" onclick="this.closest('tr').remove()">حذف</button></td>
+    <td><button class="delete-btn" onclick="this.closest('tr').remove(); updateTotalsFromTable()">حذف</button></td>
   `;
   
   tbody.appendChild(newRow);
+  // Update totals immediately after adding row
+  updateTotalsFromTable();
+}
+
+// Function to calculate totals from current table data
+function updateTotalsFromTable() {
+  const tbody = document.getElementById('garageCustodyTableBody');
+  const rows = tbody.getElementsByTagName('tr');
+  
+  let totalCustody = 0;
+  let totalClearance = 0;
+  const today = new Date().toISOString().split('T')[0];
+  
+  for (let row of rows) {
+    const dateInput = row.cells[0]?.querySelector('input');
+    const custodyInput = row.cells[2]?.querySelector('input');
+    const clearanceInput = row.cells[3]?.querySelector('input');
+    
+    if (dateInput && custodyInput && clearanceInput) {
+      const date = dateInput.value;
+      const custody = parseFloat(custodyInput.value) || 0;
+      const clearance = parseFloat(clearanceInput.value) || 0;
+      
+      // Only count today's transactions for daily report
+      if (date === today) {
+        totalCustody += custody;
+        totalClearance += clearance;
+      }
+    }
+  }
+  
+  // Update report values
+  const dailyCustodyElement = document.getElementById('dailyCustodyTotal');
+  const dailyClearanceElement = document.getElementById('dailyClearanceTotal');
+  const afterClearanceElement = document.getElementById('afterClearanceTotal');
+  const finalCustodyElement = document.getElementById('finalCustodyTotal');
+  
+  if (dailyCustodyElement) dailyCustodyElement.textContent = totalCustody.toFixed(2);
+  if (dailyClearanceElement) dailyClearanceElement.textContent = totalClearance.toFixed(2);
+  if (afterClearanceElement) afterClearanceElement.textContent = (totalCustody - totalClearance).toFixed(2);
+  if (finalCustodyElement) finalCustodyElement.textContent = (totalCustody - totalClearance).toFixed(2);
+  
+  // Calculate and update current total (all rows)
+  let currentTotal = 0;
+  for (let row of rows) {
+    const custodyInput = row.cells[2]?.querySelector('input');
+    const clearanceInput = row.cells[3]?.querySelector('input');
+    
+    if (custodyInput && clearanceInput) {
+      const custody = parseFloat(custodyInput.value) || 0;
+      const clearance = parseFloat(clearanceInput.value) || 0;
+      currentTotal += custody - clearance;
+    }
+  }
+  
+  const currentTotalElement = document.getElementById('currentCustodyTotal');
+  if (currentTotalElement) {
+    currentTotalElement.textContent = currentTotal.toFixed(2);
+    
+    // Change color based on balance
+    if (currentTotal < 0) {
+      currentTotalElement.style.color = 'var(--danger)';
+    } else if (currentTotal > 10000) {
+      currentTotalElement.style.color = 'var(--success)';
+    } else {
+      currentTotalElement.style.color = 'var(--accent)';
+    }
+  }
 }
 
 function calculateCustodyBalance(row) {
@@ -1578,26 +1646,39 @@ function calculateDailyTotals(docs) {
   
   let totalCustody = 0;
   let totalClearance = 0;
-  let currentTotal = 0;
   
   // Calculate today's totals
   todayDocs.forEach(doc => {
     const data = doc.data();
-    totalCustody += data.custodyIn || 0;
-    totalClearance += data.clearanceOut || 0;
+    totalCustody += parseFloat(data.custodyIn) || 0;
+    totalClearance += parseFloat(data.clearanceOut) || 0;
   });
+  
+  // Update report values
+  const dailyCustodyElement = document.getElementById('dailyCustodyTotal');
+  const dailyClearanceElement = document.getElementById('dailyClearanceTotal');
+  const afterClearanceElement = document.getElementById('afterClearanceTotal');
+  const finalCustodyElement = document.getElementById('finalCustodyTotal');
+  
+  if (dailyCustodyElement) dailyCustodyElement.textContent = totalCustody.toFixed(2);
+  if (dailyClearanceElement) dailyClearanceElement.textContent = totalClearance.toFixed(2);
+  if (afterClearanceElement) afterClearanceElement.textContent = (totalCustody - totalClearance).toFixed(2);
+  if (finalCustodyElement) finalCustodyElement.textContent = (totalCustody - totalClearance).toFixed(2);
+  
+  // Also update current total
+  updateCurrentCustodyTotal(docs);
+}
+
+function updateCurrentCustodyTotal(docs) {
+  let currentTotal = 0;
   
   // Calculate current total custody (all time)
   docs.forEach(doc => {
     const data = doc.data();
-    currentTotal += (data.custodyIn || 0) - (data.clearanceOut || 0);
+    const custodyIn = parseFloat(data.custodyIn) || 0;
+    const clearanceOut = parseFloat(data.clearanceOut) || 0;
+    currentTotal += custodyIn - clearanceOut;
   });
-  
-  // Update report values
-  document.getElementById('dailyCustodyTotal').textContent = totalCustody.toFixed(2);
-  document.getElementById('dailyClearanceTotal').textContent = totalClearance.toFixed(2);
-  document.getElementById('afterClearanceTotal').textContent = (totalCustody - totalClearance).toFixed(2);
-  document.getElementById('finalCustodyTotal').textContent = (totalCustody - totalClearance).toFixed(2);
   
   // Update current custody total display
   const currentTotalElement = document.getElementById('currentCustodyTotal');
@@ -2101,6 +2182,8 @@ window.removeStatus = removeStatus;
 window.addGarageCustodyRow = addGarageCustodyRow;
 window.toggleCustodyReports = toggleCustodyReports;
 window.printCustodyReports = printCustodyReports;
+window.updateTotalsFromTable = updateTotalsFromTable;
+window.updateCurrentCustodyTotal = updateCurrentCustodyTotal;
 </script>
 </body>
 </html>
