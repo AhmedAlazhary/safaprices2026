@@ -586,19 +586,19 @@ tr:hover {
       <div class="panel" style="background: linear-gradient(135deg, #e8f4fd 0%, #d1e7dd 100%); border: 2px solid var(--accent); margin-bottom: 20px;">
         <div style="display: flex; justify-content: space-between; align-items: center; padding: 16px;">
           <div>
-            <h3 style="margin: 0; color: var(--primary); font-size: 1.1rem;">Total Current Custody</h3>
-            <p style="margin: 4px 0 0 0; color: var(--muted); font-size: 0.9rem;">Garage custody balance</p>
+            <h3 style="margin: 0; color: var(--primary); font-size: 1.1rem;">إجمالي العهدة الحالية</h3>
+            <p style="margin: 4px 0 0 0; color: var(--muted); font-size: 0.9rem;">رصيد عهدة الجراج</p>
           </div>
           <div style="text-align: left;">
             <div style="font-size: 2rem; font-weight: 700; color: var(--accent);" id="currentCustodyTotal">0.00</div>
-            <div style="color: var(--muted); font-size: 0.8rem;">EGP</div>
+            <div style="color: var(--muted); font-size: 0.8rem;">ج.م</div>
           </div>
         </div>
       </div>
 
       <!-- Actions -->
       <div style="display: flex; gap: 12px; margin-bottom: 20px;">
-        <button class="success-btn" onclick="toggleCustodyReports()">Show Reports</button>
+        <button class="success-btn" onclick="toggleCustodyReports()">عرض التقارير</button>
       </div>
       
       <!-- Excel-like Custody Table -->
@@ -1598,7 +1598,10 @@ function calculateCustodyBalance(row) {
   const custodyIn = parseFloat(row.cells[2].querySelector('input').value) || 0;
   const clearanceOut = parseFloat(row.cells[3].querySelector('input').value) || 0;
   const balance = custodyIn - clearanceOut;
-  row.cells[4].querySelector('input').value = balance.toFixed(2);
+  const balanceInput = row.cells[4].querySelector('input');
+  if (balanceInput) {
+    balanceInput.value = balance.toFixed(2);
+  }
 }
 
 // Load garage custody data
@@ -1646,6 +1649,7 @@ function calculateDailyTotals(docs) {
   
   let totalCustody = 0;
   let totalClearance = 0;
+  let previousCustody = 0;
   
   // Calculate today's totals
   todayDocs.forEach(doc => {
@@ -1654,16 +1658,28 @@ function calculateDailyTotals(docs) {
     totalClearance += parseFloat(data.clearanceOut) || 0;
   });
   
+  // Calculate previous custody (all transactions before today)
+  const previousDocs = docs.filter(doc => doc.data().date < today);
+  previousDocs.forEach(doc => {
+    const data = doc.data();
+    previousCustody += (parseFloat(data.custodyIn) || 0) - (parseFloat(data.clearanceOut) || 0);
+  });
+  
+  // Calculate final total
+  const finalTotal = previousCustody + totalCustody - totalClearance;
+  
   // Update report values
+  const previousCustodyElement = document.getElementById('previousCustody');
   const dailyCustodyElement = document.getElementById('dailyCustodyTotal');
   const dailyClearanceElement = document.getElementById('dailyClearanceTotal');
   const afterClearanceElement = document.getElementById('afterClearanceTotal');
   const finalCustodyElement = document.getElementById('finalCustodyTotal');
   
+  if (previousCustodyElement) previousCustodyElement.textContent = previousCustody.toFixed(2);
   if (dailyCustodyElement) dailyCustodyElement.textContent = totalCustody.toFixed(2);
   if (dailyClearanceElement) dailyClearanceElement.textContent = totalClearance.toFixed(2);
   if (afterClearanceElement) afterClearanceElement.textContent = (totalCustody - totalClearance).toFixed(2);
-  if (finalCustodyElement) finalCustodyElement.textContent = (totalCustody - totalClearance).toFixed(2);
+  if (finalCustodyElement) finalCustodyElement.textContent = finalTotal.toFixed(2);
   
   // Also update current total
   updateCurrentCustodyTotal(docs);
