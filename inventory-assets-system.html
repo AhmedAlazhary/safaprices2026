@@ -415,6 +415,86 @@ tr:hover {
   border: 1px solid var(--border);
   border-radius: 8px;
 }
+
+.reports-section {
+  padding: 20px;
+  background: var(--surface-soft);
+  border-radius: 12px;
+  margin-top: 20px;
+}
+
+.reports-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 20px;
+  padding-bottom: 12px;
+  border-bottom: 2px solid var(--border);
+  flex-wrap: wrap;
+  gap: 12px;
+}
+
+.reports-title {
+  font-size: 1.2rem;
+  font-weight: 700;
+  color: var(--primary);
+}
+
+.reports-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+  gap: 20px;
+}
+
+.report-card {
+  background: var(--surface);
+  border-radius: 12px;
+  padding: 20px;
+  box-shadow: 0 4px 12px rgba(31, 51, 71, 0.1);
+  border: 1px solid var(--border);
+}
+
+.report-card h4 {
+  margin: 0 0 16px 0;
+  color: var(--primary);
+  font-size: 1.1rem;
+}
+
+.report-table {
+  width: 100%;
+  border-collapse: collapse;
+}
+
+.report-table td {
+  padding: 8px 12px;
+  border-bottom: 1px solid var(--border);
+}
+
+.report-table td:first-child {
+  font-weight: 700;
+  color: var(--text);
+}
+
+.highlight-red {
+  background: rgba(231, 76, 60, 0.1);
+  color: var(--danger);
+  font-weight: 700;
+  border-radius: 4px;
+}
+
+.print-btn {
+  background: #28a745;
+  color: white;
+  border: none;
+  padding: 8px 16px;
+  border-radius: 6px;
+  cursor: pointer;
+  font-weight: 700;
+}
+
+.print-btn:hover {
+  background: #218838;
+}
 </style>
 </head>
 <body>
@@ -500,62 +580,82 @@ tr:hover {
   <!-- Custody Tab -->
   <div id="custody-tab" class="tab-content">
     <div class="panel">
-      <h2>Custody & Settlements</h2>
+      <h2>عهدة الجراج</h2>
       
-      <!-- Excel-like Custody Tables -->
-      <!-- Alexandria Table -->
-      <div class="table-container" style="margin-bottom: 30px;">
+      <!-- Actions -->
+      <div style="display: flex; gap: 12px; margin-bottom: 20px;">
+        <button class="primary-btn" onclick="openCustodyModal()">إنشاء عهدة جديدة</button>
+        <button class="warning-btn" onclick="openSettlementModal()">تصفية عهدة</button>
+        <button class="success-btn" onclick="toggleCustodyReports()">عرض التقارير</button>
+      </div>
+      
+      <!-- Excel-like Custody Table -->
+      <div class="table-container">
         <div class="table-header">
-          <h2 class="table-title">Custody - Alexandria</h2>
-          <span style="color: var(--muted); font-size: 0.9rem;">Excel-like Grid System</span>
+          <h2 class="table-title">عهدة الجراج</h2>
+          <span style="color: var(--muted); font-size: 0.9rem;">نظام جدول إكسل</span>
         </div>
         <div class="table-wrapper">
-          <table class="excel-table" id="alexandriaCustodyTable">
+          <table class="excel-table" id="garageCustodyTable">
             <thead>
               <tr>
-                <th>DATE</th>
-                <th>DESCRIPTION</th>
-                <th>CUSTODY IN</th>
-                <th>CLEARANCE OUT</th>
-                <th>NOTES</th>
-                <th>ACTIONS</th>
+                <th>التاريخ</th>
+                <th>البيان</th>
+                <th>العهدة (داخل)</th>
+                <th>التصفية (خارج)</th>
+                <th>المتبقي</th>
+                <th>ملاحظات</th>
+                <th>إجراءات</th>
               </tr>
             </thead>
-            <tbody id="alexandriaCustodyTableBody">
+            <tbody id="garageCustodyTableBody">
               <tr class="loading">
-                <td colspan="6">Loading data...</td>
+                <td colspan="7">جاري تحميل البيانات...</td>
               </tr>
             </tbody>
           </table>
-          <button class="add-row-btn" onclick="addCustodyRow('alexandria')">+ Add New Row</button>
+          <button class="add-row-btn" onclick="addGarageCustodyRow()">+ إضافة صف جديد</button>
         </div>
       </div>
 
-      <!-- Dekkela Table -->
-      <div class="table-container">
-        <div class="table-header">
-          <h2 class="table-title">Custody - Dekkela</h2>
-          <span style="color: var(--muted); font-size: 0.9rem;">Excel-like Grid System</span>
+      <!-- Daily Reports Section -->
+      <div class="reports-section" id="custodyReportsSection" style="display: none;">
+        <div class="reports-header">
+          <h2 class="reports-title">التقارير اليومية</h2>
+          <div style="display: flex; gap: 12px; align-items: center; flex-wrap: wrap;">
+            <div style="color: var(--muted); font-size: 0.9rem;">تاريخ اليوم: <span id="todayDate"></span></div>
+            <button class="btn btn-primary" onclick="toggleCustodyReports()">إخفاء التقارير</button>
+            <button class="btn print-btn" onclick="printCustodyReports()">طباعة التقارير</button>
+          </div>
         </div>
-        <div class="table-wrapper">
-          <table class="excel-table" id="dekkelaCustodyTable">
-            <thead>
+        
+        <div class="reports-grid">
+          <!-- Daily Report -->
+          <div class="report-card">
+            <h4>تقرير يومي - عهدة الجراج</h4>
+            <table class="report-table" id="garageDailyReport">
               <tr>
-                <th>DATE</th>
-                <th>DESCRIPTION</th>
-                <th>CUSTODY IN</th>
-                <th>CLEARANCE OUT</th>
-                <th>NOTES</th>
-                <th>ACTIONS</th>
+                <td>عهدة سابقة</td>
+                <td id="previousCustody">0.00</td>
               </tr>
-            </thead>
-            <tbody id="dekkelaCustodyTableBody">
-              <tr class="loading">
-                <td colspan="6">Loading data...</td>
+              <tr>
+                <td><strong>إجمالي العهدة اليوم</strong></td>
+                <td id="dailyCustodyTotal">0.00</td>
               </tr>
-            </tbody>
-          </table>
-          <button class="add-row-btn" onclick="addCustodyRow('dekkela')">+ Add New Row</button>
+              <tr>
+                <td><strong>إجمالي التصفية اليومية</strong></td>
+                <td class="highlight-red" id="dailyClearanceTotal">0.00</td>
+              </tr>
+              <tr>
+                <td><strong>العهدة بعد التصفية</strong></td>
+                <td class="highlight-red" id="afterClearanceTotal">0.00</td>
+              </tr>
+              <tr>
+                <td><strong>إجمالي العهدة النهائي</strong></td>
+                <td class="highlight-red" id="finalCustodyTotal">0.00</td>
+              </tr>
+            </table>
+          </div>
         </div>
       </div>
     </div>
@@ -1395,65 +1495,106 @@ function addSettlementItem() {
   // Implementation for adding settlement items
 }
 
-// Custody table functions
-function addCustodyRow(location) {
-  const tbody = document.getElementById(`${location}CustodyTableBody`);
+// Garage custody table functions
+function addGarageCustodyRow() {
+  const tbody = document.getElementById('garageCustodyTableBody');
   const newRow = document.createElement('tr');
   const today = new Date().toISOString().split('T')[0];
   
   newRow.innerHTML = `
-    <td><input type="date" value="${today}" /></td>
-    <td><input type="text" placeholder="Enter description" /></td>
-    <td><input type="number" placeholder="0.00" step="0.01" /></td>
-    <td><input type="number" placeholder="0.00" step="0.01" /></td>
-    <td><input type="text" placeholder="Notes" /></td>
-    <td><button class="delete-btn" onclick="this.closest('tr').remove()">Delete</button></td>
+    <td><input type="date" value="${today}" onchange="calculateCustodyBalance(this.closest('tr'))" /></td>
+    <td><input type="text" placeholder="أدخل البيان" /></td>
+    <td><input type="number" placeholder="0.00" step="0.01" onchange="calculateCustodyBalance(this.closest('tr'))" /></td>
+    <td><input type="number" placeholder="0.00" step="0.01" onchange="calculateCustodyBalance(this.closest('tr'))" /></td>
+    <td><input type="number" readonly value="0.00" step="0.01" style="background: #f8f9fa;" /></td>
+    <td><input type="text" placeholder="ملاحظات" /></td>
+    <td><button class="delete-btn" onclick="this.closest('tr').remove()">حذف</button></td>
   `;
   
   tbody.appendChild(newRow);
 }
 
-// Load custody data
+function calculateCustodyBalance(row) {
+  const custodyIn = parseFloat(row.cells[2].querySelector('input').value) || 0;
+  const clearanceOut = parseFloat(row.cells[3].querySelector('input').value) || 0;
+  const balance = custodyIn - clearanceOut;
+  row.cells[4].querySelector('input').value = balance.toFixed(2);
+}
+
+// Load garage custody data
 async function loadCustodyTables() {
   try {
-    // Load Alexandria custody data
-    const alexQuery = query(collection(db, 'Custody'), where('location', '==', 'alexandria'), orderBy('date', 'desc'));
-    const alexSnapshot = await getDocs(alexQuery);
-    displayCustodyTable('alexandria', alexSnapshot.docs);
-    
-    // Load Dekkela custody data
-    const dekQuery = query(collection(db, 'Custody'), where('location', '==', 'dekkela'), orderBy('date', 'desc'));
-    const dekSnapshot = await getDocs(dekQuery);
-    displayCustodyTable('dekkela', dekSnapshot.docs);
+    const custodyQuery = query(collection(db, 'GarageCustody'), orderBy('date', 'desc'));
+    const custodySnapshot = await getDocs(custodyQuery);
+    displayGarageCustodyTable(custodySnapshot.docs);
+    calculateDailyTotals(custodySnapshot.docs);
   } catch (error) {
     console.error('Error loading custody tables:', error);
-    // Show empty tables on error
-    displayCustodyTable('alexandria', []);
-    displayCustodyTable('dekkela', []);
+    // Show empty table on error
+    displayGarageCustodyTable([]);
   }
 }
 
-function displayCustodyTable(location, docs) {
-  const tbody = document.getElementById(`${location}CustodyTableBody`);
+function displayGarageCustodyTable(docs) {
+  const tbody = document.getElementById('garageCustodyTableBody');
   
   if (docs.length === 0) {
-    tbody.innerHTML = '<tr><td colspan="6" style="text-align: center; padding: 20px;">No data found</td></tr>';
+    tbody.innerHTML = '<tr><td colspan="7" style="text-align: center; padding: 20px;">لا توجد بيانات</td></tr>';
     return;
   }
   
   tbody.innerHTML = docs.map(doc => {
     const data = doc.data();
+    const balance = (data.custodyIn || 0) - (data.clearanceOut || 0);
     return `
       <tr>
-        <td><input type="date" value="${data.date || ''}" /></td>
+        <td><input type="date" value="${data.date || ''}" onchange="calculateCustodyBalance(this.closest('tr'))" /></td>
         <td><input type="text" value="${data.description || ''}" /></td>
-        <td><input type="number" value="${data.custodyIn || 0}" step="0.01" /></td>
-        <td><input type="number" value="${data.clearanceOut || 0}" step="0.01" /></td>
+        <td><input type="number" value="${data.custodyIn || 0}" step="0.01" onchange="calculateCustodyBalance(this.closest('tr'))" /></td>
+        <td><input type="number" value="${data.clearanceOut || 0}" step="0.01" onchange="calculateCustodyBalance(this.closest('tr'))" /></td>
+        <td><input type="number" readonly value="${balance.toFixed(2)}" step="0.01" style="background: #f8f9fa;" /></td>
         <td><input type="text" value="${data.notes || ''}" /></td>
-        <td><button class="delete-btn" onclick="this.closest('tr').remove()">Delete</button></td>
+        <td><button class="delete-btn" onclick="this.closest('tr').remove()">حذف</button></td>
       </tr>
     `;
   }).join('');
+}
+
+function calculateDailyTotals(docs) {
+  const today = new Date().toISOString().split('T')[0];
+  const todayDocs = docs.filter(doc => doc.data().date === today);
+  
+  let totalCustody = 0;
+  let totalClearance = 0;
+  
+  todayDocs.forEach(doc => {
+    const data = doc.data();
+    totalCustody += data.custodyIn || 0;
+    totalClearance += data.clearanceOut || 0;
+  });
+  
+  // Update report values
+  document.getElementById('dailyCustodyTotal').textContent = totalCustody.toFixed(2);
+  document.getElementById('dailyClearanceTotal').textContent = totalClearance.toFixed(2);
+  document.getElementById('afterClearanceTotal').textContent = (totalCustody - totalClearance).toFixed(2);
+  document.getElementById('finalCustodyTotal').textContent = (totalCustody - totalClearance).toFixed(2);
+}
+
+// Toggle custody reports
+function toggleCustodyReports() {
+  const reportsSection = document.getElementById('custodyReportsSection');
+  if (reportsSection.style.display === 'none') {
+    reportsSection.style.display = 'block';
+    // Set today's date
+    document.getElementById('todayDate').textContent = new Date().toLocaleDateString('ar-EG');
+  } else {
+    reportsSection.style.display = 'none';
+  }
+}
+
+// Print custody reports
+function printCustodyReports() {
+  window.print();
 }
 
 // Lists management functions
@@ -1540,22 +1681,18 @@ async function addCategory() {
   
   try {
     const lookupsDoc = await getDoc(doc(db, 'Lookups', 'all'));
-    let categories = [];
+    let lookups = {};
     if (lookupsDoc.exists()) {
-      categories = lookupsDoc.data().categories || [];
+      lookups = lookupsDoc.data();
     }
     
+    let categories = lookups.categories || [];
     if (!categories.includes(value)) {
       categories.push(value);
-      await setDoc(doc(db, 'Lookups', 'all'), {
-        categories,
-        units: lookupsDoc.exists() ? lookupsDoc.data().units || [] : [],
-        locations: lookupsDoc.exists() ? lookupsDoc.data().locations || [] : [],
-        statuses: lookupsDoc.exists() ? lookupsDoc.data().statuses || [] : [],
-        accountingItems: lookupsDoc.exists() ? lookupsDoc.data().accountingItems || [] : [],
-        assetTypes: lookupsDoc.exists() ? lookupsDoc.data().assetTypes || [] : [],
-        updatedAt: serverTimestamp()
-      });
+      lookups.categories = categories;
+      lookups.updatedAt = serverTimestamp();
+      
+      await setDoc(doc(db, 'Lookups', 'all'), lookups);
       input.value = '';
       displayCategories(categories);
       updateItemFormOptions();
@@ -1571,14 +1708,14 @@ async function removeCategory(category) {
   try {
     const lookupsDoc = await getDoc(doc(db, 'Lookups', 'all'));
     if (lookupsDoc.exists()) {
-      const categories = lookupsDoc.data().categories || [];
+      let lookups = lookupsDoc.data();
+      const categories = lookups.categories || [];
       const updatedCategories = categories.filter(cat => cat !== category);
       
-      await setDoc(doc(db, 'Lookups', 'all'), {
-        ...lookupsDoc.data(),
-        categories: updatedCategories,
-        updatedAt: serverTimestamp()
-      });
+      lookups.categories = updatedCategories;
+      lookups.updatedAt = serverTimestamp();
+      
+      await setDoc(doc(db, 'Lookups', 'all'), lookups);
       displayCategories(updatedCategories);
       updateItemFormOptions();
     }
@@ -1926,6 +2063,9 @@ window.addLocation = addLocation;
 window.removeLocation = removeLocation;
 window.addStatus = addStatus;
 window.removeStatus = removeStatus;
+window.addGarageCustodyRow = addGarageCustodyRow;
+window.toggleCustodyReports = toggleCustodyReports;
+window.printCustodyReports = printCustodyReports;
 </script>
 </body>
 </html>
