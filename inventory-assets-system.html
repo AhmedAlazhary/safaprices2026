@@ -596,9 +596,20 @@ tr:hover {
         </div>
       </div>
 
+      <!-- Custody Officer Totals -->
+      <div class="panel" style="background: linear-gradient(135deg, #fff5e6 0%, #ffe8cc 100%); border: 2px solid var(--warning); margin-bottom: 20px;">
+        <div style="padding: 16px;">
+          <h3 style="margin: 0 0 16px 0; color: var(--primary); font-size: 1.1rem;">إجماليات حسب مسئول العهدة</h3>
+          <div id="custodyOfficerTotals" style="display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 12px;">
+            <!-- Officer totals will be loaded here -->
+          </div>
+        </div>
+      </div>
+
       <!-- Actions -->
       <div style="display: flex; gap: 12px; margin-bottom: 20px;">
         <button class="success-btn" onclick="toggleCustodyReports()">عرض التقارير</button>
+        <button class="primary-btn" onclick="saveCustodyData()">حفظ البيانات</button>
       </div>
       
       <!-- Excel-like Custody Table -->
@@ -612,6 +623,7 @@ tr:hover {
             <thead>
               <tr>
                 <th>التاريخ</th>
+                <th>مسئول العهدة</th>
                 <th>البيان</th>
                 <th>العهدة (داخل)</th>
                 <th>التصفية (خارج)</th>
@@ -1515,6 +1527,7 @@ function addGarageCustodyRow() {
   
   newRow.innerHTML = `
     <td><input type="date" value="${today}" onchange="calculateCustodyBalance(this.closest('tr')); updateTotalsFromTable()" /></td>
+    <td><input type="text" placeholder="أدخل اسم المسئول" onchange="updateTotalsFromTable()" /></td>
     <td><input type="text" placeholder="أدخل البيان" /></td>
     <td><input type="number" placeholder="0.00" step="0.01" onchange="calculateCustodyBalance(this.closest('tr')); updateTotalsFromTable()" /></td>
     <td><input type="number" placeholder="0.00" step="0.01" onchange="calculateCustodyBalance(this.closest('tr')); updateTotalsFromTable()" /></td>
@@ -1537,13 +1550,18 @@ function updateTotalsFromTable() {
   let totalClearance = 0;
   const today = new Date().toISOString().split('T')[0];
   
+  // Calculate officer totals
+  const officerTotals = {};
+  
   for (let row of rows) {
     const dateInput = row.cells[0]?.querySelector('input');
-    const custodyInput = row.cells[2]?.querySelector('input');
-    const clearanceInput = row.cells[3]?.querySelector('input');
+    const officerInput = row.cells[1]?.querySelector('input');
+    const custodyInput = row.cells[3]?.querySelector('input');
+    const clearanceInput = row.cells[4]?.querySelector('input');
     
     if (dateInput && custodyInput && clearanceInput) {
       const date = dateInput.value;
+      const officer = officerInput?.value?.trim() || 'غير محدد';
       const custody = parseFloat(custodyInput.value) || 0;
       const clearance = parseFloat(clearanceInput.value) || 0;
       
@@ -1552,8 +1570,17 @@ function updateTotalsFromTable() {
         totalCustody += custody;
         totalClearance += clearance;
       }
+      
+      // Calculate officer total
+      if (!officerTotals[officer]) {
+        officerTotals[officer] = 0;
+      }
+      officerTotals[officer] += custody - clearance;
     }
   }
+  
+  // Update officer totals display
+  updateOfficerTotals(officerTotals);
   
   // Update report values
   const dailyCustodyElement = document.getElementById('dailyCustodyTotal');
@@ -1569,8 +1596,8 @@ function updateTotalsFromTable() {
   // Calculate and update current total (all rows)
   let currentTotal = 0;
   for (let row of rows) {
-    const custodyInput = row.cells[2]?.querySelector('input');
-    const clearanceInput = row.cells[3]?.querySelector('input');
+    const custodyInput = row.cells[3]?.querySelector('input');
+    const clearanceInput = row.cells[4]?.querySelector('input');
     
     if (custodyInput && clearanceInput) {
       const custody = parseFloat(custodyInput.value) || 0;
@@ -1594,11 +1621,85 @@ function updateTotalsFromTable() {
   }
 }
 
+// Update officer totals display
+function updateOfficerTotals(officerTotals) {
+  const container = document.getElementById('custodyOfficerTotals');
+  
+  if (Object.keys(officerTotals).length === 0) {
+    container.innerHTML = '<div style="color: var(--muted); text-align: center; padding: 20px;">لا توجد بيانات للمسئولين</div>';
+    return;
+  }
+  
+  container.innerHTML = Object.entries(officerTotals).map(([officer, total]) => `
+    <div class="panel" style="padding: 12px; border: 1px solid var(--border); border-radius: 8px;">
+      <div style="display: flex; justify-content: space-between; align-items: center;">
+        <div>
+          <strong style="color: var(--primary);">${officer}</strong>
+        </div>
+        <div style="text-align: left;">
+          <div style="font-size: 1.2rem; font-weight: 700; color: ${total < 0 ? 'var(--danger)' : total > 5000 ? 'var(--success)' : 'var(--accent)'};">
+            ${total.toFixed(2)}
+          </div>
+          <div style="color: var(--muted); font-size: 0.8rem;">ج.م</div>
+        </div>
+      </div>
+    </div>
+  `).join('');
+}
+
+// Save custody data to Firestore
+async function saveCustodyData() {
+  const tbody = document.getElementById('garageCustodyTableBody');
+  const rows = tbody.getElementsByTagName('tr');
+  
+  try {
+    // Clear existing data
+    const custodyQuery = query(collection(db, 'GarageCustody'));
+    const querySnapshot = await getDocs(custodyQuery);
+    const deletePromises = [];
+    querySnapshot.forEach(doc => {
+      deletePromises.push(deleteDoc(doc.ref));
+    });
+    await Promise.all(deletePromises);
+    
+    // Save new data
+    const savePromises = [];
+    for (let row of rows) {
+      const dateInput = row.cells[0]?.querySelector('input');
+      const officerInput = row.cells[1]?.querySelector('input');
+      const descriptionInput = row.cells[2]?.querySelector('input');
+      const custodyInput = row.cells[3]?.querySelector('input');
+      const clearanceInput = row.cells[4]?.querySelector('input');
+      const notesInput = row.cells[6]?.querySelector('input');
+      
+      if (dateInput && officerInput && descriptionInput) {
+        const data = {
+          date: dateInput.value,
+          custodyOfficer: officerInput.value.trim(),
+          description: descriptionInput.value.trim(),
+          custodyIn: parseFloat(custodyInput.value) || 0,
+          clearanceOut: parseFloat(clearanceInput.value) || 0,
+          notes: notesInput?.value.trim() || '',
+          updatedAt: serverTimestamp()
+        };
+        
+        savePromises.push(addDoc(collection(db, 'GarageCustody'), data));
+      }
+    }
+    
+    await Promise.all(savePromises);
+    console.log('Custody data saved successfully');
+    
+  } catch (error) {
+    console.error('Error saving custody data:', error);
+  }
+}
+
 function calculateCustodyBalance(row) {
-  const custodyIn = parseFloat(row.cells[2].querySelector('input').value) || 0;
-  const clearanceOut = parseFloat(row.cells[3].querySelector('input').value) || 0;
+  const custodyIn = parseFloat(row.cells[3].querySelector('input').value) || 0;
+  const clearanceOut = parseFloat(row.cells[4].querySelector('input').value) || 0;
   const balance = custodyIn - clearanceOut;
-  const balanceInput = row.cells[4].querySelector('input');
+  const balanceInput = row.cells[5].querySelector('input');
   if (balanceInput) {
     balanceInput.value = balance.toFixed(2);
   }
@@ -1622,7 +1723,7 @@ function displayGarageCustodyTable(docs) {
   const tbody = document.getElementById('garageCustodyTableBody');
   
   if (docs.length === 0) {
-    tbody.innerHTML = '<tr><td colspan="7" style="text-align: center; padding: 20px;">لا توجد بيانات</td></tr>';
+    tbody.innerHTML = '<tr><td colspan="8" style="text-align: center; padding: 20px;">لا توجد بيانات</td></tr>';
     return;
   }
   
@@ -1631,10 +1732,11 @@ function displayGarageCustodyTable(docs) {
     const balance = (data.custodyIn || 0) - (data.clearanceOut || 0);
     return `
       <tr>
-        <td><input type="date" value="${data.date || ''}" onchange="calculateCustodyBalance(this.closest('tr'))" /></td>
+        <td><input type="date" value="${data.date || ''}" onchange="calculateCustodyBalance(this.closest('tr')); updateTotalsFromTable()" /></td>
+        <td><input type="text" value="${data.custodyOfficer || ''}" onchange="updateTotalsFromTable()" /></td>
         <td><input type="text" value="${data.description || ''}" /></td>
-        <td><input type="number" value="${data.custodyIn || 0}" step="0.01" onchange="calculateCustodyBalance(this.closest('tr'))" /></td>
-        <td><input type="number" value="${data.clearanceOut || 0}" step="0.01" onchange="calculateCustodyBalance(this.closest('tr'))" /></td>
+        <td><input type="number" value="${data.custodyIn || 0}" step="0.01" onchange="calculateCustodyBalance(this.closest('tr')); updateTotalsFromTable()" /></td>
+        <td><input type="number" value="${data.clearanceOut || 0}" step="0.01" onchange="calculateCustodyBalance(this.closest('tr')); updateTotalsFromTable()" /></td>
         <td><input type="number" readonly value="${balance.toFixed(2)}" step="0.01" style="background: #f8f9fa;" /></td>
         <td><input type="text" value="${data.notes || ''}" /></td>
         <td><button class="delete-btn" onclick="this.closest('tr').remove()">حذف</button></td>
@@ -2200,6 +2302,8 @@ window.toggleCustodyReports = toggleCustodyReports;
 window.printCustodyReports = printCustodyReports;
 window.updateTotalsFromTable = updateTotalsFromTable;
 window.updateCurrentCustodyTotal = updateCurrentCustodyTotal;
+window.updateOfficerTotals = updateOfficerTotals;
+window.saveCustodyData = saveCustodyData;
 </script>
 </body>
 </html>
