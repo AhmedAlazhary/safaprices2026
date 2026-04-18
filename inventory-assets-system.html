@@ -1571,16 +1571,23 @@ function updateTotalsFromTable() {
         totalClearance += clearance;
       }
       
-      // Calculate officer total
-      if (!officerTotals[officer]) {
-        officerTotals[officer] = 0;
+      // Calculate officer total using normalized name
+      const normalizedOfficer = normalizeOfficerName(officer);
+      if (!officerTotals[normalizedOfficer]) {
+        officerTotals[normalizedOfficer] = { total: 0, originalName: officer };
       }
-      officerTotals[officer] += custody - clearance;
+      officerTotals[normalizedOfficer].total += custody - clearance;
     }
   }
   
+  // Convert to simple format for display function
+  const displayTotals = {};
+  Object.entries(officerTotals).forEach(([normalizedName, data]) => {
+    displayTotals[data.originalName] = data.total;
+  });
+  
   // Update officer totals display
-  updateOfficerTotals(officerTotals);
+  updateOfficerTotals(displayTotals);
   
   // Update report values
   const dailyCustodyElement = document.getElementById('dailyCustodyTotal');
@@ -1621,6 +1628,22 @@ function updateTotalsFromTable() {
   }
 }
 
+// Function to normalize officer names (handle Arabic character variations)
+function normalizeOfficerName(name) {
+  if (!name || typeof name !== 'string') return 'غير محدد';
+  
+  // Normalize Arabic characters
+  return name
+    .trim()
+    .replace(/[أإآ]/g, 'ا')  // Normalize alif variants
+    .replace(/[ى]/g, 'ي')     // Normalize ya
+    .replace(/[ؤ]/g, 'و')      // Normalize waw
+    .replace(/[ئ]/g, 'ء')      // Normalize hamza
+    .replace(/[ة]/g, 'ه')      // Normalize ta marbuta
+    .replace(/\s+/g, ' ')      // Normalize spaces
+    .toLowerCase();
+}
+
 // Update officer totals display
 function updateOfficerTotals(officerTotals) {
   const container = document.getElementById('custodyOfficerTotals');
@@ -1630,11 +1653,26 @@ function updateOfficerTotals(officerTotals) {
     return;
   }
   
-  container.innerHTML = Object.entries(officerTotals).map(([officer, total]) => `
+  // Group totals by normalized names
+  const normalizedTotals = {};
+  const originalNames = {};
+  
+  Object.entries(officerTotals).forEach(([originalName, total]) => {
+    const normalizedName = normalizeOfficerName(originalName);
+    
+    if (!normalizedTotals[normalizedName]) {
+      normalizedTotals[normalizedName] = 0;
+      originalNames[normalizedName] = originalName; // Keep first original name
+    }
+    
+    normalizedTotals[normalizedName] += total;
+  });
+  
+  container.innerHTML = Object.entries(normalizedTotals).map(([normalizedName, total]) => `
     <div class="panel" style="padding: 12px; border: 1px solid var(--border); border-radius: 8px;">
       <div style="display: flex; justify-content: space-between; align-items: center;">
         <div>
-          <strong style="color: var(--primary);">${officer}</strong>
+          <strong style="color: var(--primary);">${originalNames[normalizedName]}</strong>
         </div>
         <div style="text-align: left;">
           <div style="font-size: 1.2rem; font-weight: 700; color: ${total < 0 ? 'var(--danger)' : total > 5000 ? 'var(--success)' : 'var(--accent)'};">
@@ -2304,6 +2342,7 @@ window.updateTotalsFromTable = updateTotalsFromTable;
 window.updateCurrentCustodyTotal = updateCurrentCustodyTotal;
 window.updateOfficerTotals = updateOfficerTotals;
 window.saveCustodyData = saveCustodyData;
+window.normalizeOfficerName = normalizeOfficerName;
 </script>
 </body>
 </html>
