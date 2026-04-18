@@ -548,8 +548,22 @@ tr:hover {
       <div style="display: flex; gap: 12px; margin-bottom: 20px;">
         <button class="primary-btn" onclick="openItemModal()">إضافة صنف جديد</button>
         <button class="success-btn" onclick="generateInventoryReport()">تقرير جرد</button>
+        <button class="warning-btn" onclick="showInventoryTotals()">إجماليات المخزن</button>
       </div>
       
+      <!-- Inventory Totals Section -->
+      <div id="inventoryTotalsSection" class="panel" style="background: linear-gradient(135deg, #f0f8ff 0%, #e6f3ff 100%); border: 2px solid var(--accent); margin-bottom: 20px; display: none;">
+        <div style="padding: 20px;">
+          <h3 style="margin: 0 0 20px 0; color: var(--primary); font-size: 1.3rem;">**Total Inventory Summary**</h3>
+          <div id="inventoryTotalsContent" style="display: grid; grid-template-columns: repeat(auto-fit, minmax(250px, 1fr)); gap: 16px;">
+            <!-- Totals will be loaded here -->
+          </div>
+          <div style="margin-top: 20px; text-align: center;">
+            <button class="ghost-btn" onclick="hideInventoryTotals()">Hide Totals</button>
+          </div>
+        </div>
+      </div>
+
       <!-- Inventory Table -->
       <div class="table-container">
         <table>
@@ -988,6 +1002,48 @@ tr:hover {
 </div>
 
 <div id="alerts"></div>
+
+<!-- Disbursement Modal -->
+<div id="disbursementModal" class="modal">
+  <div class="modal-content">
+    <span class="close-btn" onclick="closeDisbursementModal()">&times;</span>
+    <h2>Inventory Disbursement</h2>
+    <form id="disbursementForm">
+      <div class="form-grid">
+        <div class="form-group">
+          <label>Select Item *</label>
+          <select id="disbursementItem" required onchange="updateItemInfo()">
+            <option value="">Select Item</option>
+          </select>
+        </div>
+        <div class="form-group">
+          <label>Current Quantity</label>
+          <input type="number" id="currentQuantity" readonly style="background: #f8f9fa;">
+        </div>
+        <div class="form-group">
+          <label>Disbursement Quantity *</label>
+          <input type="number" id="disbursementQuantity" min="1" required>
+        </div>
+        <div class="form-group">
+          <label>Reason *</label>
+          <input type="text" id="disbursementReason" required>
+        </div>
+        <div class="form-group">
+          <label>Recipient *</label>
+          <input type="text" id="disbursementRecipient" required>
+        </div>
+        <div class="form-group">
+          <label>Date *</label>
+          <input type="date" id="disbursementDate" required>
+        </div>
+      </div>
+      <div style="display: flex; gap: 12px; justify-content: center;">
+        <button type="button" class="ghost-btn" onclick="closeDisbursementModal()">Cancel</button>
+        <button type="submit" class="danger-btn">Process Disbursement</button>
+      </div>
+    </form>
+  </div>
+</div>
 
 <script type="module">
 import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-app.js";
@@ -2460,6 +2516,228 @@ async function addNewStatusFromForm(statusName) {
   }
 }
 
+// Inventory totals functions
+async function showInventoryTotals() {
+  try {
+    const querySnapshot = await getDocs(collection(db, 'Items'));
+    const items = [];
+    
+    querySnapshot.forEach((doc) => {
+      items.push({ id: doc.id, ...doc.data() });
+    });
+    
+    calculateAndDisplayTotals(items);
+    document.getElementById('inventoryTotalsSection').style.display = 'block';
+    
+  } catch (error) {
+    console.error('Error calculating inventory totals:', error);
+    showAlert('Error calculating inventory totals', 'danger');
+  }
+}
+
+function hideInventoryTotals() {
+  document.getElementById('inventoryTotalsSection').style.display = 'none';
+}
+
+function calculateAndDisplayTotals(items) {
+  const totals = {
+    totalItems: items.length,
+    totalQuantity: 0,
+    totalValue: 0,
+    categories: {},
+    locations: {},
+    statuses: {},
+    lowStock: []
+  };
+  
+  items.forEach(item => {
+    const quantity = item.quantity || 0;
+    const value = (item.unitPrice || 0) * quantity;
+    
+    totals.totalQuantity += quantity;
+    totals.totalValue += value;
+    
+    // Category totals
+    const category = item.categoryId || 'Uncategorized';
+    if (!totals.categories[category]) {
+      totals.categories[category] = { count: 0, quantity: 0, value: 0 };
+    }
+    totals.categories[category].count++;
+    totals.categories[category].quantity += quantity;
+    totals.categories[category].value += value;
+    
+    // Location totals
+    const location = item.location || 'Unknown';
+    if (!totals.locations[location]) {
+      totals.locations[location] = { count: 0, quantity: 0, value: 0 };
+    }
+    totals.locations[location].count++;
+    totals.locations[location].quantity += quantity;
+    totals.locations[location].value += value;
+    
+    // Status totals
+    const status = item.status || 'Unknown';
+    if (!totals.statuses[status]) {
+      totals.statuses[status] = { count: 0, quantity: 0, value: 0 };
+    }
+    totals.statuses[status].count++;
+    totals.statuses[status].quantity += quantity;
+    totals.statuses[status].value += value;
+    
+    // Low stock items (less than 5)
+    if (quantity < 5 && quantity > 0) {
+      totals.lowStock.push(item);
+    }
+  });
+  
+  displayTotalsHTML(totals);
+}
+
+function displayTotalsHTML(totals) {
+  const container = document.getElementById('inventoryTotalsContent');
+  
+  container.innerHTML = `
+    <div class="panel" style="padding: 16px; border: 1px solid var(--border); border-radius: 8px;">
+      <h4 style="margin: 0 0 12px 0; color: var(--primary);">Total Items</h4>
+      <div style="font-size: 1.5rem; font-weight: 700; color: var(--accent);">${totals.totalItems}</div>
+    </div>
+    
+    <div class="panel" style="padding: 16px; border: 1px solid var(--border); border-radius: 8px;">
+      <h4 style="margin: 0 0 12px 0; color: var(--primary);">Total Quantity</h4>
+      <div style="font-size: 1.5rem; font-weight: 700; color: var(--success);">${totals.totalQuantity}</div>
+    </div>
+    
+    <div class="panel" style="padding: 16px; border: 1px solid var(--border); border-radius: 8px;">
+      <h4 style="margin: 0 0 12px 0; color: var(--primary);">Total Value</h4>
+      <div style="font-size: 1.5rem; font-weight: 700; color: var(--warning);">${totals.totalValue.toFixed(2)} EGP</div>
+    </div>
+    
+    <div class="panel" style="padding: 16px; border: 1px solid var(--border); border-radius: 8px;">
+      <h4 style="margin: 0 0 12px 0; color: var(--primary);">Low Stock Items</h4>
+      <div style="font-size: 1.5rem; font-weight: 700; color: var(--danger);">${totals.lowStock.length}</div>
+    </div>
+    
+    <div class="panel" style="padding: 16px; border: 1px solid var(--border); border-radius: 8px;">
+      <h4 style="margin: 0 0 12px 0; color: var(--primary);">Categories</h4>
+      ${Object.entries(totals.categories).map(([cat, data]) => 
+        `<div style="margin-bottom: 8px; padding: 8px; background: #f8f9fa; border-radius: 4px;">
+          <strong>${cat}:</strong> ${data.count} items, ${data.quantity} units, ${data.value.toFixed(2)} EGP
+        </div>`
+      ).join('')}
+    </div>
+    
+    <div class="panel" style="padding: 16px; border: 1px solid var(--border); border-radius: 8px;">
+      <h4 style="margin: 0 0 12px 0; color: var(--primary);">Locations</h4>
+      ${Object.entries(totals.locations).map(([loc, data]) => 
+        `<div style="margin-bottom: 8px; padding: 8px; background: #f8f9fa; border-radius: 4px;">
+          <strong>${loc}:</strong> ${data.count} items, ${data.quantity} units, ${data.value.toFixed(2)} EGP
+        </div>`
+      ).join('')}
+    </div>
+  `;
+}
+
+// Disbursement functions
+async function openDisbursementModal() {
+  try {
+    // Load items for disbursement
+    const querySnapshot = await getDocs(collection(db, 'Items'));
+    const select = document.getElementById('disbursementItem');
+    
+    select.innerHTML = '<option value="">Select Item</option>';
+    querySnapshot.forEach((doc) => {
+      const item = doc.data();
+      if (item.quantity > 0) {
+        select.innerHTML += `<option value="${doc.id}" data-quantity="${item.quantity}">${item.name} (${item.quantity} ${item.unit || 'units'})</option>`;
+      }
+    });
+    
+    // Set today's date
+    document.getElementById('disbursementDate').value = new Date().toISOString().split('T')[0];
+    
+    document.getElementById('disbursementModal').style.display = 'block';
+    
+  } catch (error) {
+    console.error('Error opening disbursement modal:', error);
+    showAlert('Error opening disbursement modal', 'danger');
+  }
+}
+
+function closeDisbursementModal() {
+  document.getElementById('disbursementModal').style.display = 'none';
+  document.getElementById('disbursementForm').reset();
+}
+
+function updateItemInfo() {
+  const select = document.getElementById('disbursementItem');
+  const selectedOption = select.options[select.selectedIndex];
+  const currentQuantityInput = document.getElementById('currentQuantity');
+  
+  if (selectedOption && selectedOption.value) {
+    const quantity = selectedOption.getAttribute('data-quantity');
+    currentQuantityInput.value = quantity;
+  } else {
+    currentQuantityInput.value = '';
+  }
+}
+
+// Handle disbursement form submission
+document.getElementById('disbursementForm').addEventListener('submit', async (e) => {
+  e.preventDefault();
+  
+  try {
+    const itemId = document.getElementById('disbursementItem').value;
+    const disbursementQuantity = parseInt(document.getElementById('disbursementQuantity').value);
+    const reason = document.getElementById('disbursementReason').value;
+    const recipient = document.getElementById('disbursementRecipient').value;
+    const date = document.getElementById('disbursementDate').value;
+    
+    // Get current item
+    const itemDoc = await getDoc(doc(db, 'Items', itemId));
+    if (!itemDoc.exists()) {
+      showAlert('Item not found', 'danger');
+      return;
+    }
+    
+    const item = itemDoc.data();
+    const currentQuantity = item.quantity || 0;
+    
+    // Check if enough quantity
+    if (disbursementQuantity > currentQuantity) {
+      showAlert('Insufficient quantity. Available: ' + currentQuantity, 'danger');
+      return;
+    }
+    
+    // Update item quantity
+    const newQuantity = currentQuantity - disbursementQuantity;
+    await updateDoc(doc(db, 'Items', itemId), {
+      quantity: newQuantity,
+      updatedAt: serverTimestamp()
+    });
+    
+    // Record disbursement
+    await addDoc(collection(db, 'Disbursements'), {
+      itemId: itemId,
+      itemName: item.name,
+      quantity: disbursementQuantity,
+      reason: reason,
+      recipient: recipient,
+      date: date,
+      previousQuantity: currentQuantity,
+      newQuantity: newQuantity,
+      createdAt: serverTimestamp()
+    });
+    
+    showAlert('Disbursement processed successfully', 'success');
+    closeDisbursementModal();
+    loadInventory(); // Refresh inventory
+    
+  } catch (error) {
+    console.error('Error processing disbursement:', error);
+    showAlert('Error processing disbursement', 'danger');
+  }
+});
+
 async function updateAssetFormOptions() {
   try {
     const lookupsDoc = await getDoc(doc(db, 'Lookups', 'all'));
@@ -2522,6 +2800,11 @@ window.addNewCategoryFromForm = addNewCategoryFromForm;
 window.addNewUnitFromForm = addNewUnitFromForm;
 window.addNewLocationFromForm = addNewLocationFromForm;
 window.addNewStatusFromForm = addNewStatusFromForm;
+window.showInventoryTotals = showInventoryTotals;
+window.hideInventoryTotals = hideInventoryTotals;
+window.openDisbursementModal = openDisbursementModal;
+window.closeDisbursementModal = closeDisbursementModal;
+window.updateItemInfo = updateItemInfo;
 </script>
 </body>
 </html>
