@@ -1470,10 +1470,12 @@ async function handleItemSubmit(e) {
       name: document.getElementById('itemName').value.trim(),
       categoryId: document.getElementById('itemCategory').value,
       unit: document.getElementById('itemUnit').value,
-      quantity: parseFloat(document.getElementById('itemQuantity').value),
+      quantity: parseInt(document.getElementById('itemQuantity').value),
       unitPrice: parseFloat(document.getElementById('itemUnitPrice').value),
-      location: document.getElementById('itemLocation').value,
       status: document.getElementById('itemStatus').value,
+      location: document.getElementById('itemLocation').value,
+      notes: document.getElementById('itemNotes').value.trim(),
+      barcode: document.getElementById('itemBarcode')?.value.trim() || await generateAndAssignBarcode(),
       updatedAt: serverTimestamp()
     };
 
@@ -2540,52 +2542,85 @@ function hideInventoryTotals() {
 }
 
 function calculateAndDisplayTotals(items) {
+  // Normalize and group items by name
+  const normalizedItems = {};
+  const itemMap = {};
+  
+  items.forEach(item => {
+    const normalizedName = normalizeItemName(item.name);
+    
+    if (!normalizedItems[normalizedName]) {
+      normalizedItems[normalizedName] = {
+        name: item.name,
+        normalizedName: normalizedName,
+        quantity: 0,
+        totalValue: 0,
+        unitPrice: 0,
+        category: item.categoryId || 'Uncategorized',
+        unit: item.unit || 'Unknown',
+        status: item.status || 'Unknown',
+        location: item.location || 'Unknown',
+        barcode: item.barcode || null,
+        count: 0
+      };
+    }
+    
+    // Aggregate quantities and values
+    normalizedItems[normalizedName].quantity += (item.quantity || 0);
+    normalizedItems[normalizedName].totalValue += ((item.unitPrice || 0) * (item.quantity || 0));
+    normalizedItems[normalizedName].count++;
+    
+    // Keep the most recent unit price
+    if (item.unitPrice && item.unitPrice > 0) {
+      normalizedItems[normalizedName].unitPrice = item.unitPrice;
+    }
+    
+    // Keep the first barcode found
+    if (!normalizedItems[normalizedName].barcode && item.barcode) {
+      normalizedItems[normalizedName].barcode = item.barcode;
+    }
+  });
+  
+  const detailedItems = Object.values(normalizedItems);
+  
   const totals = {
-    totalItems: items.length,
-    totalQuantity: 0,
-    totalValue: 0,
+    totalItems: detailedItems.length,
+    totalQuantity: detailedItems.reduce((sum, item) => sum + item.quantity, 0),
+    totalValue: detailedItems.reduce((sum, item) => sum + item.totalValue, 0),
     categories: {},
     locations: {},
     statuses: {},
-    lowStock: []
+    lowStock: [],
+    detailedItems: detailedItems
   };
   
-  items.forEach(item => {
-    const quantity = item.quantity || 0;
-    const value = (item.unitPrice || 0) * quantity;
-    
-    totals.totalQuantity += quantity;
-    totals.totalValue += value;
-    
+  detailedItems.forEach(item => {
     // Category totals
-    const category = item.categoryId || 'Uncategorized';
-    if (!totals.categories[category]) {
-      totals.categories[category] = { count: 0, quantity: 0, value: 0 };
+    if (!totals.categories[item.category]) {
+      totals.categories[item.category] = { count: 0, quantity: 0, value: 0 };
     }
-    totals.categories[category].count++;
-    totals.categories[category].quantity += quantity;
-    totals.categories[category].value += value;
+    totals.categories[item.category].count++;
+    totals.categories[item.category].quantity += item.quantity;
+    totals.categories[item.category].value += item.totalValue;
     
     // Location totals
-    const location = item.location || 'Unknown';
-    if (!totals.locations[location]) {
-      totals.locations[location] = { count: 0, quantity: 0, value: 0 };
+    if (!totals.locations[item.location]) {
+      totals.locations[item.location] = { count: 0, quantity: 0, value: 0 };
     }
-    totals.locations[location].count++;
-    totals.locations[location].quantity += quantity;
-    totals.locations[location].value += value;
+    totals.locations[item.location].count++;
+    totals.locations[item.location].quantity += item.quantity;
+    totals.locations[item.location].value += item.totalValue;
     
     // Status totals
-    const status = item.status || 'Unknown';
-    if (!totals.statuses[status]) {
-      totals.statuses[status] = { count: 0, quantity: 0, value: 0 };
+    if (!totals.statuses[item.status]) {
+      totals.statuses[item.status] = { count: 0, quantity: 0, value: 0 };
     }
-    totals.statuses[status].count++;
-    totals.statuses[status].quantity += quantity;
-    totals.statuses[status].value += value;
+    totals.statuses[item.status].count++;
+    totals.statuses[item.status].quantity += item.quantity;
+    totals.statuses[item.status].value += item.totalValue;
     
     // Low stock items (less than 5)
-    if (quantity < 5 && quantity > 0) {
+    if (item.quantity < 5 && item.quantity > 0) {
       totals.lowStock.push(item);
     }
   });
@@ -2593,46 +2628,210 @@ function calculateAndDisplayTotals(items) {
   displayTotalsHTML(totals);
 }
 
+// Function to normalize item names (handle Arabic character variations)
+function normalizeItemName(name) {
+  if (!name || typeof name !== 'string') return 'unknown';
+  
+  return name
+    .trim()
+    .replace(/[éèê]/g, 'e')
+    .replace(/[àáâãäå]/g, 'a')
+    .replace(/[ìíîï]/g, 'i')
+    .replace(/[òóôõö]/g, 'o')
+    .replace(/[ùúûü]/g, 'u')
+    .replace(/[ýÿ]/g, 'y')
+    .replace(/[ç]/g, 'c')
+    .replace(/[ñ]/g, 'n')
+    .replace(/[ß]/g, 'ss')
+    .replace(/[æ]/g, 'ae')
+    .replace(/[ø]/g, 'o')
+    .replace(/[å]/g, 'a')
+    .replace(/[ä]/g, 'a')
+    .replace(/[ö]/g, 'o')
+    .replace(/[ü]/g, 'u')
+    .replace(/[Ä]/g, 'A')
+    .replace(/[Ö]/g, 'O')
+    .replace(/[Ü]/g, 'U')
+    .replace(/[É]/g, 'E')
+    .replace(/[ÀÁÂÃÄÅ]/g, 'A')
+    .replace(/[ÌÍÎÏ]/g, 'I')
+    .replace(/[ÒÓÔÕÖ]/g, 'O')
+    .replace(/[ÙÚÛÜ]/g, 'U')
+    .replace(/[Ý]/g, 'Y')
+    .replace(/[Ç]/g, 'C')
+    .replace(/[Ñ]/g, 'N')
+    .replace(/[Æ]/g, 'AE')
+    .replace(/[Ø]/g, 'O')
+    .replace(/[Å]/g, 'A')
+    // Arabic characters
+    .replace(/[á]/g, 'a')
+    .replace(/[é]/g, 'e')
+    .replace(/[í]/g, 'i')
+    .replace(/[ó]/g, 'o')
+    .replace(/[ú]/g, 'u')
+    .replace(/[ñ]/g, 'n')
+    .replace(/[ü]/g, 'u')
+    // Special characters
+    .replace(/[^\w\s]/g, '') // Remove special characters
+    .replace(/\s+/g, ' ') // Normalize spaces
+    .toLowerCase();
+}
+
+// Barcode generation system
+function generateUniqueBarcode() {
+  // Generate a unique 12-digit barcode
+  const timestamp = Date.now().toString().slice(-6); // Last 6 digits of timestamp
+  const random = Math.floor(Math.random() * 1000000).toString().padStart(6, '0'); // 6 random digits
+  return timestamp + random;
+}
+
+async function isBarcodeUnique(barcode) {
+  try {
+    const querySnapshot = await getDocs(collection(db, 'Items'));
+    for (const doc of querySnapshot.docs) {
+      if (doc.data().barcode === barcode) {
+        return false;
+      }
+    }
+    return true;
+  } catch (error) {
+    console.error('Error checking barcode uniqueness:', error);
+    return false;
+  }
+}
+
+async function generateAndAssignBarcode() {
+  let barcode;
+  let isUnique = false;
+  let attempts = 0;
+  
+  while (!isUnique && attempts < 10) {
+    barcode = generateUniqueBarcode();
+    isUnique = await isBarcodeUnique(barcode);
+    attempts++;
+  }
+  
+  if (isUnique) {
+    return barcode;
+  } else {
+    throw new Error('Failed to generate unique barcode after 10 attempts');
+  }
+}
+
+// Function to add barcode field to item form
+function addBarcodeToItemForm() {
+  const barcodeField = document.createElement('div');
+  barcodeField.className = 'form-group';
+  barcodeField.innerHTML = `
+    <label>Barcode</label>
+    <div style="display: flex; gap: 8px;">
+      <input type="text" id="itemBarcode" readonly style="flex: 1; background: #f8f9fa; font-family: monospace;">
+      <button type="button" class="primary-btn" onclick="generateNewBarcode()">Generate</button>
+    </div>
+  `;
+  
+  // Find the notes field and insert barcode before it
+  const notesField = document.getElementById('itemNotes')?.parentElement;
+  if (notesField) {
+    notesField.parentElement.insertBefore(barcodeField, notesField);
+  }
+}
+
+async function generateNewBarcode() {
+  try {
+    const barcode = await generateAndAssignBarcode();
+    document.getElementById('itemBarcode').value = barcode;
+  } catch (error) {
+    console.error('Error generating barcode:', error);
+    showAlert('Error generating barcode', 'danger');
+  }
+}
+
 function displayTotalsHTML(totals) {
   const container = document.getElementById('inventoryTotalsContent');
   
   container.innerHTML = `
-    <div class="panel" style="padding: 16px; border: 1px solid var(--border); border-radius: 8px;">
-      <h4 style="margin: 0 0 12px 0; color: var(--primary);">Total Items</h4>
-      <div style="font-size: 1.5rem; font-weight: 700; color: var(--accent);">${totals.totalItems}</div>
-    </div>
-    
-    <div class="panel" style="padding: 16px; border: 1px solid var(--border); border-radius: 8px;">
-      <h4 style="margin: 0 0 12px 0; color: var(--primary);">Total Quantity</h4>
-      <div style="font-size: 1.5rem; font-weight: 700; color: var(--success);">${totals.totalQuantity}</div>
-    </div>
-    
-    <div class="panel" style="padding: 16px; border: 1px solid var(--border); border-radius: 8px;">
-      <h4 style="margin: 0 0 12px 0; color: var(--primary);">Total Value</h4>
-      <div style="font-size: 1.5rem; font-weight: 700; color: var(--warning);">${totals.totalValue.toFixed(2)} EGP</div>
-    </div>
-    
-    <div class="panel" style="padding: 16px; border: 1px solid var(--border); border-radius: 8px;">
-      <h4 style="margin: 0 0 12px 0; color: var(--primary);">Low Stock Items</h4>
-      <div style="font-size: 1.5rem; font-weight: 700; color: var(--danger);">${totals.lowStock.length}</div>
-    </div>
-    
-    <div class="panel" style="padding: 16px; border: 1px solid var(--border); border-radius: 8px;">
-      <h4 style="margin: 0 0 12px 0; color: var(--primary);">Categories</h4>
-      ${Object.entries(totals.categories).map(([cat, data]) => 
-        `<div style="margin-bottom: 8px; padding: 8px; background: #f8f9fa; border-radius: 4px;">
-          <strong>${cat}:</strong> ${data.count} items, ${data.quantity} units, ${data.value.toFixed(2)} EGP
-        </div>`
-      ).join('')}
-    </div>
-    
-    <div class="panel" style="padding: 16px; border: 1px solid var(--border); border-radius: 8px;">
-      <h4 style="margin: 0 0 12px 0; color: var(--primary);">Locations</h4>
-      ${Object.entries(totals.locations).map(([loc, data]) => 
-        `<div style="margin-bottom: 8px; padding: 8px; background: #f8f9fa; border-radius: 4px;">
-          <strong>${loc}:</strong> ${data.count} items, ${data.quantity} units, ${data.value.toFixed(2)} EGP
-        </div>`
-      ).join('')}
+    <div style="grid-column: 1 / -1;">
+      <div class="panel" style="padding: 20px; border: 1px solid var(--border); border-radius: 8px;">
+        <h3 style="margin: 0 0 16px 0; color: var(--primary);">Detailed Inventory Summary</h3>
+        
+        <!-- Summary Cards -->
+        <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 16px; margin-bottom: 24px;">
+          <div style="padding: 16px; background: linear-gradient(135deg, #e3f2fd 0%, #bbdefb 100%); border-radius: 8px; text-align: center;">
+            <h4 style="margin: 0 0 8px 0; color: var(--primary);">Total Items</h4>
+            <div style="font-size: 1.8rem; font-weight: 700; color: var(--accent);">${totals.totalItems}</div>
+          </div>
+          <div style="padding: 16px; background: linear-gradient(135deg, #e8f5e8 0%, #c8e6c9 100%); border-radius: 8px; text-align: center;">
+            <h4 style="margin: 0 0 8px 0; color: var(--primary);">Total Quantity</h4>
+            <div style="font-size: 1.8rem; font-weight: 700; color: var(--success);">${totals.totalQuantity}</div>
+          </div>
+          <div style="padding: 16px; background: linear-gradient(135deg, #fff3e0 0%, #ffcc80 100%); border-radius: 8px; text-align: center;">
+            <h4 style="margin: 0 0 8px 0; color: var(--primary);">Total Value</h4>
+            <div style="font-size: 1.8rem; font-weight: 700; color: var(--warning);">${totals.totalValue.toFixed(2)} EGP</div>
+          </div>
+          <div style="padding: 16px; background: linear-gradient(135deg, #ffebee 0%, #ffcdd2 100%); border-radius: 8px; text-align: center;">
+            <h4 style="margin: 0 0 8px 0; color: var(--primary);">Low Stock</h4>
+            <div style="font-size: 1.8rem; font-weight: 700; color: var(--danger);">${totals.lowStock.length}</div>
+          </div>
+        </div>
+        
+        <!-- Detailed Items Table -->
+        <h4 style="margin: 24px 0 12px 0; color: var(--primary);">All Items Details</h4>
+        <div style="max-height: 400px; overflow-y: auto; border: 1px solid var(--border); border-radius: 8px;">
+          <table style="width: 100%; border-collapse: collapse;">
+            <thead style="position: sticky; top: 0; background: var(--surface); z-index: 10;">
+              <tr>
+                <th style="padding: 12px; border-bottom: 2px solid var(--border); text-align: right;">Barcode</th>
+                <th style="padding: 12px; border-bottom: 2px solid var(--border); text-align: right;">Item Name</th>
+                <th style="padding: 12px; border-bottom: 2px solid var(--border); text-align: right;">Category</th>
+                <th style="padding: 12px; border-bottom: 2px solid var(--border); text-align: right;">Unit</th>
+                <th style="padding: 12px; border-bottom: 2px solid var(--border); text-align: center;">Quantity</th>
+                <th style="padding: 12px; border-bottom: 2px solid var(--border); text-align: center;">Unit Price</th>
+                <th style="padding: 12px; border-bottom: 2px solid var(--border); text-align: center;">Total Value</th>
+                <th style="padding: 12px; border-bottom: 2px solid var(--border); text-align: center;">Status</th>
+              </tr>
+            </thead>
+            <tbody id="detailedItemsTableBody">
+              ${totals.detailedItems.map(item => `
+                <tr style="${item.quantity < 5 ? 'background: rgba(255, 152, 0, 0.1);' : ''}">
+                  <td style="padding: 10px; border-bottom: 1px solid var(--border); font-family: monospace; font-size: 0.9rem;">${item.barcode || 'N/A'}</td>
+                  <td style="padding: 10px; border-bottom: 1px solid var(--border); font-weight: 600;">${item.name}</td>
+                  <td style="padding: 10px; border-bottom: 1px solid var(--border);">${item.category || 'N/A'}</td>
+                  <td style="padding: 10px; border-bottom: 1px solid var(--border);">${item.unit || 'N/A'}</td>
+                  <td style="padding: 10px; border-bottom: 1px solid var(--border); text-align: center; ${item.quantity < 5 ? 'color: var(--danger); font-weight: 700;' : ''}">${item.quantity}</td>
+                  <td style="padding: 10px; border-bottom: 1px solid var(--border); text-align: center;">${(item.unitPrice || 0).toFixed(2)}</td>
+                  <td style="padding: 10px; border-bottom: 1px solid var(--border); text-align: center; font-weight: 600;">${((item.unitPrice || 0) * item.quantity).toFixed(2)}</td>
+                  <td style="padding: 10px; border-bottom: 1px solid var(--border); text-align: center;">
+                    <span class="status-badge status-${item.status || 'unknown'}">${item.status || 'Unknown'}</span>
+                  </td>
+                </tr>
+              `).join('')}
+            </tbody>
+          </table>
+        </div>
+        
+        <!-- Category Summary -->
+        <h4 style="margin: 24px 0 12px 0; color: var(--primary);">Category Summary</h4>
+        <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(300px, 1fr)); gap: 16px;">
+          ${Object.entries(totals.categories).map(([cat, data]) => 
+            `<div style="padding: 16px; background: #f8f9fa; border: 1px solid var(--border); border-radius: 8px;">
+              <h5 style="margin: 0 0 12px 0; color: var(--primary);">${cat}</h5>
+              <div style="display: flex; justify-content: space-between; margin-bottom: 8px;">
+                <span>Items:</span>
+                <strong>${data.count}</strong>
+              </div>
+              <div style="display: flex; justify-content: space-between; margin-bottom: 8px;">
+                <span>Total Quantity:</span>
+                <strong>${data.quantity}</strong>
+              </div>
+              <div style="display: flex; justify-content: space-between;">
+                <span>Total Value:</span>
+                <strong style="color: var(--warning);">${data.value.toFixed(2)} EGP</strong>
+              </div>
+            </div>`
+          ).join('')}
+        </div>
+      </div>
     </div>
   `;
 }
@@ -2805,6 +3004,12 @@ window.hideInventoryTotals = hideInventoryTotals;
 window.openDisbursementModal = openDisbursementModal;
 window.closeDisbursementModal = closeDisbursementModal;
 window.updateItemInfo = updateItemInfo;
+window.generateUniqueBarcode = generateUniqueBarcode;
+window.isBarcodeUnique = isBarcodeUnique;
+window.generateAndAssignBarcode = generateAndAssignBarcode;
+window.addBarcodeToItemForm = addBarcodeToItemForm;
+window.generateNewBarcode = generateNewBarcode;
+window.normalizeItemName = normalizeItemName;
 </script>
 </body>
 </html>
