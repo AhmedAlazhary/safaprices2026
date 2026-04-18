@@ -1053,6 +1053,7 @@ function initializeInventorySystem() {
   loadAssets();
   loadLookups();
   loadLists();
+  updateItemFormOptions();
 }
 
 // Tab switching
@@ -2258,6 +2259,7 @@ async function updateItemFormOptions() {
       (lookups.categories || []).forEach(cat => {
         categorySelect.innerHTML += `<option value="${cat}">${cat}</option>`;
       });
+      categorySelect.innerHTML += '<option value="ADD_NEW_CATEGORY">+ إضافة تصنيف جديد</option>';
       
       // Update unit select
       const unitSelect = document.getElementById('itemUnit');
@@ -2265,6 +2267,7 @@ async function updateItemFormOptions() {
       (lookups.units || []).forEach(unit => {
         unitSelect.innerHTML += `<option value="${unit}">${unit}</option>`;
       });
+      unitSelect.innerHTML += '<option value="ADD_NEW_UNIT">+ إضافة وحدة جديدة</option>';
       
       // Update location select
       const locationSelect = document.getElementById('itemLocation');
@@ -2272,6 +2275,7 @@ async function updateItemFormOptions() {
       (lookups.locations || []).forEach(loc => {
         locationSelect.innerHTML += `<option value="${loc}">${loc}</option>`;
       });
+      locationSelect.innerHTML += '<option value="ADD_NEW_LOCATION">+ إضافة موقع جديد</option>';
       
       // Update status select
       const statusSelect = document.getElementById('itemStatus');
@@ -2279,9 +2283,180 @@ async function updateItemFormOptions() {
       (lookups.statuses || []).forEach(status => {
         statusSelect.innerHTML += `<option value="${status}">${status}</option>`;
       });
+      statusSelect.innerHTML += '<option value="ADD_NEW_STATUS">+ إضافة حالة جديدة</option>';
+      
+      // Add change event listeners for "Add New" options
+      categorySelect.onchange = function() {
+        if (this.value === 'ADD_NEW_CATEGORY') {
+          const newCategory = prompt('أدخل اسم التصنيف الجديد:');
+          if (newCategory && newCategory.trim()) {
+            addNewCategoryFromForm(newCategory.trim());
+          } else {
+            this.value = '';
+          }
+        }
+      };
+      
+      unitSelect.onchange = function() {
+        if (this.value === 'ADD_NEW_UNIT') {
+          const newUnit = prompt('أدخل اسم الوحدة الجديدة:');
+          if (newUnit && newUnit.trim()) {
+            addNewUnitFromForm(newUnit.trim());
+          } else {
+            this.value = '';
+          }
+        }
+      };
+      
+      locationSelect.onchange = function() {
+        if (this.value === 'ADD_NEW_LOCATION') {
+          const newLocation = prompt('أدخل اسم الموقع الجديد:');
+          if (newLocation && newLocation.trim()) {
+            addNewLocationFromForm(newLocation.trim());
+          } else {
+            this.value = '';
+          }
+        }
+      };
+      
+      statusSelect.onchange = function() {
+        if (this.value === 'ADD_NEW_STATUS') {
+          const newStatus = prompt('أدخل اسم الحالة الجديدة:');
+          if (newStatus && newStatus.trim()) {
+            addNewStatusFromForm(newStatus.trim());
+          } else {
+            this.value = '';
+          }
+        }
+      };
     }
   } catch (error) {
     console.error('Error updating form options:', error);
+  }
+}
+
+// Functions to add new items from form dropdowns
+async function addNewCategoryFromForm(categoryName) {
+  try {
+    const lookupsDoc = await getDoc(doc(db, 'Lookups', 'all'));
+    let lookups = {};
+    if (lookupsDoc.exists()) {
+      lookups = lookupsDoc.data();
+    }
+    
+    let categories = lookups.categories || [];
+    if (!categories.includes(categoryName)) {
+      categories.push(categoryName);
+      lookups.categories = categories;
+      lookups.updatedAt = serverTimestamp();
+      
+      await setDoc(doc(db, 'Lookups', 'all'), lookups);
+      
+      // Update the form and set the new value
+      await updateItemFormOptions();
+      document.getElementById('itemCategory').value = categoryName;
+      
+      // Also update the lists tab
+      displayCategories(categories);
+      
+      console.log('New category added from form:', categoryName);
+    }
+  } catch (error) {
+    console.error('Error adding category from form:', error);
+    alert('حدث خطأ أثناء إضافة التصنيف الجديد');
+  }
+}
+
+async function addNewUnitFromForm(unitName) {
+  try {
+    const lookupsDoc = await getDoc(doc(db, 'Lookups', 'all'));
+    let lookups = {};
+    if (lookupsDoc.exists()) {
+      lookups = lookupsDoc.data();
+    }
+    
+    let units = lookups.units || [];
+    if (!units.includes(unitName)) {
+      units.push(unitName);
+      lookups.units = units;
+      lookups.updatedAt = serverTimestamp();
+      
+      await setDoc(doc(db, 'Lookups', 'all'), lookups);
+      
+      // Update the form and set the new value
+      await updateItemFormOptions();
+      document.getElementById('itemUnit').value = unitName;
+      
+      // Also update the lists tab
+      displayUnits(units);
+      
+      console.log('New unit added from form:', unitName);
+    }
+  } catch (error) {
+    console.error('Error adding unit from form:', error);
+    alert('حدث خطأ أثناء إضافة الوحدة الجديدة');
+  }
+}
+
+async function addNewLocationFromForm(locationName) {
+  try {
+    const lookupsDoc = await getDoc(doc(db, 'Lookups', 'all'));
+    let lookups = {};
+    if (lookupsDoc.exists()) {
+      lookups = lookupsDoc.data();
+    }
+    
+    let locations = lookups.locations || [];
+    if (!locations.includes(locationName)) {
+      locations.push(locationName);
+      lookups.locations = locations;
+      lookups.updatedAt = serverTimestamp();
+      
+      await setDoc(doc(db, 'Lookups', 'all'), lookups);
+      
+      // Update the form and set the new value
+      await updateItemFormOptions();
+      document.getElementById('itemLocation').value = locationName;
+      
+      // Also update the lists tab
+      displayLocations(locations);
+      
+      console.log('New location added from form:', locationName);
+    }
+  } catch (error) {
+    console.error('Error adding location from form:', error);
+    alert('حدث خطأ أثناء إضافة الموقع الجديد');
+  }
+}
+
+async function addNewStatusFromForm(statusName) {
+  try {
+    const lookupsDoc = await getDoc(doc(db, 'Lookups', 'all'));
+    let lookups = {};
+    if (lookupsDoc.exists()) {
+      lookups = lookupsDoc.data();
+    }
+    
+    let statuses = lookups.statuses || [];
+    if (!statuses.includes(statusName)) {
+      statuses.push(statusName);
+      lookups.statuses = statuses;
+      lookups.updatedAt = serverTimestamp();
+      
+      await setDoc(doc(db, 'Lookups', 'all'), lookups);
+      
+      // Update the form and set the new value
+      await updateItemFormOptions();
+      document.getElementById('itemStatus').value = statusName;
+      
+      // Also update the lists tab
+      displayStatuses(statuses);
+      
+      console.log('New status added from form:', statusName);
+    }
+  } catch (error) {
+    console.error('Error adding status from form:', error);
+    alert('حدث خطأ أثناء إضافة الحالة الجديدة');
   }
 }
 
@@ -2343,6 +2518,10 @@ window.updateCurrentCustodyTotal = updateCurrentCustodyTotal;
 window.updateOfficerTotals = updateOfficerTotals;
 window.saveCustodyData = saveCustodyData;
 window.normalizeOfficerName = normalizeOfficerName;
+window.addNewCategoryFromForm = addNewCategoryFromForm;
+window.addNewUnitFromForm = addNewUnitFromForm;
+window.addNewLocationFromForm = addNewLocationFromForm;
+window.addNewStatusFromForm = addNewStatusFromForm;
 </script>
 </body>
 </html>
