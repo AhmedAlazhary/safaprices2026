@@ -576,12 +576,13 @@ tr:hover {
               <th>سعر الوحدة</th>
               <th>الموقع</th>
               <th>الحالة</th>
+              <th>الباركود</th>
               <th>الإجراءات</th>
             </tr>
           </thead>
           <tbody id="inventoryTableBody">
             <tr>
-              <td colspan="8" style="text-align: center; padding: 40px;">
+              <td colspan="9" style="text-align: center; padding: 40px;">
                 جاري تحميل البيانات...
               </td>
             </tr>
@@ -866,11 +867,11 @@ tr:hover {
         <div class="form-group">
           <label>Barcode</label>
           <div style="display: flex; gap: 8px; align-items: center;">
-            <input type="text" id="itemBarcode" style="flex: 1; font-family: monospace;" placeholder="XX-YY-MM-NNNN" maxlength="12">
+            <input type="text" id="itemBarcode" style="flex: 1; font-family: monospace;" placeholder="10 digits (e.g., 0126040001)" maxlength="10">
             <button type="button" class="primary-btn" onclick="generateNewBarcode()">Generate</button>
             <button type="button" class="secondary-btn" onclick="toggleBarcodeInput()">Manual</button>
           </div>
-          <small style="color: #666; margin-top: 4px; display: block;">Format: Category-Year-Month-Product (e.g., 01-26-04-0001)</small>
+          <small style="color: #666; margin-top: 4px; display: block;">Format: 10 digits - Category(2) + Year(2) + Month(2) + Product(4) (e.g., 0126040001)</small>
         </div>
       </div>
       <div style="display: flex; gap: 12px; justify-content: center;">
@@ -1254,7 +1255,7 @@ function displayInventory(items) {
   const tbody = document.getElementById('inventoryTableBody');
   
   if (items.length === 0) {
-    tbody.innerHTML = '<tr><td colspan="8" class="empty-state">لا توجد أصناف</td></tr>';
+    tbody.innerHTML = '<tr><td colspan="9" class="empty-state">لا توجد أصناف</td></tr>';
     return;
   }
   
@@ -1267,6 +1268,7 @@ function displayInventory(items) {
       <td>${item.unitPrice?.toFixed(2) || '0.00'}</td>
       <td>${item.location || '-'}</td>
       <td><span class="status-badge status-${item.status}">${item.status}</span></td>
+      <td style="font-family: monospace; font-size: 12px;">${item.barcode || '-'}</td>
       <td>
         <button class="primary-btn" onclick="editItem('${item.id}')">تعديل</button>
         <button class="danger-btn" onclick="deleteItem('${item.id}')">حذف</button>
@@ -1426,9 +1428,89 @@ function closeAssetModal() {
 }
 
 // Report functions
-function generateInventoryReport() {
-  showAlert('جاري إنشاء تقرير المخزون...', 'success');
-  // Implementation for inventory report
+async function generateInventoryReport() {
+  try {
+    showAlert('جاري إنشاء تقرير المخزون...', 'success');
+    
+    // Get all items from Firestore
+    const querySnapshot = await getDocs(collection(db, 'Items'));
+    const items = querySnapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
+    
+    // Calculate totals
+    const totalItems = items.length;
+    const totalQuantity = items.reduce((sum, item) => sum + (item.quantity || 0), 0);
+    const totalValue = items.reduce((sum, item) => sum + ((item.quantity || 0) * (item.unitPrice || 0)), 0);
+    
+    // Create report HTML
+    const reportHTML = `
+      <div style="direction: rtl; padding: 20px; font-family: Arial, sans-serif;">
+        <h1 style="text-align: center; color: #333; margin-bottom: 30px;">تقرير جرد المخزون</h1>
+        <p style="text-align: center; color: #666; margin-bottom: 30px;">التاريخ: ${new Date().toLocaleDateString('ar-EG')}</p>
+        
+        <div style="margin-bottom: 30px;">
+          <h2 style="color: #333; border-bottom: 2px solid #007bff; padding-bottom: 10px;">ملخص التقرير</h2>
+          <table style="width: 100%; border-collapse: collapse; margin-top: 15px;">
+            <tr style="background: #f8f9fa;">
+              <td style="padding: 10px; border: 1px solid #ddd; font-weight: bold;">إجمالي الأصناف</td>
+              <td style="padding: 10px; border: 1px solid #ddd;">${totalItems} صنف</td>
+            </tr>
+            <tr>
+              <td style="padding: 10px; border: 1px solid #ddd; font-weight: bold;">إجمالي الكميات</td>
+              <td style="padding: 10px; border: 1px solid #ddd;">${totalQuantity} وحدة</td>
+            </tr>
+            <tr style="background: #f8f9fa;">
+              <td style="padding: 10px; border: 1px solid #ddd; font-weight: bold;">إجمالي القيمة</td>
+              <td style="padding: 10px; border: 1px solid #ddd;">${totalValue.toFixed(2)} جنيه</td>
+            </tr>
+          </table>
+        </div>
+        
+        <div>
+          <h2 style="color: #333; border-bottom: 2px solid #007bff; padding-bottom: 10px;">تفاصيل الأصناف</h2>
+          <table style="width: 100%; border-collapse: collapse; margin-top: 15px;">
+            <thead>
+              <tr style="background: #007bff; color: white;">
+                <th style="padding: 10px; border: 1px solid #ddd;">اسم الصنف</th>
+                <th style="padding: 10px; border: 1px solid #ddd;">الفئة</th>
+                <th style="padding: 10px; border: 1px solid #ddd;">الوحدة</th>
+                <th style="padding: 10px; border: 1px solid #ddd;">الكمية</th>
+                <th style="padding: 10px; border: 1px solid #ddd;">سعر الوحدة</th>
+                <th style="padding: 10px; border: 1px solid #ddd;">القيمة الإجمالية</th>
+                <th style="padding: 10px; border: 1px solid #ddd;">الباركود</th>
+              </tr>
+            </thead>
+            <tbody>
+              ${items.map(item => `
+                <tr>
+                  <td style="padding: 10px; border: 1px solid #ddd;">${item.name}</td>
+                  <td style="padding: 10px; border: 1px solid #ddd;">${item.categoryId}</td>
+                  <td style="padding: 10px; border: 1px solid #ddd;">${item.unit}</td>
+                  <td style="padding: 10px; border: 1px solid #ddd;">${item.quantity}</td>
+                  <td style="padding: 10px; border: 1px solid #ddd;">${(item.unitPrice || 0).toFixed(2)}</td>
+                  <td style="padding: 10px; border: 1px solid #ddd;">${((item.quantity || 0) * (item.unitPrice || 0)).toFixed(2)}</td>
+                  <td style="padding: 10px; border: 1px solid #ddd; font-family: monospace;">${item.barcode || '-'}</td>
+                </tr>
+              `).join('')}
+            </tbody>
+          </table>
+        </div>
+        
+        <div style="margin-top: 30px; text-align: center;">
+          <button onclick="window.print()" style="padding: 10px 20px; background: #007bff; color: white; border: none; border-radius: 5px; cursor: pointer;">طباعة التقرير</button>
+        </div>
+      </div>
+    `;
+    
+    // Open report in new window
+    const reportWindow = window.open('', '_blank');
+    reportWindow.document.write(reportHTML);
+    reportWindow.document.close();
+    
+    showAlert('تم إنشاء تقرير المخزون بنجاح', 'success');
+  } catch (error) {
+    console.error('Error generating inventory report:', error);
+    showAlert('حدث خطأ أثناء إنشاء التقرير', 'danger');
+  }
 }
 
 function generateCustodyReport() {
@@ -2722,7 +2804,7 @@ function generateOrganizedBarcode(categoryCode, itemName) {
   const nameHash = itemName.split('').reduce((acc, char) => acc + char.charCodeAt(0), 0);
   productCode = (nameHash % 9999) + 1; // 1-9999
   
-  return `${categoryCode}-${year}-${month}-${productCode.toString().padStart(4, '0')}`;
+  return `${categoryCode}${year}${month}${productCode.toString().padStart(4, '0')}`;
 }
 
 async function generateCategoryBasedBarcode() {
@@ -2741,12 +2823,12 @@ async function generateCategoryBasedBarcode() {
   const isUnique = await isBarcodeUnique(barcode);
   if (!isUnique) {
     // If exists, increment product code
-    const parts = barcode.split('-');
-    let productCode = parseInt(parts[3]);
+    let productCode = parseInt(barcode.slice(-4));
+    const baseCode = barcode.slice(0, -4);
     let newBarcode;
     do {
       productCode++;
-      newBarcode = `${parts[0]}-${parts[1]}-${parts[2]}-${productCode.toString().padStart(4, '0')}`;
+      newBarcode = `${baseCode}${productCode.toString().padStart(4, '0')}`;
     } while (!await isBarcodeUnique(newBarcode));
     return newBarcode;
   }
@@ -2801,8 +2883,8 @@ async function generateNewBarcode() {
 }
 
 function validateBarcodeFormat(barcode) {
-  // Format: XX-YY-MM-NNNN (12 chars with dashes)
-  const format = /^\d{2}-\d{2}-\d{2}-\d{4}$/;
+  // Format: 10 digits only
+  const format = /^\d{10}$/;
   return format.test(barcode);
 }
 
