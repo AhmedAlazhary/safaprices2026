@@ -864,11 +864,13 @@ tr:hover {
           </select>
         </div>
         <div class="form-group">
-          <label>الباركود</label>
-          <div style="display: flex; gap: 8px;">
-            <input type="text" id="itemBarcode" readonly style="flex: 1; background: #f8f9fa; font-family: monospace;" placeholder="سيتم التوليد تلقائياً">
-            <button type="button" class="primary-btn" onclick="generateNewBarcode()">توليد</button>
+          <label>Barcode</label>
+          <div style="display: flex; gap: 8px; align-items: center;">
+            <input type="text" id="itemBarcode" style="flex: 1; font-family: monospace;" placeholder="XX-YY-MM-NNNN" maxlength="12">
+            <button type="button" class="primary-btn" onclick="generateNewBarcode()">Generate</button>
+            <button type="button" class="secondary-btn" onclick="toggleBarcodeInput()">Manual</button>
           </div>
+          <small style="color: #666; margin-top: 4px; display: block;">Format: Category-Year-Month-Product (e.g., 01-26-04-0001)</small>
         </div>
       </div>
       <div style="display: flex; gap: 12px; justify-content: center;">
@@ -1475,6 +1477,23 @@ async function handleItemSubmit(e) {
   e.preventDefault();
   
   try {
+    const barcodeInput = document.getElementById('itemBarcode').value.trim();
+    
+    // Validate barcode format if manually entered
+    if (barcodeInput && !validateBarcodeFormat(barcodeInput)) {
+      showAlert('Please enter barcode in format: XX-YY-MM-NNNN (e.g., 01-26-04-0001)', 'danger');
+      return;
+    }
+    
+    // Check if barcode already exists for different item
+    if (barcodeInput) {
+      const existingItem = await checkExistingItemByBarcode(barcodeInput);
+      if (existingItem && existingItem.name !== document.getElementById('itemName').value.trim()) {
+        showAlert('This barcode already exists for a different item. Please use a different barcode.', 'danger');
+        return;
+      }
+    }
+    
     const formData = {
       name: document.getElementById('itemName').value.trim(),
       categoryId: document.getElementById('itemCategory').value,
@@ -1484,7 +1503,7 @@ async function handleItemSubmit(e) {
       status: document.getElementById('itemStatus').value,
       location: document.getElementById('itemLocation').value,
       notes: document.getElementById('itemNotes').value.trim(),
-      barcode: document.getElementById('itemBarcode')?.value.trim() || await generateAndAssignBarcode(),
+      barcode: barcodeInput || await generateCategoryBasedBarcode(),
       updatedAt: serverTimestamp()
     };
 
@@ -2673,12 +2692,66 @@ function normalizeItemName(name) {
     .toLowerCase();
 }
 
-// Barcode generation system
-function generateUniqueBarcode() {
-  // Generate a unique 12-digit barcode
-  const timestamp = Date.now().toString().slice(-6); // Last 6 digits of timestamp
-  const random = Math.floor(Math.random() * 1000000).toString().padStart(6, '0'); // 6 random digits
-  return timestamp + random;
+// Barcode generation system - Organized structure
+const CATEGORY_CODES = {
+  '01': 'Oils',
+  '02': 'Cleaning',
+  '03': 'Tools', 
+  '04': 'Tires',
+  '05': 'Parts',
+  '99': 'Misc'
+};
+
+function getCategoryCode(categoryName) {
+  const normalized = categoryName.toLowerCase();
+  if (normalized.includes('oil') || normalized.includes('oil') || normalized.includes('oil')) return '01';
+  if (normalized.includes('clean') || normalized.includes('cleaning') || normalized.includes('clean')) return '02';
+  if (normalized.includes('tool') || normalized.includes('tools') || normalized.includes('tool')) return '03';
+  if (normalized.includes('tire') || normalized.includes('tires') || normalized.includes('tire')) return '04';
+  if (normalized.includes('part') || normalized.includes('parts') || normalized.includes('part')) return '05';
+  return '99';
+}
+
+function generateOrganizedBarcode(categoryCode, itemName) {
+  const now = new Date();
+  const year = now.getFullYear().toString().slice(-2); // 26 for 2026
+  const month = (now.getMonth() + 1).toString().padStart(2, '0'); // 04 for April
+  
+  // Generate product unique code based on item name hash
+  let productCode = 1;
+  const nameHash = itemName.split('').reduce((acc, char) => acc + char.charCodeAt(0), 0);
+  productCode = (nameHash % 9999) + 1; // 1-9999
+  
+  return `${categoryCode}-${year}-${month}-${productCode.toString().padStart(4, '0')}`;
+}
+
+async function generateCategoryBasedBarcode() {
+  const category = document.getElementById('itemCategory').value;
+  const itemName = document.getElementById('itemName').value.trim();
+  
+  if (!category || !itemName) {
+    showAlert('Please select category and enter item name first', 'danger');
+    return null;
+  }
+  
+  const categoryCode = getCategoryCode(category);
+  const barcode = generateOrganizedBarcode(categoryCode, itemName);
+  
+  // Check if this exact barcode already exists
+  const isUnique = await isBarcodeUnique(barcode);
+  if (!isUnique) {
+    // If exists, increment product code
+    const parts = barcode.split('-');
+    let productCode = parseInt(parts[3]);
+    let newBarcode;
+    do {
+      productCode++;
+      newBarcode = `${parts[0]}-${parts[1]}-${parts[2]}-${productCode.toString().padStart(4, '0')}`;
+    } while (!await isBarcodeUnique(newBarcode));
+    return newBarcode;
+  }
+  
+  return barcode;
 }
 
 async function isBarcodeUnique(barcode) {
@@ -2696,50 +2769,55 @@ async function isBarcodeUnique(barcode) {
   }
 }
 
-async function generateAndAssignBarcode() {
-  let barcode;
-  let isUnique = false;
-  let attempts = 0;
+function toggleBarcodeInput() {
+  const barcodeInput = document.getElementById('itemBarcode');
+  const manualBtn = event.target;
   
-  while (!isUnique && attempts < 10) {
-    barcode = generateUniqueBarcode();
-    isUnique = await isBarcodeUnique(barcode);
-    attempts++;
-  }
-  
-  if (isUnique) {
-    return barcode;
+  if (barcodeInput.readOnly) {
+    barcodeInput.readOnly = false;
+    barcodeInput.style.background = 'white';
+    manualBtn.textContent = 'Auto';
+    manualBtn.classList.remove('secondary-btn');
+    manualBtn.classList.add('primary-btn');
   } else {
-    throw new Error('Failed to generate unique barcode after 10 attempts');
-  }
-}
-
-// Function to add barcode field to item form
-function addBarcodeToItemForm() {
-  const barcodeField = document.createElement('div');
-  barcodeField.className = 'form-group';
-  barcodeField.innerHTML = `
-    <label>Barcode</label>
-    <div style="display: flex; gap: 8px;">
-      <input type="text" id="itemBarcode" readonly style="flex: 1; background: #f8f9fa; font-family: monospace;">
-      <button type="button" class="primary-btn" onclick="generateNewBarcode()">Generate</button>
-    </div>
-  `;
-  
-  // Find the notes field and insert barcode before it
-  const notesField = document.getElementById('itemNotes')?.parentElement;
-  if (notesField) {
-    notesField.parentElement.insertBefore(barcodeField, notesField);
+    barcodeInput.readOnly = true;
+    barcodeInput.style.background = '#f8f9fa';
+    manualBtn.textContent = 'Manual';
+    manualBtn.classList.remove('primary-btn');
+    manualBtn.classList.add('secondary-btn');
   }
 }
 
 async function generateNewBarcode() {
   try {
-    const barcode = await generateAndAssignBarcode();
-    document.getElementById('itemBarcode').value = barcode;
+    const barcode = await generateCategoryBasedBarcode();
+    if (barcode) {
+      document.getElementById('itemBarcode').value = barcode;
+    }
   } catch (error) {
     console.error('Error generating barcode:', error);
     showAlert('Error generating barcode', 'danger');
+  }
+}
+
+function validateBarcodeFormat(barcode) {
+  // Format: XX-YY-MM-NNNN (12 chars with dashes)
+  const format = /^\d{2}-\d{2}-\d{2}-\d{4}$/;
+  return format.test(barcode);
+}
+
+async function checkExistingItemByBarcode(barcode) {
+  try {
+    const querySnapshot = await getDocs(collection(db, 'Items'));
+    for (const doc of querySnapshot.docs) {
+      if (doc.data().barcode === barcode) {
+        return doc.data();
+      }
+    }
+    return null;
+  } catch (error) {
+    console.error('Error checking existing item:', error);
+    return null;
   }
 }
 
@@ -3006,6 +3084,12 @@ window.generateAndAssignBarcode = generateAndAssignBarcode;
 window.addBarcodeToItemForm = addBarcodeToItemForm;
 window.generateNewBarcode = generateNewBarcode;
 window.normalizeItemName = normalizeItemName;
+window.generateOrganizedBarcode = generateOrganizedBarcode;
+window.getCategoryCode = getCategoryCode;
+window.generateCategoryBasedBarcode = generateCategoryBasedBarcode;
+window.toggleBarcodeInput = toggleBarcodeInput;
+window.validateBarcodeFormat = validateBarcodeFormat;
+window.checkExistingItemByBarcode = checkExistingItemByBarcode;
 </script>
 </body>
 </html>
