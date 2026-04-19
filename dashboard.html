@@ -536,31 +536,36 @@ function escapeHtml(value) {
 </script>
 
 <!-- Firebase SDK -->
-<script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-app.js"></script>
-<script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-auth.js"></script>
-<script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-firestore.js"></script>
-<script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-functions.js"></script>
+<script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-app-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-auth-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-firestore-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-functions-compat.js"></script>
 
-<!-- RBAC System -->
-<script type="module">
-  // Import Firebase and RBAC modules
-  import { auth, onAuthStateChanged } from './firebase-config.js';
-  import { initRBAC } from './js/rbac-main.js';
-  import { logout } from './js/auth-guard.js';
+<script>
+  // Firebase configuration
+  const firebaseConfig = {
+    apiKey: "AIzaSyARqSgfh78TqFQ2hhZaAtUaVQFqlPuRM3w",
+    authDomain: "trialsafaprices2026.firebaseapp.com",
+    projectId: "trialsafaprices2026",
+    storageBucket: "trialsafaprices2026.appspot.com",
+    messagingSenderId: "177091434445",
+    appId: "1:177091434445:web:568b6ae3ba270a21d4d684"
+  };
 
-  // Initialize RBAC system
-  initRBAC();
-
-  // Make logout available globally
-  window.logout = logout;
+  // Initialize Firebase
+  firebase.initializeApp(firebaseConfig);
+  const auth = firebase.auth();
+  const db = firebase.firestore();
 
   // Check authentication state
-  onAuthStateChanged(auth, (user) => {
+  auth.onAuthStateChanged((user) => {
     if (!user) {
       // Redirect to login if not authenticated
       window.location.href = 'index.html';
       return;
     }
+
+    console.log('User is logged in:', user.email);
 
     // Update user info in the UI
     const userDisplay = document.querySelector('.user-display');
@@ -568,17 +573,46 @@ function escapeHtml(value) {
       userDisplay.textContent = user.displayName || user.email;
     }
 
-    // Add role indicator
-    const role = sessionStorage.getItem('userRole');
-    if (role) {
-      addRoleIndicator(role);
-    }
+    // Get user role from custom claims or Firestore
+    user.getIdTokenResult().then((idTokenResult) => {
+      let role = 'viewer'; // default role
+      
+      if (idTokenResult.claims.admin) {
+        role = 'admin';
+      } else if (idTokenResult.claims.manager) {
+        role = 'manager';
+      } else if (idTokenResult.claims.viewer) {
+        role = 'viewer';
+      }
 
-    // Add admin panel link for admins
-    if (role === 'admin') {
-      addAdminPanelLink();
-    }
+      // Store role in session
+      sessionStorage.setItem('userRole', role);
+      sessionStorage.setItem('userUID', user.uid);
+      sessionStorage.setItem('userEmail', user.email);
+
+      // Add role indicator
+      addRoleIndicator(role);
+
+      // Add admin panel link for admins
+      if (role === 'admin') {
+        addAdminPanelLink();
+      }
+
+      console.log('User role:', role);
+    }).catch((error) => {
+      console.error('Error getting user role:', error);
+    });
   });
+
+  // Logout function
+  window.logout = function() {
+    auth.signOut().then(() => {
+      sessionStorage.clear();
+      window.location.href = 'index.html';
+    }).catch((error) => {
+      console.error('Logout error:', error);
+    });
+  };
 
   // Add role indicator to the page
   function addRoleIndicator(role) {
