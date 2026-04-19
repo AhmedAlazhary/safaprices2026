@@ -1268,7 +1268,7 @@ function displayInventory(items) {
       <td>${item.unitPrice?.toFixed(2) || '0.00'}</td>
       <td>${item.location || '-'}</td>
       <td><span class="status-badge status-${item.status}">${item.status}</span></td>
-      <td style="font-family: monospace; font-size: 12px;">${item.barcode || '-'}</td>
+      <td style="font-family: monospace; font-size: 12px;">${item.barcode ? item.barcode.replace(/-/g, '') : '-'}</td>
       <td>
         <button class="primary-btn" onclick="editItem('${item.id}')">تعديل</button>
         <button class="danger-btn" onclick="deleteItem('${item.id}')">حذف</button>
@@ -1488,7 +1488,7 @@ async function generateInventoryReport() {
                   <td style="padding: 10px; border: 1px solid #ddd;">${item.quantity}</td>
                   <td style="padding: 10px; border: 1px solid #ddd;">${(item.unitPrice || 0).toFixed(2)}</td>
                   <td style="padding: 10px; border: 1px solid #ddd;">${((item.quantity || 0) * (item.unitPrice || 0)).toFixed(2)}</td>
-                  <td style="padding: 10px; border: 1px solid #ddd; font-family: monospace;">${item.barcode || '-'}</td>
+                  <td style="padding: 10px; border: 1px solid #ddd; font-family: monospace;">${item.barcode ? item.barcode.replace(/-/g, '') : '-'}</td>
                 </tr>
               `).join('')}
             </tbody>
@@ -2950,7 +2950,7 @@ function displayTotalsHTML(totals) {
             <tbody id="detailedItemsTableBody">
               ${totals.detailedItems.map(item => `
                 <tr style="${item.quantity < 5 ? 'background: rgba(255, 152, 0, 0.1);' : ''}">
-                  <td style="padding: 10px; border-bottom: 1px solid var(--border); font-family: monospace; font-size: 0.9rem;">${item.barcode || 'N/A'}</td>
+                  <td style="padding: 10px; border-bottom: 1px solid var(--border); font-family: monospace; font-size: 0.9rem;">${item.barcode ? item.barcode.replace(/-/g, '') : 'N/A'}</td>
                   <td style="padding: 10px; border-bottom: 1px solid var(--border); font-weight: 600;">${item.name}</td>
                   <td style="padding: 10px; border-bottom: 1px solid var(--border);">${item.category || 'N/A'}</td>
                   <td style="padding: 10px; border-bottom: 1px solid var(--border);">${item.unit || 'N/A'}</td>
