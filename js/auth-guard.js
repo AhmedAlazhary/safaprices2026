@@ -1,5 +1,5 @@
 // js/auth-guard.js - Route Guards and Authentication Protection
-import { auth, onAuthStateChanged } from './firebase-config.js';
+// Note: This file uses global Firebase from compat version
 
 // صفحات تتطلب صلاحيات معينة
 const PROTECTED_ROUTES = {
@@ -24,29 +24,22 @@ const PUBLIC_ROUTES = [
     'register.html'
 ];
 
-// تهيئة حماية المسارات
-export function initRouteGuard() {
-    const currentPath = window.location.pathname;
-    const currentPage = currentPath.split('/').pop() || 'index.html';
-    
-    // التحقق من المستخدم الحالي
-    onAuthStateChanged(auth, async (user) => {
-        if (!user) {
-            // المستخدم غير مسجل دخوله
-            if (!PUBLIC_ROUTES.includes(currentPage)) {
-                // إعادة توجيه إلى صفحة تسجيل الدخول
+// Initialize route guards
+function initRouteGuards() {
+    firebase.auth().onAuthStateChanged((user) => {
+        const currentPath = window.location.pathname;
+        const currentPage = currentPath.split('/').pop() || 'index.html';
+        
+        // Check if current page requires authentication
+        if (PROTECTED_ROUTES[currentPage]) {
+            if (!user) {
+                // Redirect to login
                 window.location.href = 'index.html';
                 return;
             }
-        } else {
-            // المستخدم مسجل دخوله - التحقق من الصلاحيات
-            const userRole = await getUserRole(user);
             
-            // التحقق من أن المستخدم لديه صلاحية الوصول للصفحة الحالية
-            if (currentPage !== 'index.html' && !hasAccess(currentPage, userRole)) {
-                // عرض رسالة خطأ وإعادة التوجيه
-                showAccessDeniedError(currentPage, userRole);
-                setTimeout(() => {
+            // Check user role
+            checkUserRole(user, currentPage);
                     window.location.href = 'dashboard.html';
                 }, 3000);
                 return;
