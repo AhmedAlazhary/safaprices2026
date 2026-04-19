@@ -863,6 +863,13 @@ tr:hover {
             <option value="">اختر الحالة</option>
           </select>
         </div>
+        <div class="form-group">
+          <label>الباركود</label>
+          <div style="display: flex; gap: 8px;">
+            <input type="text" id="itemBarcode" readonly style="flex: 1; background: #f8f9fa; font-family: monospace;" placeholder="سيتم التوليد تلقائياً">
+            <button type="button" class="primary-btn" onclick="generateNewBarcode()">توليد</button>
+          </div>
+        </div>
       </div>
       <div style="display: flex; gap: 12px; justify-content: center;">
         <button type="button" class="ghost-btn" onclick="closeItemModal()">إلغاء</button>
@@ -1373,11 +1380,13 @@ function updateLookups(items) {
 }
 
 // Modal functions
-function openItemModal() {
+async function openItemModal() {
   currentEditingItem = null;
   document.getElementById('itemModalTitle').textContent = 'إضافة صنف جديد';
   document.getElementById('itemForm').reset();
   document.getElementById('itemModal').style.display = 'block';
+  // Generate barcode automatically for new items
+  await generateNewBarcode();
 }
 
 function closeItemModal() {
@@ -1532,20 +1541,7 @@ async function editItem(itemId) {
     
     if (itemSnap.exists()) {
       const itemData = itemSnap.data();
-      currentEditingItem = itemId;
-      
-      // Populate form
-      document.getElementById('itemModalTitle').textContent = 'تعديل الصنف';
-      document.getElementById('itemName').value = itemData.name;
-      document.getElementById('itemCategory').value = itemData.categoryId;
-      document.getElementById('itemUnit').value = itemData.unit;
-      document.getElementById('itemQuantity').value = itemData.quantity;
-      document.getElementById('itemUnitPrice').value = itemData.unitPrice;
-      document.getElementById('itemLocation').value = itemData.location || '';
-      document.getElementById('itemStatus').value = itemData.status;
-      
-      // Open modal
-      document.getElementById('itemModal').style.display = 'block';
+      await openItemModal(itemData);
     }
   } catch (error) {
     console.error('Error loading item for edit:', error);
