@@ -1156,47 +1156,57 @@
                 loginNote: 'Please contact admin if you need login credentials'
             },
             ar: {
-                home: 'Accueil',
+                home: 'Home',
                 services: 'Services',
-                about: 'À propos',
+                about: 'About',
                 contact: 'Contact',
-                login: 'Connexion',
-                heroTitle: 'Solution Puissante de Transport et Logistique',
-                heroSubtitle: 'Expédition rapide, sûre et précise dans le monde entier. Services logistiques professionnels adaptés à vos besoins.',
-                ourServices: 'Nos Services',
-                contactUs: 'Contactez-nous',
-                whatWeOffer: 'Ce que nous offrons',
-                inlandTransport: 'Transport terrestre',
-                airFreight: 'Fret aérien international',
-                oceanFreight: 'Fret maritime',
-                warehousing: 'Entreposage et stockage',
-                contractLogistics: 'Logistique contractuelle',
-                largeProjects: 'Grands projets',
-                customsClearance: 'Dédouanement',
-                supplyChain: 'Gestion de la chaîne d\'approvisionnement',
-                whyChooseUs: 'Pourquoi nous choisir',
-                globalCoverage: 'Couverture mondiale',
-                support247: 'Support 24/7',
-                secure: 'Sûr et sécurisé',
-                costEffective: 'Rentable',
-                whatClientsSay: 'Que disent nos clients',
-                newsletter: 'Abonnement newsletter',
-                newsletterText: 'Abonnez-vous à notre newsletter et nous vous informerons des derniers projets et promotions.',
-                subscribe: 'S\'abonner',
-                contactInfo: 'Contactez-nous',
-                address: 'Adresse',
-                phone: 'Téléphone',
+                login: 'Login',
+                heroTitle: 'Powerful Transport & Logistics Solution',
+                heroSubtitle: 'Fast, safe and accurate shipment provided all over the globe. Professional logistics services tailored to your needs.',
+                ourServices: 'Our Services',
+                contactUs: 'Contact Us',
+                whatWeOffer: 'What We Offer',
+                inlandTransport: 'Ground Shipping',
+                airFreight: 'Air Freight',
+                oceanFreight: 'Ocean Freight',
+                warehousing: 'Warehousing & Storage',
+                contractLogistics: 'Contract Logistics',
+                largeProjects: 'Large Projects',
+                customsClearance: 'Customs Clearance',
+                supplyChain: 'Supply Chain Management',
+                whyChooseUs: 'Why Choose Us',
+                globalCoverage: 'Global Coverage',
+                support247: '24/7 Support',
+                secure: 'Safe & Secure',
+                costEffective: 'Cost Effective',
+                whatClientsSay: 'What Our Clients Say',
+                newsletter: 'Newsletter Subscribe',
+                newsletterText: 'Subscribe to our newsletter and we will inform you about newest projects and promotions.',
+                subscribe: 'Subscribe',
+                contactInfo: 'Contact Us',
+                address: 'Address',
+                phone: 'Phone',
                 whatsapp: 'WhatsApp',
                 email: 'Email',
-                allRights: 'TOUS DROITS RÉSERVÉS PAR',
-                loginModalTitle: 'Connexion Safa Transport',
-                username: 'Nom d\'utilisateur',
-                password: 'Mot de passe',
-                enterUsername: 'Entrez le nom d\'utilisateur',
-                enterPassword: 'Entrez le mot de passe',
-                loggingIn: 'Connexion...',
-                loginSuccess: 'Connexion réussie! Redirection vers le tableau de bord...',
-                loginNote: 'Veuillez contacter l\'administrateur si vous avez besoin des identifiants de connexion'
+                allRights: 'ALL RIGHTS RESERVED BY',
+                loginModalTitle: 'Safa Transport Login',
+                username: 'Username',
+                password: 'Password',
+                enterUsername: 'Enter username',
+                enterPassword: 'Enter password',
+                loggingIn: 'Logging in...',
+                loginSuccess: 'Login successful! Redirecting to dashboard...',
+                loginNote: 'Please contact admin if you need login credentials',
+                aboutUs: 'About Safa Transport',
+                companyProfile: 'Company Profile',
+                ourMission: 'Our Mission',
+                getInTouch: 'Get In Touch',
+                name: 'Name',
+                emailField: 'Email',
+                subject: 'Subject',
+                message: 'Message',
+                sendMessage: 'Send Message',
+                headquarters: 'Safa Transport Headquarters'
             }
         };
 
@@ -1305,6 +1315,36 @@
             
             const loginNote = document.querySelector('.modal-footer small');
             if (loginNote) loginNote.innerHTML = `<i class="fas fa-info-circle"></i> ${t.loginNote}`;
+            
+            // Update About Us section
+            const aboutTitle = document.querySelector('.features-section .section-title');
+            if (aboutTitle && aboutTitle.textContent.includes('About')) {
+                aboutTitle.textContent = t.aboutUs;
+            }
+            
+            // Update contact form labels
+            const nameLabel = document.querySelector('label[for="contact-name"]');
+            if (nameLabel) nameLabel.textContent = t.name + ' *';
+            
+            const emailLabel = document.querySelector('label[for="contact-email"]');
+            if (emailLabel) emailLabel.textContent = t.emailField + ' *';
+            
+            const subjectLabel = document.querySelector('label[for="contact-subject"]');
+            if (subjectLabel) subjectLabel.textContent = t.subject;
+            
+            const messageLabel = document.querySelector('label[for="contact-message"]');
+            if (messageLabel) messageLabel.textContent = t.message + ' *';
+            
+            const submitBtn = document.querySelector('.contact-submit-btn');
+            if (submitBtn) submitBtn.innerHTML = `<i class="fas fa-paper-plane"></i> ${t.sendMessage}`;
+            
+            // Update contact form title
+            const contactFormTitle = document.querySelector('.contact-form-wrapper h3');
+            if (contactFormTitle) contactFormTitle.textContent = t.getInTouch;
+            
+            // Update contact info title
+            const contactInfoTitle = document.querySelector('.contact-info-wrapper h3');
+            if (contactInfoTitle) contactInfoTitle.textContent = t.headquarters;
             
             // Update footer
             const copyright = document.querySelector('.copyright');
@@ -1453,16 +1493,14 @@
                 // Show success message
                 showSuccess('Login successful! Redirecting to dashboard...');
                 
-                // Close modal immediately and redirect
+                // Close modal and redirect immediately
                 const modal = bootstrap.Modal.getInstance(document.getElementById('loginModal'));
                 if (modal) {
                     modal.hide();
                 }
                 
-                // Redirect after a short delay
-                setTimeout(() => {
-                    window.location.href = 'dashboard.html';
-                }, 1000);
+                // Force redirect immediately
+                window.location.replace('dashboard.html');
                 
             } catch (error) {
                 console.error('Login error:', error);
