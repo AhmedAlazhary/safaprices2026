@@ -1502,7 +1502,7 @@ async function handleItemSubmit(e) {
       unitPrice: parseFloat(document.getElementById('itemUnitPrice').value),
       status: document.getElementById('itemStatus').value,
       location: document.getElementById('itemLocation').value,
-      notes: document.getElementById('itemNotes').value.trim(),
+      notes: document.getElementById('itemNotes')?.value.trim() || '',
       barcode: barcodeInput || await generateCategoryBasedBarcode(),
       updatedAt: serverTimestamp()
     };
