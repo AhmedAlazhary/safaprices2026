@@ -1,0 +1,220 @@
+rules_version = '2';
+service cloud.firestore {
+  match /databases/{database}/documents {
+
+    // Helper functions
+    function isAuthenticated() {
+      return request.auth != null;
+    }
+    
+    function isAdmin() {
+      return isAuthenticated() && request.auth.token.admin == true;
+    }
+    
+    function isManagerOrAbove() {
+      return isAuthenticated() && 
+             (request.auth.token.admin == true || request.auth.token.manager == true);
+    }
+    
+    function isViewerOrAbove() {
+      return isAuthenticated() && 
+             (request.auth.token.admin == true || 
+              request.auth.token.manager == true || 
+              request.auth.token.viewer == true);
+    }
+    
+    function isOwner(userId) {
+      return isAuthenticated() && request.auth.uid == userId;
+    }
+    
+    function isOriginalUser(userId) {
+      return exists(/databases/$(database)/documents/user_roles/$(userId)) &&
+             get(/databases/$(database)/documents/user_roles/$(userId)).data.isOriginalUser == true;
+    }
+
+    // User roles collection - Admin only
+    match /user_roles/{userId} {
+      allow read: isAdmin() || isOwner(userId);
+      allow write: isAdmin() && !isOriginalUser(userId);
+      allow create: isAdmin();
+      allow update: isAdmin() && !isOriginalUser(userId);
+      allow delete: isAdmin() && !isOriginalUser(userId);
+    }
+
+    // Audit logs - Admin only for write, all authenticated for read
+    match /audit_logs/{auditId} {
+      allow read: isAdmin();
+      allow write: isAdmin();
+      allow create: isAdmin();
+    }
+
+    // Users collection - Admin only
+    match /users/{userId} {
+      allow read: isAdmin() || isOwner(userId);
+      allow write: isAdmin();
+      allow create: isAdmin();
+      allow update: isAdmin();
+      allow delete: isAdmin();
+    }
+
+    // Inventory collection
+    match /inventory/{itemId} {
+      allow read: isViewerOrAbove();
+      allow create: isManagerOrAbove();
+      allow update: isManagerOrAbove();
+      allow delete: isAdmin();
+    }
+
+    // Operations collection
+    match /operations/{operationId} {
+      allow read: isViewerOrAbove();
+      allow create: isManagerOrAbove();
+      allow update: isManagerOrAbove();
+      allow delete: isAdmin();
+    }
+
+    // Vehicles collection
+    match /vehicles/{vehicleId} {
+      allow read: isViewerOrAbove();
+      allow create: isManagerOrAbove();
+      allow update: isManagerOrAbove();
+      allow delete: isAdmin();
+    }
+
+    // Staff collection
+    match /staff/{staffId} {
+      allow read: isViewerOrAbove();
+      allow create: isManagerOrAbove();
+      allow update: isManagerOrAbove();
+      allow delete: isAdmin();
+    }
+
+    // Maintenance orders collection
+    match /maintenance_orders/{orderId} {
+      allow read: isViewerOrAbove();
+      allow create: isManagerOrAbove();
+      allow update: isManagerOrAbove();
+      allow delete: isAdmin();
+    }
+
+    // Treasury collection
+    match /treasury/{transactionId} {
+      allow read: isManagerOrAbove();
+      allow create: isManagerOrAbove();
+      allow update: isManagerOrAbove();
+      allow delete: isAdmin();
+    }
+
+    // Banks collection
+    match /banks/{bankId} {
+      allow read: isManagerOrAbove();
+      allow create: isManagerOrAbove();
+      allow update: isManagerOrAbove();
+      allow delete: isAdmin();
+    }
+
+    // Invoices collection
+    match /invoices/{invoiceId} {
+      allow read: isManagerOrAbove();
+      allow create: isManagerOrAbove();
+      allow update: isManagerOrAbove();
+      allow delete: isAdmin();
+    }
+
+    // Daily reports collection
+    match /daily_reports/{reportId} {
+      allow read: isViewerOrAbove();
+      allow create: isManagerOrAbove();
+      allow update: isManagerOrAbove();
+      allow delete: isAdmin();
+    }
+
+    // Monthly reports collection
+    match /monthly_reports/{reportId} {
+      allow read: isViewerOrAbove();
+      allow create: isManagerOrAbove();
+      allow update: isManagerOrAbove();
+      allow delete: isAdmin();
+    }
+
+    // Notifications collection
+    match /notifications/{notificationId} {
+      allow read: isOwner(resource.data.userId);
+      allow write: isAdmin();
+      allow create: isAdmin();
+      allow update: isAdmin();
+      allow delete: isAdmin();
+    }
+
+    // Tasks collection
+    match /tasks/{taskId} {
+      allow read: isViewerOrAbove();
+      allow create: isManagerOrAbove();
+      allow update: isManagerOrAbove();
+      allow delete: isAdmin();
+    }
+
+    // Settings collection - Admin only
+    match /settings/{settingId} {
+      allow read: isAdmin();
+      allow write: isAdmin();
+      allow create: isAdmin();
+      allow update: isAdmin();
+      allow delete: isAdmin();
+    }
+
+    // Backups collection - Admin only
+    match /backups/{backupId} {
+      allow read: isAdmin();
+      allow write: isAdmin();
+      allow create: isAdmin();
+      allow update: isAdmin();
+      allow delete: isAdmin();
+    }
+
+    // Shared lists collection
+    match /shared_lists/{listId} {
+      allow read: isViewerOrAbove();
+      allow create: isManagerOrAbove();
+      allow update: isManagerOrAbove();
+      allow delete: isAdmin();
+    }
+
+    // Prices collection
+    match /prices/{priceId} {
+      allow read: isViewerOrAbove();
+      allow create: isManagerOrAbove();
+      allow update: isManagerOrAbove();
+      allow delete: isAdmin();
+    }
+
+    // Warehouse collection
+    match /warehouse/{itemId} {
+      allow read: isViewerOrAbove();
+      allow create: isManagerOrAbove();
+      allow update: isManagerOrAbove();
+      allow delete: isAdmin();
+    }
+
+    // Drivers collection
+    match /drivers/{driverId} {
+      allow read: isViewerOrAbove();
+      allow create: isManagerOrAbove();
+      allow update: isManagerOrAbove();
+      allow delete: isAdmin();
+    }
+
+    // Upload files collection
+    match /uploads/{fileId} {
+      allow read: isViewerOrAbove();
+      allow create: isManagerOrAbove();
+      allow update: isManagerOrAbove();
+      allow delete: isAdmin();
+    }
+
+    // Deny all other access
+    match /{document=**} {
+      allow read, write: if false;
+    }
+  }
+}

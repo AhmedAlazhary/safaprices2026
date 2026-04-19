@@ -1,0 +1,407 @@
+/* CSS File for Admin Panel - Additional Styles */
+
+/* Enhanced Animations */
+@keyframes slideDown {
+    from {
+        opacity: 0;
+        transform: translateY(-20px);
+    }
+    to {
+        opacity: 1;
+        transform: translateY(0);
+    }
+}
+
+@keyframes pulse {
+    0% { transform: scale(1); }
+    50% { transform: scale(1.05); }
+    100% { transform: scale(1); }
+}
+
+/* Enhanced Header */
+.header {
+    animation: slideDown 0.5s ease-out;
+}
+
+/* Enhanced Stat Cards */
+.stat-card {
+    position: relative;
+    overflow: hidden;
+}
+
+.stat-card::before {
+    content: '';
+    position: absolute;
+    top: 0;
+    left: -100%;
+    width: 100%;
+    height: 100%;
+    background: linear-gradient(90deg, transparent, rgba(255,255,255,0.2), transparent);
+    transition: left 0.5s;
+}
+
+.stat-card:hover::before {
+    left: 100%;
+}
+
+/* Enhanced Table Styles */
+.users-table {
+    font-size: 0.95rem;
+}
+
+.users-table th {
+    position: sticky;
+    top: 0;
+    z-index: 10;
+    background: #f8f9fa;
+    font-weight: 600;
+    text-transform: uppercase;
+    font-size: 0.85rem;
+    letter-spacing: 0.5px;
+}
+
+.users-table td {
+    vertical-align: middle;
+}
+
+/* Enhanced Role Select */
+.role-select {
+    min-width: 120px;
+    font-weight: 500;
+    transition: all 0.3s ease;
+}
+
+.role-select:not(:disabled):hover {
+    border-color: #2196f3;
+    box-shadow: 0 0 0 3px rgba(33, 150, 243, 0.1);
+}
+
+/* Enhanced Buttons */
+.delete-user-btn {
+    transition: all 0.3s ease;
+    position: relative;
+    overflow: hidden;
+}
+
+.delete-user-btn::before {
+    content: '';
+    position: absolute;
+    top: 50%;
+    left: 50%;
+    width: 0;
+    height: 0;
+    background: rgba(255, 255, 255, 0.3);
+    border-radius: 50%;
+    transform: translate(-50%, -50%);
+    transition: width 0.3s, height 0.3s;
+}
+
+.delete-user-btn:hover::before {
+    width: 100%;
+    height: 100%;
+}
+
+/* Enhanced Search and Filter */
+.search-input {
+    position: relative;
+    padding-right: 40px;
+}
+
+.search-input::placeholder {
+    color: #999;
+    font-style: italic;
+}
+
+.filter-select {
+    cursor: pointer;
+    background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='12' viewBox='0 0 12 12'%3E%3Cpath fill='%23333' d='M6 9L1 4h10z'/%3E%3C/svg%3E");
+    background-repeat: no-repeat;
+    background-position: left 10px center;
+    padding-left: 35px;
+}
+
+/* Enhanced Info Box */
+.info-box {
+    position: relative;
+    border-right-width: 5px;
+    box-shadow: 0 4px 15px rgba(33, 150, 243, 0.15);
+}
+
+.info-box::before {
+    content: 'ℹ️';
+    position: absolute;
+    top: 20px;
+    right: 20px;
+    font-size: 1.5rem;
+    opacity: 0.5;
+}
+
+/* Enhanced Loading State */
+.loading {
+    position: relative;
+}
+
+.loading::after {
+    content: '';
+    position: absolute;
+    top: 0;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    background: rgba(255, 255, 255, 0.9);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 1.2rem;
+    color: #2196f3;
+}
+
+/* Enhanced Error State */
+.error-message {
+    border-right: 4px solid #f44336;
+    background: linear-gradient(135deg, #ffebee, #ffffff);
+}
+
+/* Enhanced Success Notification */
+.notification.success {
+    background: linear-gradient(135deg, #4caf50, #45a049);
+    box-shadow: 0 4px 15px rgba(76, 175, 80, 0.3);
+}
+
+.notification.error {
+    background: linear-gradient(135deg, #f44336, #d32f2f);
+    box-shadow: 0 4px 15px rgba(244, 67, 54, 0.3);
+}
+
+/* Enhanced User Avatar */
+.user-avatar {
+    position: relative;
+    cursor: pointer;
+    transition: transform 0.3s ease;
+}
+
+.user-avatar:hover {
+    transform: scale(1.1);
+}
+
+.user-avatar::after {
+    content: '';
+    position: absolute;
+    bottom: 0;
+    right: 0;
+    width: 12px;
+    height: 12px;
+    background: #4caf50;
+    border: 2px solid white;
+    border-radius: 50%;
+}
+
+/* Enhanced Export Button */
+.export-btn {
+    position: relative;
+    overflow: hidden;
+}
+
+.export-btn::before {
+    content: '';
+    position: absolute;
+    top: 0;
+    left: -100%;
+    width: 100%;
+    height: 100%;
+    background: linear-gradient(90deg, transparent, rgba(255,255,255,0.2), transparent);
+    transition: left 0.5s;
+}
+
+.export-btn:hover::before {
+    left: 100%;
+}
+
+/* Enhanced Original User Row */
+.original-user-row {
+    position: relative;
+}
+
+.original-user-row::before {
+    content: '⭐';
+    position: absolute;
+    right: -20px;
+    top: 50%;
+    transform: translateY(-50%);
+    font-size: 1.2rem;
+    opacity: 0.7;
+}
+
+/* Enhanced Badge */
+.badge-original {
+    animation: pulse 2s infinite;
+    box-shadow: 0 2px 5px rgba(255, 152, 0, 0.3);
+}
+
+/* Enhanced Responsive Design */
+@media (max-width: 768px) {
+    .header {
+        padding: 1rem;
+    }
+    
+    .header-content {
+        flex-direction: column;
+        gap: 1rem;
+    }
+    
+    .search-filter {
+        flex-direction: column;
+        gap: 0.5rem;
+    }
+    
+    .search-input {
+        width: 100%;
+        padding-right: 15px;
+    }
+    
+    .users-table {
+        font-size: 0.8rem;
+    }
+    
+    .users-table th,
+    .users-table td {
+        padding: 0.5rem 0.25rem;
+    }
+    
+    .role-select {
+        min-width: 80px;
+        font-size: 0.8rem;
+    }
+    
+    .delete-user-btn {
+        padding: 0.25rem 0.5rem;
+        font-size: 0.8rem;
+    }
+    
+    .stats-grid {
+        grid-template-columns: repeat(2, 1fr);
+        gap: 1rem;
+    }
+    
+    .stat-number {
+        font-size: 2rem;
+    }
+}
+
+@media (max-width: 480px) {
+    .stats-grid {
+        grid-template-columns: 1fr;
+    }
+    
+    .user-info {
+        flex-direction: column;
+        gap: 0.5rem;
+    }
+    
+    .info-box {
+        padding: 1rem;
+    }
+    
+    .info-box h3 {
+        font-size: 1rem;
+    }
+}
+
+/* Enhanced Dark Mode Support */
+@media (prefers-color-scheme: dark) {
+    body {
+        background: linear-gradient(135deg, #1a237e, #4a148c);
+    }
+    
+    .header {
+        background: rgba(30, 30, 30, 0.95);
+        color: white;
+    }
+    
+    .logo h1 {
+        color: white;
+    }
+    
+    .stat-card {
+        background: #2d2d2d;
+        color: white;
+    }
+    
+    .users-table {
+        background: #2d2d2d;
+        color: white;
+    }
+    
+    .users-table th {
+        background: #3d3d3d;
+        color: white;
+    }
+    
+    .users-table td {
+        border-bottom-color: #4d4d4d;
+    }
+    
+    .search-input,
+    .filter-select {
+        background: #3d3d3d;
+        color: white;
+        border-color: #4d4d4d;
+    }
+    
+    .info-box {
+        background: rgba(33, 150, 243, 0.1);
+        color: white;
+    }
+}
+
+/* Enhanced Print Styles */
+@media print {
+    .header,
+    .users-controls,
+    .delete-user-btn,
+    .role-select {
+        display: none !important;
+    }
+    
+    .users-table {
+        font-size: 12pt;
+    }
+    
+    .original-user-row {
+        background: #f5f5f5 !important;
+        -webkit-print-color-adjust: exact;
+    }
+}
+
+/* Enhanced Accessibility */
+@media (prefers-reduced-motion: reduce) {
+    * {
+        animation-duration: 0.01ms !important;
+        animation-iteration-count: 1 !important;
+        transition-duration: 0.01ms !important;
+    }
+}
+
+/* Enhanced Focus Styles */
+button:focus,
+input:focus,
+select:focus {
+    outline: 2px solid #2196f3;
+    outline-offset: 2px;
+}
+
+/* Enhanced High Contrast Mode */
+@media (prefers-contrast: high) {
+    .stat-card {
+        border: 2px solid #000;
+    }
+    
+    .users-table th,
+    .users-table td {
+        border: 1px solid #000;
+    }
+    
+    .delete-user-btn {
+        border: 2px solid #000;
+    }
+}

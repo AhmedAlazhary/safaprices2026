@@ -534,5 +534,189 @@ function escapeHtml(value) {
     .replace(/'/g, "&#39;");
 }
 </script>
+
+<!-- Firebase SDK -->
+<script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-app.js"></script>
+<script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-auth.js"></script>
+<script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-firestore.js"></script>
+<script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-functions.js"></script>
+
+<!-- RBAC System -->
+<script type="module">
+  // Import Firebase and RBAC modules
+  import { auth, onAuthStateChanged } from './firebase-config.js';
+  import { initRBAC } from './js/rbac-main.js';
+  import { logout } from './js/auth-guard.js';
+
+  // Initialize RBAC system
+  initRBAC();
+
+  // Make logout available globally
+  window.logout = logout;
+
+  // Check authentication state
+  onAuthStateChanged(auth, (user) => {
+    if (!user) {
+      // Redirect to login if not authenticated
+      window.location.href = 'index.html';
+      return;
+    }
+
+    // Update user info in the UI
+    const userDisplay = document.querySelector('.user-display');
+    if (userDisplay) {
+      userDisplay.textContent = user.displayName || user.email;
+    }
+
+    // Add role indicator
+    const role = sessionStorage.getItem('userRole');
+    if (role) {
+      addRoleIndicator(role);
+    }
+
+    // Add admin panel link for admins
+    if (role === 'admin') {
+      addAdminPanelLink();
+    }
+  });
+
+  // Add role indicator to the page
+  function addRoleIndicator(role) {
+    const header = document.querySelector('header');
+    if (!header) return;
+
+    const indicator = document.createElement('div');
+    indicator.className = 'role-indicator';
+    indicator.innerHTML = getRoleBadge(role);
+    
+    const style = document.createElement('style');
+    style.textContent = `
+      .role-indicator {
+        position: fixed;
+        top: 20px;
+        left: 20px;
+        z-index: 1000;
+        background: ${getRoleColor(role)};
+        color: white;
+        padding: 8px 15px;
+        border-radius: 20px;
+        font-size: 12px;
+        font-weight: bold;
+        box-shadow: 0 2px 10px rgba(0,0,0,0.2);
+        direction: rtl;
+      }
+    `;
+    
+    document.head.appendChild(style);
+    document.body.appendChild(indicator);
+  }
+
+  // Add admin panel link
+  function addAdminPanelLink() {
+    const nav = document.querySelector('nav');
+    if (!nav) return;
+
+    const adminLink = document.createElement('a');
+    adminLink.href = 'admin-panel.html';
+    adminLink.className = 'nav-link admin-link';
+    adminLink.innerHTML = '⚙️ لوحة التحكم';
+    adminLink.setAttribute('data-role', 'admin');
+    
+    const style = document.createElement('style');
+    style.textContent = `
+      .admin-link {
+        background: #f44336;
+        color: white !important;
+        padding: 8px 15px;
+        border-radius: 8px;
+        text-decoration: none;
+        margin-right: 10px;
+        transition: background 0.3s;
+      }
+      
+      .admin-link:hover {
+        background: #d32f2f !important;
+      }
+    `;
+    
+    document.head.appendChild(style);
+    nav.insertBefore(adminLink, nav.firstChild);
+  }
+
+  // Get role badge HTML
+  function getRoleBadge(role) {
+    const badges = {
+      'admin': '👑 أدمن',
+      'manager': '📊 مدير',
+      'viewer': '👁️ مشاهد'
+    };
+    return badges[role] || '👤 مستخدم';
+  }
+
+  // Get role color
+  function getRoleColor(role) {
+    const colors = {
+      'admin': '#f44336',
+      'manager': '#ff9800',
+      'viewer': '#4caf50'
+    };
+    return colors[role] || '#9e9e9e';
+  }
+
+  // Add keyboard shortcuts
+  document.addEventListener('keydown', (e) => {
+    // Ctrl+Shift+L for logout
+    if (e.ctrlKey && e.shiftKey && e.key === 'L') {
+      e.preventDefault();
+      logout();
+    }
+    
+    // Ctrl+Shift+A for admin panel (admins only)
+    if (e.ctrlKey && e.shiftKey && e.key === 'A') {
+      e.preventDefault();
+      const role = sessionStorage.getItem('userRole');
+      if (role === 'admin') {
+        window.location.href = 'admin-panel.html';
+      }
+    }
+  });
+
+  // Add logout button to user menu
+  function addLogoutButton() {
+    const userSection = document.querySelector('.user');
+    if (!userSection) return;
+
+    const logoutBtn = document.createElement('button');
+    logoutBtn.className = 'logout-btn';
+    logoutBtn.innerHTML = '🚪 تسجيل الخروج';
+    logoutBtn.onclick = logout;
+    
+    const style = document.createElement('style');
+    style.textContent = `
+      .logout-btn {
+        background: #f44336;
+        color: white;
+        border: none;
+        padding: 8px 15px;
+        border-radius: 8px;
+        cursor: pointer;
+        margin-top: 10px;
+        transition: background 0.3s;
+      }
+      
+      .logout-btn:hover {
+        background: #d32f2f;
+      }
+    `;
+    
+    document.head.appendChild(style);
+    userSection.appendChild(logoutBtn);
+  }
+
+  // Initialize when DOM is ready
+  document.addEventListener('DOMContentLoaded', () => {
+    addLogoutButton();
+  });
+</script>
 </body>
 </html>

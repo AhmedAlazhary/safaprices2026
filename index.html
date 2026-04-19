@@ -1,181 +1,717 @@
 <!DOCTYPE html>
-<html lang="ar" dir="rtl">
+<html lang="en">
 <head>
-<meta charset="UTF-8">
-<meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>تسجيل الدخول - مكتب الصفا</title>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Safa Transport & Logistics - Professional Logistics Solutions</title>
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <style>
+        :root {
+            --primary-color: #1e3a8a;
+            --secondary-color: #f59e0b;
+            --text-dark: #1f2937;
+            --text-light: #6b7280;
+            --bg-light: #f9fafb;
+        }
 
-<style>
-:root {
-  --primary: #1f4f7a;
-  --primary-dark: #173b5b;
-  --surface: rgba(255, 255, 255, 0.95);
-  --text: #1f2937;
-  --muted: #5f6b7a;
-  --border: #d4dce5;
-}
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
 
-* {
-  box-sizing: border-box;
-}
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            line-height: 1.6;
+            color: var(--text-dark);
+        }
 
-body {
-  margin: 0;
-  font-family: Arial, sans-serif;
-  min-height: 100vh;
-  display: flex;
-  justify-content: center;
-  align-items: center;
-  position: relative;
-  overflow: hidden;
-  background: linear-gradient(180deg, #eef4fa 0%, #dfeaf4 100%);
-}
+        /* Header Styles */
+        .top-header {
+            background: var(--primary-color);
+            color: white;
+            padding: 8px 0;
+            font-size: 14px;
+        }
 
-body::before {
-  content: "";
-  position: absolute;
-  inset: 0;
-  background: url("logo.png") no-repeat center center;
-  background-size: min(62vw, 420px);
-  filter: blur(22px);
-  opacity: 0.17;
-  z-index: 0;
-}
+        .main-header {
+            background: white;
+            box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+            position: sticky;
+            top: 0;
+            z-index: 1000;
+        }
 
-.login-box {
-  position: relative;
-  z-index: 1;
-  background: var(--surface);
-  padding: 34px 28px;
-  border-radius: 22px;
-  width: min(92vw, 460px);
-  text-align: center;
-  box-shadow: 0 12px 32px rgba(0, 0, 0, 0.16);
-  backdrop-filter: blur(6px);
-}
+        .navbar {
+            padding: 15px 0;
+        }
 
-.login-box img {
-  width: clamp(95px, 18vw, 130px);
-  margin-bottom: 14px;
-}
+        .navbar-brand {
+            font-size: 24px;
+            font-weight: bold;
+            color: var(--primary-color) !important;
+            text-decoration: none;
+        }
 
-.login-title {
-  margin: 0 0 10px;
-  color: var(--primary-dark);
-  font-size: clamp(1.15rem, 2.6vw, 1.55rem);
-  line-height: 1.6;
-}
+        .nav-link {
+            color: var(--text-dark) !important;
+            font-weight: 500;
+            margin: 0 10px;
+            transition: color 0.3s;
+        }
 
-.login-subtitle {
-  margin: 0 0 22px;
-  color: var(--muted);
-  font-size: clamp(0.88rem, 1.9vw, 0.98rem);
-  line-height: 1.8;
-}
+        .nav-link:hover {
+            color: var(--primary-color) !important;
+        }
 
-input {
-  width: 100%;
-  padding: 12px;
-  margin: 10px 0;
-  border-radius: 12px;
-  border: 1px solid var(--border);
-  font-size: 16px;
-}
+        .login-btn {
+            background: var(--secondary-color);
+            color: white !important;
+            padding: 10px 25px;
+            border-radius: 25px;
+            text-decoration: none;
+            transition: all 0.3s;
+            display: inline-block;
+            border: none;
+            cursor: pointer;
+            font-weight: 600;
+        }
 
-input:focus {
-  outline: none;
-  border-color: #7fb1dd;
-  box-shadow: 0 0 0 3px rgba(52, 152, 219, 0.14);
-}
+        .login-btn:hover {
+            background: #d97706;
+            transform: translateY(-2px);
+            box-shadow: 0 5px 15px rgba(245, 158, 11, 0.3);
+            color: white !important;
+        }
 
-button {
-  width: 100%;
-  padding: 12px;
-  border: none;
-  border-radius: 12px;
-  background: #3498db;
-  color: white;
-  font-size: 16px;
-  cursor: pointer;
-  transition: 0.3s;
-  margin-top: 6px;
-}
+        /* Hero Section */
+        .hero-section {
+            background: linear-gradient(135deg, var(--primary-color) 0%, #3730a3 100%);
+            color: white;
+            padding: 100px 0;
+            position: relative;
+            overflow: hidden;
+        }
 
-button:hover {
-  background: #2980b9;
-}
+        .hero-section::before {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            background: url('data:image/svg+xml,<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1440 320"><path fill="%23ffffff20" d="M0,96L48,112C96,128,192,160,288,160C384,160,480,128,576,122.7C672,117,768,139,864,138.7C960,139,1056,117,1152,106.7C1248,96,1344,96,1392,96L1440,96L1440,320L1392,320C1344,320,1248,320,1152,320C1056,320,960,320,864,320C768,320,672,320,576,320C480,320,384,320,288,320C192,320,96,320,48,320L0,320Z"></path></svg>') no-repeat bottom;
+            background-size: cover;
+        }
 
-@media (max-width: 480px) {
-  .login-box {
-    width: calc(100vw - 24px);
-    padding: 24px 16px;
-    border-radius: 18px;
-  }
+        .hero-content {
+            position: relative;
+            z-index: 1;
+        }
 
-  input,
-  button {
-    font-size: 15px;
-  }
-}
-</style>
+        .hero-title {
+            font-size: 48px;
+            font-weight: bold;
+            margin-bottom: 20px;
+            animation: fadeInUp 1s ease;
+        }
+
+        .hero-subtitle {
+            font-size: 20px;
+            margin-bottom: 30px;
+            opacity: 0.9;
+            animation: fadeInUp 1s ease 0.2s;
+            animation-fill-mode: both;
+        }
+
+        /* Services Section */
+        .services-section {
+            padding: 80px 0;
+            background: var(--bg-light);
+        }
+
+        .section-title {
+            text-align: center;
+            font-size: 36px;
+            font-weight: bold;
+            margin-bottom: 50px;
+            color: var(--primary-color);
+        }
+
+        .service-card {
+            background: white;
+            padding: 30px;
+            border-radius: 10px;
+            text-align: center;
+            box-shadow: 0 5px 20px rgba(0,0,0,0.1);
+            transition: transform 0.3s, box-shadow 0.3s;
+            height: 100%;
+        }
+
+        .service-card:hover {
+            transform: translateY(-10px);
+            box-shadow: 0 15px 40px rgba(0,0,0,0.15);
+        }
+
+        .service-icon {
+            font-size: 48px;
+            color: var(--secondary-color);
+            margin-bottom: 20px;
+        }
+
+        .service-title {
+            font-size: 20px;
+            font-weight: bold;
+            margin-bottom: 15px;
+            color: var(--primary-color);
+        }
+
+        /* Features Section */
+        .features-section {
+            padding: 80px 0;
+            background: white;
+        }
+
+        .feature-item {
+            display: flex;
+            align-items: center;
+            margin-bottom: 30px;
+        }
+
+        .feature-icon {
+            font-size: 36px;
+            color: var(--secondary-color);
+            margin-right: 20px;
+            min-width: 50px;
+        }
+
+        .feature-content h3 {
+            font-size: 20px;
+            margin-bottom: 10px;
+            color: var(--primary-color);
+        }
+
+        /* Testimonials Section */
+        .testimonials-section {
+            padding: 80px 0;
+            background: var(--bg-light);
+        }
+
+        .testimonial-card {
+            background: white;
+            padding: 30px;
+            border-radius: 10px;
+            box-shadow: 0 5px 20px rgba(0,0,0,0.1);
+            margin-bottom: 30px;
+        }
+
+        .testimonial-text {
+            font-style: italic;
+            margin-bottom: 20px;
+            color: var(--text-light);
+        }
+
+        .testimonial-author {
+            font-weight: bold;
+            color: var(--primary-color);
+        }
+
+        /* Newsletter Section */
+        .newsletter-section {
+            padding: 60px 0;
+            background: var(--primary-color);
+            color: white;
+            text-align: center;
+        }
+
+        .newsletter-form {
+            max-width: 500px;
+            margin: 0 auto;
+            display: flex;
+            gap: 10px;
+        }
+
+        .newsletter-input {
+            flex: 1;
+            padding: 12px 20px;
+            border: none;
+            border-radius: 25px;
+            font-size: 16px;
+        }
+
+        .newsletter-btn {
+            background: var(--secondary-color);
+            color: white;
+            border: none;
+            padding: 12px 30px;
+            border-radius: 25px;
+            cursor: pointer;
+            font-weight: 600;
+            transition: background 0.3s;
+        }
+
+        .newsletter-btn:hover {
+            background: #d97706;
+        }
+
+        /* Contact Section */
+        .contact-section {
+            padding: 80px 0;
+            background: white;
+        }
+
+        .contact-info {
+            display: flex;
+            justify-content: space-around;
+            flex-wrap: wrap;
+            gap: 30px;
+        }
+
+        .contact-item {
+            text-align: center;
+            flex: 1;
+            min-width: 250px;
+        }
+
+        .contact-icon {
+            font-size: 36px;
+            color: var(--secondary-color);
+            margin-bottom: 15px;
+        }
+
+        /* Footer */
+        footer {
+            background: var(--primary-color);
+            color: white;
+            padding: 40px 0 20px;
+            text-align: center;
+        }
+
+        .footer-content {
+            margin-bottom: 30px;
+        }
+
+        .footer-links {
+            display: flex;
+            justify-content: center;
+            gap: 30px;
+            margin-bottom: 20px;
+            flex-wrap: wrap;
+        }
+
+        .footer-links a {
+            color: white;
+            text-decoration: none;
+            transition: color 0.3s;
+        }
+
+        .footer-links a:hover {
+            color: var(--secondary-color);
+        }
+
+        .copyright {
+            border-top: 1px solid rgba(255,255,255,0.1);
+            padding-top: 20px;
+            margin-top: 30px;
+        }
+
+        .copyright a {
+            color: var(--secondary-color);
+            text-decoration: none;
+            font-weight: bold;
+        }
+
+        .copyright a:hover {
+            text-decoration: underline;
+        }
+
+        /* Animations */
+        @keyframes fadeInUp {
+            from {
+                opacity: 0;
+                transform: translateY(30px);
+            }
+            to {
+                opacity: 1;
+                transform: translateY(0);
+            }
+        }
+
+        /* Responsive */
+        @media (max-width: 768px) {
+            .hero-title {
+                font-size: 36px;
+            }
+            
+            .hero-subtitle {
+                font-size: 18px;
+            }
+            
+            .newsletter-form {
+                flex-direction: column;
+            }
+            
+            .contact-info {
+                flex-direction: column;
+            }
+        }
+    </style>
 </head>
-
 <body>
+    <!-- Top Header -->
+    <div class="top-header">
+        <div class="container">
+            <div class="row">
+                <div class="col-md-6">
+                    <i class="fas fa-phone"></i> +20 34842651 | 
+                    <i class="fas fa-mobile"></i> +20 1555541485
+                </div>
+                <div class="col-md-6 text-end">
+                    <i class="fas fa-envelope"></i> omar_sabry11@yahoo.com
+                </div>
+            </div>
+        </div>
+    </div>
 
-<div class="login-box">
-  <img src="logo.gif" alt="شعار مكتب الصفا">
-  <h3 class="login-title">مرحبًا بك فى نظام مكتب الصفا للنقل</h3>
-  <p class="login-subtitle">من فضلك قم بتسجيل الدخول باسم المستخدم وكلمة المرور الخاصة بك والمقدمة من مكتب الصفا للنقل</p>
+    <!-- Main Header -->
+    <header class="main-header">
+        <div class="container">
+            <nav class="navbar navbar-expand-lg">
+                <a class="navbar-brand" href="#">
+                    <i class="fas fa-shipping-fast"></i> Safa Transport
+                </a>
+                <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbarNav">
+                    <span class="navbar-toggler-icon"></span>
+                </button>
+                <div class="collapse navbar-collapse" id="navbarNav">
+                    <ul class="navbar-nav mx-auto">
+                        <li class="nav-item">
+                            <a class="nav-link" href="#">Home</a>
+                        </li>
+                        <li class="nav-item dropdown">
+                            <a class="nav-link dropdown-toggle" href="#" id="servicesDropdown" role="button" data-bs-toggle="dropdown">
+                                Services
+                            </a>
+                            <ul class="dropdown-menu">
+                                <li><a class="dropdown-item" href="#">Inland Transportation</a></li>
+                                <li><a class="dropdown-item" href="#">Air Freight</a></li>
+                                <li><a class="dropdown-item" href="#">Ocean Freight</a></li>
+                                <li><a class="dropdown-item" href="#">Large Projects</a></li>
+                                <li><a class="dropdown-item" href="#">Customs Clearance</a></li>
+                                <li><a class="dropdown-item" href="#">Contract Logistics</a></li>
+                                <li><a class="dropdown-item" href="#">Warehousing</a></li>
+                                <li><a class="dropdown-item" href="#">Supply Chain Management</a></li>
+                            </ul>
+                        </li>
+                        <li class="nav-item">
+                            <a class="nav-link" href="#">About</a>
+                        </li>
+                        <li class="nav-item">
+                            <a class="nav-link" href="#contact">Contact</a>
+                        </li>
+                    </ul>
+                    <a href="login.html" class="login-btn">
+                        <i class="fas fa-sign-in-alt"></i> Login
+                    </a>
+                </div>
+            </nav>
+        </div>
+    </header>
 
-  <input type="text" id="username" placeholder="اسم المستخدم">
-  <input type="password" id="password" placeholder="كلمة السر">
+    <!-- Hero Section -->
+    <section class="hero-section">
+        <div class="container">
+            <div class="row">
+                <div class="col-lg-8 mx-auto text-center hero-content">
+                    <h1 class="hero-title">Powerful Transport & Logistics Solution</h1>
+                    <p class="hero-subtitle">Fast, safe and accurate shipment provided all over the globe. Professional logistics services tailored to your needs.</p>
+                    <div class="mt-4">
+                        <a href="#services" class="btn btn-warning btn-lg me-3">Our Services</a>
+                        <a href="#contact" class="btn btn-outline-light btn-lg">Contact Us</a>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </section>
 
-  <button onclick="login()">تسجيل الدخول</button>
-</div>
+    <!-- Services Section -->
+    <section id="services" class="services-section">
+        <div class="container">
+            <h2 class="section-title">What We Offer</h2>
+            <div class="row">
+                <div class="col-md-4 mb-4">
+                    <div class="service-card">
+                        <div class="service-icon">
+                            <i class="fas fa-truck"></i>
+                        </div>
+                        <h3 class="service-title">Inland Transportation</h3>
+                        <p>Professional road transportation services across the region with modern fleet and experienced drivers.</p>
+                    </div>
+                </div>
+                <div class="col-md-4 mb-4">
+                    <div class="service-card">
+                        <div class="service-icon">
+                            <i class="fas fa-plane"></i>
+                        </div>
+                        <h3 class="service-title">International Air Freight</h3>
+                        <p>Fast and reliable air cargo solutions for time-sensitive shipments worldwide.</p>
+                    </div>
+                </div>
+                <div class="col-md-4 mb-4">
+                    <div class="service-card">
+                        <div class="service-icon">
+                            <i class="fas fa-ship"></i>
+                        </div>
+                        <h3 class="service-title">Ocean Freight</h3>
+                        <p>Cost-effective sea freight solutions for large volume shipments with global coverage.</p>
+                    </div>
+                </div>
+                <div class="col-md-4 mb-4">
+                    <div class="service-card">
+                        <div class="service-icon">
+                            <i class="fas fa-warehouse"></i>
+                        </div>
+                        <h3 class="service-title">Warehousing & Storage</h3>
+                        <p>Modern warehouse solutions with intelligent storage and inventory management systems.</p>
+                    </div>
+                </div>
+                <div class="col-md-4 mb-4">
+                    <div class="service-card">
+                        <div class="service-icon">
+                            <i classfas fa-cogs"></i>
+                        </div>
+                        <h3 class="service-title">Contract Logistics</h3>
+                        <p>Customized logistics solutions designed to meet your specific business requirements.</p>
+                    </div>
+                </div>
+                <div class="col-md-4 mb-4">
+                    <div class="service-card">
+                        <div class="service-icon">
+                            <i class="fas fa-project-diagram"></i>
+                        </div>
+                        <h3 class="service-title">Large Projects</h3>
+                        <p>Specialized logistics solutions for large-scale projects and complex supply chains.</p>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </section>
 
-<script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-app-compat.js"></script>
-<script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-auth-compat.js"></script>
+    <!-- Features Section -->
+    <section class="features-section">
+        <div class="container">
+            <h2 class="section-title">Why Choose Us</h2>
+            <div class="row">
+                <div class="col-md-6">
+                    <div class="feature-item">
+                        <div class="feature-icon">
+                            <i class="fas fa-globe"></i>
+                        </div>
+                        <div class="feature-content">
+                            <h3>Global Coverage</h3>
+                            <p>We cover over 150 locations worldwide with our extensive network of logistics partners.</p>
+                        </div>
+                    </div>
+                    <div class="feature-item">
+                        <div class="feature-icon">
+                            <i class="fas fa-clock"></i>
+                        </div>
+                        <div class="feature-content">
+                            <h3>24/7 Support</h3>
+                            <p>Round-the-clock customer support to ensure your shipments are always on track.</p>
+                        </div>
+                    </div>
+                </div>
+                <div class="col-md-6">
+                    <div class="feature-item">
+                        <div class="feature-icon">
+                            <i class="fas fa-shield-alt"></i>
+                        </div>
+                        <div class="feature-content">
+                            <h3>Safe & Secure</h3>
+                            <p>Advanced security measures and insurance options to protect your valuable cargo.</p>
+                        </div>
+                    </div>
+                    <div class="feature-item">
+                        <div class="feature-icon">
+                            <i class="fas fa-chart-line"></i>
+                        </div>
+                        <div class="feature-content">
+                            <h3>Cost Effective</h3>
+                            <p>Competitive pricing without compromising on service quality and reliability.</p>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </section>
 
-<script>
-// ⚠️ SECURITY WARNING: API key is exposed for development only
-// In production, use environment variables instead
-const firebaseConfig = {
-  apiKey: "AIzaSyARqSgfh78TqFQ2hhZaAtUaVQFqlPuRM3w",
-  authDomain: "trialsafaprices2026.firebaseapp.com",
-  projectId: "trialsafaprices2026",
-  storageBucket: "trialsafaprices2026.appspot.com",
-  messagingSenderId: "177091434445",
-  appId: "1:177091434445:web:568b6ae3ba270a21d4d684"
-};
+    <!-- Testimonials Section -->
+    <section class="testimonials-section">
+        <div class="container">
+            <h2 class="section-title">What Our Clients Say</h2>
+            <div class="row">
+                <div class="col-md-4">
+                    <div class="testimonial-card">
+                        <p class="testimonial-text">"Best customer support and response time I have ever seen... Thank you Safa Transport!"</p>
+                        <p class="testimonial-author">- Ahmed Mohamed</p>
+                    </div>
+                </div>
+                <div class="col-md-4">
+                    <div class="testimonial-card">
+                        <p class="testimonial-text">"Thanks for helping me develop my business! Your logistics solutions are outstanding."</p>
+                        <p class="testimonial-author">- Sarah Johnson</p>
+                    </div>
+                </div>
+                <div class="col-md-4">
+                    <div class="testimonial-card">
+                        <p class="testimonial-text">"Safa Transport does a good job of keeping the customer happy. It feels like more than a business relationship."</p>
+                        <p class="testimonial-author">- Michael Chen</p>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </section>
 
-firebase.initializeApp(firebaseConfig);
+    <!-- Newsletter Section -->
+    <section class="newsletter-section">
+        <div class="container">
+            <h2 class="mb-4">Newsletter Subscribe</h2>
+            <p class="mb-4">Subscribe to our newsletter and we will inform you about newest projects and promotions.</p>
+            <form class="newsletter-form" onsubmit="handleNewsletterSubmit(event)">
+                <input type="email" class="newsletter-input" placeholder="Enter your email" required>
+                <button type="submit" class="newsletter-btn">Subscribe</button>
+            </form>
+        </div>
+    </section>
 
-const usersMap = {
-  "ahmed": "ahmed@safatrans.com",
-  "hesham": "hesham@safatrans.com",
-  "omar": "omar@safatrans.com",
-  "sabry": "sabry@safatrans.com"
-};
+    <!-- Contact Section -->
+    <section id="contact" class="contact-section">
+        <div class="container">
+            <h2 class="section-title">Contact Us</h2>
+            <div class="contact-info">
+                <div class="contact-item">
+                    <div class="contact-icon">
+                        <i class="fas fa-map-marker-alt"></i>
+                    </div>
+                    <h3>Address</h3>
+                    <p>5 BAHARY BEK ST . ELBAN<br>ALEXANDRIA EGYPT</p>
+                </div>
+                <div class="contact-item">
+                    <div class="contact-icon">
+                        <i class="fas fa-phone"></i>
+                    </div>
+                    <h3>Phone</h3>
+                    <p>Landline: +20 34842651<br>Mobile: +20 1555541485</p>
+                </div>
+                <div class="contact-item">
+                    <div class="contact-icon">
+                        <i class="fab fa-whatsapp"></i>
+                    </div>
+                    <h3>WhatsApp</h3>
+                    <p>+20 1220417513</p>
+                </div>
+                <div class="contact-item">
+                    <div class="contact-icon">
+                        <i class="fas fa-envelope"></i>
+                    </div>
+                    <h3>Email</h3>
+                    <p>omar_sabry11@yahoo.com</p>
+                </div>
+            </div>
+        </div>
+    </section>
 
-function login() {
-  const username = document.getElementById("username").value.trim().toLowerCase();
-  const password = document.getElementById("password").value;
-  const email = usersMap[username];
+    <!-- Footer -->
+    <footer>
+        <div class="container">
+            <div class="footer-content">
+                <div class="footer-links">
+                    <a href="#">About Us</a>
+                    <a href="#">Services</a>
+                    <a href="#">Locations</a>
+                    <a href="#contact">Contact</a>
+                    <a href="#">Privacy Policy</a>
+                </div>
+                <div class="social-links">
+                    <a href="https://wa.me/2011220417513" class="text-white me-3"><i class="fab fa-whatsapp fa-2x"></i></a>
+                    <a href="#" class="text-white me-3"><i class="fab fa-facebook fa-2x"></i></a>
+                    <a href="#" class="text-white me-3"><i class="fab fa-twitter fa-2x"></i></a>
+                    <a href="#" class="text-white"><i class="fab fa-linkedin fa-2x"></i></a>
+                </div>
+            </div>
+            <div class="copyright">
+                <p>&copy; 2024 Safa Transport & Logistics. ALL RIGHTS RESERVED BY <a href="https://wa.me/201142999462" target="_blank">AHMED ALAZHARY</a></p>
+            </div>
+        </div>
+    </footer>
 
-  if (!email) {
-    alert("اسم المستخدم غير صحيح");
-    return;
-  }
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
+    <script>
+        // Smooth scrolling for navigation links
+        document.querySelectorAll('a[href^="#"]').forEach(anchor => {
+            anchor.addEventListener('click', function (e) {
+                e.preventDefault();
+                const target = document.querySelector(this.getAttribute('href'));
+                if (target) {
+                    target.scrollIntoView({
+                        behavior: 'smooth',
+                        block: 'start'
+                    });
+                }
+            });
+        });
 
-  firebase.auth().signInWithEmailAndPassword(email, password)
-    .then(() => {
-      window.location.href = "dashboard.html";
-    })
-    .catch(() => {
-      alert("كلمة السر غير صحيحة");
-    });
-}
-</script>
+        // Newsletter form submission
+        function handleNewsletterSubmit(event) {
+            event.preventDefault();
+            const email = event.target.querySelector('input[type="email"]').value;
+            
+            // Show success message
+            const form = event.target;
+            const originalContent = form.innerHTML;
+            form.innerHTML = '<div class="alert alert-success">Thank you for subscribing! We will keep you updated.</div>';
+            
+            // Reset form after 3 seconds
+            setTimeout(() => {
+                form.innerHTML = originalContent;
+                form.querySelector('input[type="email"]').value = '';
+            }, 3000);
+        }
 
+        // Add scroll effect to header
+        window.addEventListener('scroll', function() {
+            const header = document.querySelector('.main-header');
+            if (window.scrollY > 100) {
+                header.style.boxShadow = '0 5px 20px rgba(0,0,0,0.1)';
+            } else {
+                header.style.boxShadow = '0 2px 10px rgba(0,0,0,0.1)';
+            }
+        });
+
+        // Animation on scroll
+        const observerOptions = {
+            threshold: 0.1,
+            rootMargin: '0px 0px -50px 0px'
+        };
+
+        const observer = new IntersectionObserver(function(entries) {
+            entries.forEach(entry => {
+                if (entry.isIntersecting) {
+                    entry.target.style.opacity = '1';
+                    entry.target.style.transform = 'translateY(0)';
+                }
+            });
+        }, observerOptions);
+
+        // Observe all service cards and feature items
+        document.querySelectorAll('.service-card, .feature-item').forEach(el => {
+            el.style.opacity = '0';
+            el.style.transform = 'translateY(30px)';
+            el.style.transition = 'opacity 0.6s ease, transform 0.6s ease';
+            observer.observe(el);
+        });
+    </script>
 </body>
 </html>

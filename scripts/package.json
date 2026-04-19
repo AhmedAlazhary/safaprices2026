@@ -1,0 +1,12 @@
+{
+  "name": "upgrade-existing-users",
+  "version": "1.0.0",
+  "description": "Script to upgrade existing users to admin role",
+  "main": "upgrade-existing-users.js",
+  "scripts": {
+    "start": "node upgrade-existing-users.js"
+  },
+  "dependencies": {
+    "firebase-admin": "^11.10.1"
+  }
+}
