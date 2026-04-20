@@ -787,7 +787,7 @@
                 </div>
             </div>
             <div class="copyright text-center mt-4">
-                <p>&copy; 2024 Safa Transport & Logistics. All Rights Reserved. <a href="https://wa.me/201142999462" style="color: var(--secondary-color); text-decoration: none;">AHMED ALAZHARY</a></p>
+                <p>&copy; 2024 Safa Transport & Logistics. All Rights Reserved.</p>
             </div>
         </div>
     </footer>
@@ -1065,16 +1065,6 @@
         // Auto-advance slides every 5 seconds
         setInterval(nextSlide, 5000);
 
-        // Firebase configuration
-        const firebaseConfig = {
-            apiKey: "AIzaSyBxxxxxxxxxxxxxxxxxxxxxxxxxxx",
-            authDomain: "safatransport.firebaseapp.com",
-            projectId: "safatransport",
-            storageBucket: "safatransport.appspot.com",
-            messagingSenderId: "123456789",
-            appId: "1:123456789:web:abcdef123456"
-        };
-
         // Initialize Firebase
         if (typeof firebase !== 'undefined') {
             firebase.initializeApp(firebaseConfig);
@@ -1149,23 +1139,14 @@
                     // Show success message
                     showSuccess('Login successful! Redirecting to dashboard...');
                     
-                    // Close modal
+                    // Close modal and redirect immediately
                     const modal = bootstrap.Modal.getInstance(document.getElementById('loginModal'));
                     if (modal) {
                         modal.hide();
                     }
                     
-                    // Wait a moment then redirect
-                    setTimeout(() => {
-                        // Try multiple redirect methods
-                        try {
-                            window.location.href = 'dashboard.html';
-                        } catch (e) {
-                            console.error('Redirect failed:', e);
-                            // Fallback method
-                            window.location.replace('dashboard.html');
-                        }
-                    }, 1500);
+                    // Force redirect immediately
+                    window.location.replace('dashboard.html');
                     
                 } catch (error) {
                     console.error('Login error:', error);
