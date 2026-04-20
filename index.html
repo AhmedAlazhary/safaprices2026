@@ -1153,6 +1153,11 @@
                         // Show success message
                         showSuccess('Login successful! Redirecting to dashboard...');
                         
+                        // Set user session for auth guard
+                        sessionStorage.setItem('userLoggedIn', 'true');
+                        sessionStorage.setItem('userRole', 'admin'); // Default role for demo
+                        sessionStorage.setItem('userEmail', email);
+                        
                         // Close modal
                         const modal = bootstrap.Modal.getInstance(document.getElementById('loginModal'));
                         if (modal) {
