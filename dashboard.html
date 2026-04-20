@@ -560,9 +560,43 @@ function escapeHtml(value) {
   const auth = firebase.auth();
   const db = firebase.firestore();
 
+  function applyUserSession(userData = {}) {
+    const role = userData.role || sessionStorage.getItem('userRole') || 'viewer';
+    const email = userData.email || sessionStorage.getItem('userEmail') || 'demo@safatrans.com';
+    const displayName = userData.displayName || email;
+
+    sessionStorage.setItem('userLoggedIn', 'true');
+    sessionStorage.setItem('userRole', role);
+    sessionStorage.setItem('userEmail', email);
+
+    if (userData.uid) {
+      sessionStorage.setItem('userUID', userData.uid);
+    }
+
+    const userDisplay = document.querySelector('.user-display');
+    if (userDisplay) {
+      userDisplay.textContent = displayName;
+    }
+
+    addRoleIndicator(role);
+
+    if (role === 'admin') {
+      addAdminPanelLink();
+    }
+
+    console.log('User role:', role);
+  }
+
   // Check authentication state
   auth.onAuthStateChanged((user) => {
     if (!user) {
+      const isDemoLoggedIn = sessionStorage.getItem('userLoggedIn') === 'true';
+
+      if (isDemoLoggedIn) {
+        applyUserSession();
+        return;
+      }
+
       // Redirect to login if not authenticated
       window.location.href = 'index.html';
       return;
@@ -570,11 +604,11 @@ function escapeHtml(value) {
 
     console.log('User is logged in:', user.email);
 
-    // Update user info in the UI
-    const userDisplay = document.querySelector('.user-display');
-    if (userDisplay) {
-      userDisplay.textContent = user.displayName || user.email;
-    }
+    applyUserSession({
+      email: user.email,
+      displayName: user.displayName || user.email,
+      uid: user.uid
+    });
 
     // Get user role from custom claims or Firestore
     user.getIdTokenResult().then((idTokenResult) => {
@@ -588,20 +622,12 @@ function escapeHtml(value) {
         role = 'viewer';
       }
 
-      // Store role in session
-      sessionStorage.setItem('userRole', role);
-      sessionStorage.setItem('userUID', user.uid);
-      sessionStorage.setItem('userEmail', user.email);
-
-      // Add role indicator
-      addRoleIndicator(role);
-
-      // Add admin panel link for admins
-      if (role === 'admin') {
-        addAdminPanelLink();
-      }
-
-      console.log('User role:', role);
+      applyUserSession({
+        email: user.email,
+        displayName: user.displayName || user.email,
+        uid: user.uid,
+        role
+      });
     }).catch((error) => {
       console.error('Error getting user role:', error);
     });
@@ -609,11 +635,11 @@ function escapeHtml(value) {
 
   // Logout function
   window.logout = function() {
-    auth.signOut().then(() => {
+    auth.signOut().catch((error) => {
+      console.error('Logout error:', error);
+    }).finally(() => {
       sessionStorage.clear();
       window.location.href = 'index.html';
-    }).catch((error) => {
-      console.error('Logout error:', error);
     });
   };
 
@@ -621,6 +647,13 @@ function escapeHtml(value) {
   function addRoleIndicator(role) {
     const header = document.querySelector('header');
     if (!header) return;
+
+    const existingIndicator = document.querySelector('.role-indicator');
+    if (existingIndicator) {
+      existingIndicator.innerHTML = getRoleBadge(role);
+      existingIndicator.style.background = getRoleColor(role);
+      return;
+    }
 
     const indicator = document.createElement('div');
     indicator.className = 'role-indicator';
@@ -652,6 +685,10 @@ function escapeHtml(value) {
   function addAdminPanelLink() {
     const nav = document.querySelector('nav');
     if (!nav) return;
+
+    if (nav.querySelector('.admin-link')) {
+      return;
+    }
 
     const adminLink = document.createElement('a');
     adminLink.href = 'admin-panel.html';
