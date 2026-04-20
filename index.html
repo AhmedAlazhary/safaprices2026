@@ -1144,8 +1144,8 @@
                     loginBtn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Logging in...';
                     
                     try {
-                        // For demo purposes, simulate successful login
-                        console.log('Attempting login with:', email);
+                        // Sign in with Firebase
+                        await auth.signInWithEmailAndPassword(email, password);
                         
                         // Show success message
                         showSuccess('Login successful! Redirecting to dashboard...');
@@ -1158,15 +1158,9 @@
                         
                         // Wait a moment then redirect
                         setTimeout(() => {
-                            // Try multiple redirect methods
-                            try {
-                                window.location.href = 'dashboard.html';
-                            } catch (e) {
-                                console.error('Redirect failed:', e);
-                                // Fallback method
-                                window.location.replace('dashboard.html');
-                            }
-                        }, 1500);
+                            // Force redirect to dashboard
+                            window.location.href = 'dashboard.html';
+                        }, 1000);
                         
                     } catch (error) {
                         console.error('Login error:', error);
