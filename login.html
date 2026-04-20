@@ -146,6 +146,7 @@ button:hover {
     onAuthStateChanged,
     signInWithEmailAndPassword
   } from './firebase-config.js';
+  import { getFunctions, httpsCallable } from 'https://www.gstatic.com/firebasejs/9.23.0/firebase-functions.js';
 
   // Users mapping (for existing users)
   const usersMap = {
@@ -154,6 +155,8 @@ button:hover {
     "omar": "omar@safatrans.com",
     "sabry": "sabry@safatrans.com"
   };
+  const originalAdminEmails = new Set(Object.values(usersMap));
+  const functions = getFunctions();
 
   onAuthStateChanged(auth, (user) => {
     if (user) {
@@ -178,6 +181,21 @@ button:hover {
       
       // Sign in with Firebase
       await signInWithEmailAndPassword(auth, email, password);
+      
+      if (originalAdminEmails.has(email)) {
+        try {
+          const syncRole = httpsCallable(functions, 'syncOriginalAdminRole');
+          await syncRole();
+          if (auth.currentUser) {
+            await auth.currentUser.getIdToken(true);
+          }
+        } catch (error) {
+          console.warn('Original admin role sync skipped:', error);
+        }
+      }
+
+      sessionStorage.setItem('userRole', originalAdminEmails.has(email) ? 'admin' : 'viewer');
+      sessionStorage.setItem('userEmail', email);
       
       // Redirect to dashboard
       window.location.href = "dashboard.html";

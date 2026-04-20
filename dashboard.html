@@ -307,6 +307,11 @@ button:hover,
         <p>نظام متكامل لإدارة المخزن، العهد، الأصول، والتصفيات مع الربط المحاسبي والالتزام بالدورة المستندية.</p>
         <button data-target="inventory-assets-system.html">فتح نظام المخزن والأصول</button>
       </article>
+      <article class="nav-card highlight" data-role="admin">
+        <h3>إدارة الصلاحيات</h3>
+        <p>الوصول إلى لوحة الأدمن لتعديل أدوار المستخدمين ومراجعة حسابات النظام الحالية.</p>
+        <button data-target="admin-panel.html">فتح إدارة الصلاحيات</button>
+      </article>
     </div>
 
     <div class="grid stats-grid">
@@ -361,6 +366,7 @@ import {
   orderBy,
   limit
 } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore.js";
+import { getFunctions, httpsCallable } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-functions.js";
 
 // ⚠️ SECURITY WARNING: API key is exposed for development only
 // In production, use environment variables instead
@@ -376,6 +382,13 @@ const firebaseConfig = {
 const app = initializeApp(firebaseConfig);
 const auth = getAuth(app);
 const firestore = getFirestore(app);
+const functions = getFunctions(app);
+const ORIGINAL_ADMIN_EMAILS = new Set([
+  "ahmed@safatrans.com",
+  "hesham@safatrans.com",
+  "omar@safatrans.com",
+  "sabry@safatrans.com"
+]);
 
 const activityList = document.getElementById("activityList");
 const inventoryCount = document.getElementById("inventoryCount");
@@ -414,6 +427,9 @@ onAuthStateChanged(auth, async user => {
   }
 
   state.role = await resolveRole(user);
+  if (isOriginalAdminEmail(user.email) && state.role !== "admin") {
+    state.role = await syncOriginalAdminRole(user);
+  }
   sessionStorage.setItem("userRole", state.role);
   sessionStorage.setItem("userUID", user.uid);
   sessionStorage.setItem("userEmail", user.email || "");
@@ -422,6 +438,10 @@ onAuthStateChanged(auth, async user => {
 });
 
 async function resolveRole(user) {
+  if (isOriginalAdminEmail(user.email)) {
+    return "admin";
+  }
+
   try {
     const token = await user.getIdTokenResult();
     if (token.claims.admin) return "admin";
@@ -438,6 +458,26 @@ async function resolveRole(user) {
     console.error("Unable to read staff role", error);
   }
   return "viewer";
+}
+
+function isOriginalAdminEmail(email) {
+  return ORIGINAL_ADMIN_EMAILS.has(String(email || "").trim().toLowerCase());
+}
+
+async function syncOriginalAdminRole(user) {
+  if (!isOriginalAdminEmail(user.email)) {
+    return state.role;
+  }
+
+  try {
+    const syncRole = httpsCallable(functions, "syncOriginalAdminRole");
+    await syncRole();
+    await user.getIdToken(true);
+  } catch (error) {
+    console.warn("Original admin role sync skipped:", error);
+  }
+
+  return "admin";
 }
 
 function startRealtimeListeners() {
@@ -569,7 +609,7 @@ function escapeHtml(value) {
   const db = firebase.firestore();
 
   function applyUserSession(userData = {}) {
-    const role = userData.role || sessionStorage.getItem('userRole') || 'viewer';
+    const role = userData.role || (isOriginalAdminEmail(userData.email) ? 'admin' : sessionStorage.getItem('userRole')) || 'viewer';
     const email = userData.email || sessionStorage.getItem('userEmail') || '';
     const displayName = userData.displayName || email;
 
@@ -606,14 +646,15 @@ function escapeHtml(value) {
     applyUserSession({
       email: user.email,
       displayName: user.displayName || user.email,
-      uid: user.uid
+      uid: user.uid,
+      role: isOriginalAdminEmail(user.email) ? 'admin' : undefined
     });
 
     // Get user role from custom claims or Firestore
     user.getIdTokenResult().then((idTokenResult) => {
-      let role = 'viewer'; // default role
+      let role = isOriginalAdminEmail(user.email) ? 'admin' : 'viewer';
       
-      if (idTokenResult.claims.admin) {
+      if (isOriginalAdminEmail(user.email) || idTokenResult.claims.admin) {
         role = 'admin';
       } else if (idTokenResult.claims.manager) {
         role = 'manager';
@@ -694,6 +735,7 @@ function escapeHtml(value) {
     adminLink.className = 'nav-link admin-link';
     adminLink.innerHTML = '⚙️ لوحة التحكم';
     adminLink.setAttribute('data-role', 'admin');
+    adminLink.textContent = 'إدارة الصلاحيات';
     
     const style = document.createElement('style');
     style.textContent = `

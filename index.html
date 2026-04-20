@@ -1089,6 +1089,23 @@
                     "omar": "omar@safatrans.com",
                     "sabry": "sabry@safatrans.com"
                 };
+                const originalAdminEmails = new Set(Object.values(usersMap));
+
+                async function syncOriginalAdminRole(email) {
+                    if (!originalAdminEmails.has(email)) {
+                        return;
+                    }
+
+                    try {
+                        const syncRole = firebase.functions().httpsCallable('syncOriginalAdminRole');
+                        await syncRole();
+                        if (auth.currentUser) {
+                            await auth.currentUser.getIdToken(true);
+                        }
+                    } catch (error) {
+                        console.warn('Original admin role sync skipped:', error);
+                    }
+                }
 
                 // Check if user is already logged in
                 auth.onAuthStateChanged((user) => {
@@ -1145,11 +1162,12 @@
                     
                     try {
                         await auth.signInWithEmailAndPassword(email, password);
+                        await syncOriginalAdminRole(email);
                         
                         // Show success message
                         showSuccess('Login successful! Redirecting to dashboard...');
 
-                        sessionStorage.removeItem('userRole');
+                        sessionStorage.setItem('userRole', originalAdminEmails.has(email) ? 'admin' : 'viewer');
                         sessionStorage.setItem('userEmail', email);
                         
                         // Close modal

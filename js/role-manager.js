@@ -7,6 +7,16 @@ let functions;
 let assignUserRoleFunction;
 let getAllUsersFunction;
 let deleteUserFunction;
+const ORIGINAL_ADMIN_EMAILS = new Set([
+    'ahmed@safatrans.com',
+    'hesham@safatrans.com',
+    'omar@safatrans.com',
+    'sabry@safatrans.com'
+]);
+
+function isOriginalAdminEmail(email) {
+    return ORIGINAL_ADMIN_EMAILS.has(String(email || '').trim().toLowerCase());
+}
 
 // تهيئة Firebase Functions
 async function initFunctions() {
@@ -70,6 +80,10 @@ export async function deleteUser(uid, deletedBy = null) {
 // التأكد من أن المستخدم لديه دور
 export async function ensureUserHasRole(user) {
     try {
+        if (isOriginalAdminEmail(user.email)) {
+            return;
+        }
+
         // التحقق من Custom Claims
         const tokenResult = await user.getIdTokenResult();
         const hasAnyRole = tokenResult.claims.admin || 

@@ -1,5 +1,11 @@
 // js/auth-guard.js - Route Guards and Authentication Protection
 // Note: This file uses global Firebase from compat version
+const ORIGINAL_ADMIN_EMAILS = new Set([
+    'ahmed@safatrans.com',
+    'hesham@safatrans.com',
+    'omar@safatrans.com',
+    'sabry@safatrans.com'
+]);
 
 // Initialize route guards
 function initRouteGuards() {
@@ -58,6 +64,11 @@ function checkUserRole(user, page) {
 
 // Function to get current user role
 function getCurrentUserRole() {
+    const email = sessionStorage.getItem('userEmail') || '';
+    if (ORIGINAL_ADMIN_EMAILS.has(email.trim().toLowerCase())) {
+        return 'admin';
+    }
+
     return sessionStorage.getItem('userRole') || 'viewer';
 }
 

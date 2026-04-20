@@ -703,12 +703,33 @@ async function sendMonthlyReport(report) {
 // RBAC (Role-Based Access Control) Functions
 // ============================================
 
+const ORIGINAL_ADMIN_EMAILS = new Set([
+    'ahmed@safatrans.com',
+    'hesham@safatrans.com',
+    'omar@safatrans.com',
+    'sabry@safatrans.com'
+]);
+
+function isOriginalAdminEmail(email) {
+    return ORIGINAL_ADMIN_EMAILS.has(String(email || '').trim().toLowerCase());
+}
+
 /**
  * دالة مساعدة للتحقق مما إذا كان المستخدم أصلياً
  */
 async function isOriginalUser(uid) {
     const userRoleDoc = await db.collection('user_roles').doc(uid).get();
-    return userRoleDoc.exists && userRoleDoc.data().isOriginalUser === true;
+    if (userRoleDoc.exists && userRoleDoc.data().isOriginalUser === true) {
+        return true;
+    }
+
+    try {
+        const userRecord = await admin.auth().getUser(uid);
+        return isOriginalAdminEmail(userRecord.email);
+    } catch (error) {
+        console.error('Error checking original user by email:', error);
+        return false;
+    }
 }
 
 /**
@@ -812,13 +833,15 @@ exports.getAllUsers = functions.https.onCall(async (data, context) => {
         const usersWithRoles = users.map(user => {
             const roleData = userRoles[user.uid] || {};
             const token = user.customClaims || {};
+            const isOriginalAdmin = roleData.isOriginalUser || isOriginalAdminEmail(user.email);
+            const resolvedRole = roleData.role || (token.admin || isOriginalAdmin ? 'admin' : 'viewer');
             
             return {
                 uid: user.uid,
                 email: user.email,
                 displayName: user.displayName,
-                role: roleData.role || 'viewer',
-                isOriginal: roleData.isOriginalUser || false,
+                role: resolvedRole,
+                isOriginal: isOriginalAdmin,
                 createdAt: user.metadata.creationTime,
                 lastSignIn: user.metadata.lastSignInTime,
                 disabled: user.disabled,
@@ -913,7 +936,7 @@ exports.createUserWithRole = functions.https.onCall(async (data, context) => {
 
     // التحقق من صحة الدور
     const validRoles = ['admin', 'manager', 'viewer'];
-    const userRole = role || 'viewer';
+    const userRole = isOriginalAdminEmail(email) ? 'admin' : (role || 'viewer');
     if (!validRoles.includes(userRole)) {
         throw new functions.https.HttpsError('invalid-argument', 'دور غير صالح');
     }
@@ -940,7 +963,7 @@ exports.createUserWithRole = functions.https.onCall(async (data, context) => {
             email: userRecord.email,
             displayName: userRecord.displayName,
             role: userRole,
-            isOriginalUser: false,
+            isOriginalUser: isOriginalAdminEmail(userRecord.email),
             createdAt: admin.firestore.FieldValue.serverTimestamp(),
             createdBy: createdBy || context.auth.uid
         });
@@ -986,28 +1009,62 @@ exports.assignDefaultRoleOnSignup = functions.auth.user().onCreate(async (user) 
             return;
         }
 
-        // تعيين دور viewer افتراضي
+        const isOriginalAdmin = isOriginalAdminEmail(user.email);
+        const assignedRole = isOriginalAdmin ? 'admin' : 'viewer';
+
         await admin.auth().setCustomUserClaims(user.uid, {
-            admin: false,
+            admin: assignedRole === 'admin',
             manager: false,
-            viewer: true
+            viewer: assignedRole === 'viewer'
         });
 
         // إنشاء سجل في Firestore
         await db.collection('user_roles').doc(user.uid).set({
             email: user.email,
             displayName: user.displayName || user.email.split('@')[0],
-            role: 'viewer',
-            isOriginalUser: false,
+            role: assignedRole,
+            isOriginalUser: isOriginalAdmin,
             createdAt: admin.firestore.FieldValue.serverTimestamp(),
             createdBy: 'system'
         });
 
-        console.log(`✅ Assigned viewer role to new user: ${user.email}`);
+        console.log(`✅ Assigned ${assignedRole} role to new user: ${user.email}`);
 
     } catch (error) {
         console.error('Error assigning default role:', error);
     }
+});
+
+exports.syncOriginalAdminRole = functions.https.onCall(async (data, context) => {
+    if (!context.auth) {
+        throw new functions.https.HttpsError('unauthenticated', 'يجب تسجيل الدخول أولاً');
+    }
+
+    const userRecord = await admin.auth().getUser(context.auth.uid);
+    if (!isOriginalAdminEmail(userRecord.email)) {
+        throw new functions.https.HttpsError('permission-denied', 'هذا المستخدم ليس من المستخدمين الأصليين');
+    }
+
+    await admin.auth().setCustomUserClaims(userRecord.uid, {
+        admin: true,
+        manager: false,
+        viewer: false
+    });
+
+    await db.collection('user_roles').doc(userRecord.uid).set({
+        email: userRecord.email,
+        displayName: userRecord.displayName || userRecord.email.split('@')[0],
+        role: 'admin',
+        isOriginalUser: true,
+        updatedAt: admin.firestore.FieldValue.serverTimestamp(),
+        updatedBy: 'system-bootstrap'
+    }, { merge: true });
+
+    return {
+        success: true,
+        role: 'admin',
+        isOriginalUser: true
+    };
 });
 
 /**
@@ -1024,6 +1081,7 @@ async function getUserCurrentRole(uid) {
         const userRecord = await admin.auth().getUser(uid);
         const claims = userRecord.customClaims || {};
         
+        if (isOriginalAdminEmail(userRecord.email)) return 'admin';
         if (claims.admin) return 'admin';
         if (claims.manager) return 'manager';
         if (claims.viewer) return 'viewer';
