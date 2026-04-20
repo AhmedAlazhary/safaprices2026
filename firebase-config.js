@@ -1,6 +1,11 @@
 // Firebase Configuration - Modular SDK v9
 import { initializeApp } from "https://www.gstatic.com/firebasejs/9.23.0/firebase-app.js";
-import { getAuth } from "https://www.gstatic.com/firebasejs/9.23.0/firebase-auth.js";
+import {
+  getAuth,
+  onAuthStateChanged,
+  signInWithEmailAndPassword,
+  signOut
+} from "https://www.gstatic.com/firebasejs/9.23.0/firebase-auth.js";
 import { 
   getFirestore, 
   serverTimestamp, 
@@ -40,6 +45,11 @@ const app = initializeApp(firebaseConfig);
 export const auth = getAuth(app);
 export const db = getFirestore(app);
 export const realtimeDb = getDatabase(app);
+export {
+  onAuthStateChanged,
+  signInWithEmailAndPassword,
+  signOut
+};
 export { 
   serverTimestamp, 
   runTransaction,

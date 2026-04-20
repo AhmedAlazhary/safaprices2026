@@ -3,10 +3,6 @@
 
 // Initialize route guards
 function initRouteGuards() {
-    // Check if user is logged in (using sessionStorage for demo)
-    const isLoggedIn =
-        sessionStorage.getItem('userLoggedIn') === 'true' ||
-        localStorage.getItem('userLoggedIn') === 'true';
     const currentPath = window.location.pathname;
     const currentPage = currentPath.split('/').pop() || 'index.html';
     
@@ -33,14 +29,24 @@ function initRouteGuards() {
         'register.html'
     ];
     
-    // Check if current page requires authentication
-    if (protectedPages.includes(currentPage)) {
-        if (!isLoggedIn) {
-            // Redirect to login page
+    if (!protectedPages.includes(currentPage)) {
+        return;
+    }
+
+    if (typeof firebase === 'undefined') {
+        window.location.href = 'index.html';
+        return;
+    }
+
+    firebase.auth().onAuthStateChanged((user) => {
+        if (!user) {
             window.location.href = 'index.html';
             return;
         }
-    }
+
+        sessionStorage.setItem('userUID', user.uid);
+        sessionStorage.setItem('userEmail', user.email || '');
+    });
 }
 
 // Function to check user role
@@ -52,7 +58,7 @@ function checkUserRole(user, page) {
 
 // Function to get current user role
 function getCurrentUserRole() {
-    return sessionStorage.getItem('userRole') || localStorage.getItem('userRole') || 'viewer';
+    return sessionStorage.getItem('userRole') || 'viewer';
 }
 
 // Function to protect buttons based on role
@@ -68,11 +74,16 @@ function protectButton(buttonId, requiredRole) {
 
 // Logout function
 function logout() {
-    sessionStorage.clear();
-    localStorage.removeItem('userLoggedIn');
-    localStorage.removeItem('userRole');
-    localStorage.removeItem('userEmail');
-    window.location.href = 'index.html';
+    if (typeof firebase === 'undefined') {
+        sessionStorage.clear();
+        window.location.href = 'index.html';
+        return;
+    }
+
+    firebase.auth().signOut().finally(() => {
+        sessionStorage.clear();
+        window.location.href = 'index.html';
+    });
 }
 
 // Initialize when DOM is loaded

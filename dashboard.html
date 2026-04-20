@@ -391,45 +391,6 @@ const state = {
   role: "viewer"
 };
 
-function readDemoSession() {
-  const params = new URLSearchParams(window.location.search);
-  const encodedSession = params.get("demoSession");
-
-  if (encodedSession) {
-    try {
-      const parsedSession = JSON.parse(decodeURIComponent(encodedSession));
-      if (parsedSession?.email) {
-        sessionStorage.setItem("userLoggedIn", "true");
-        sessionStorage.setItem("userRole", parsedSession.role || "viewer");
-        sessionStorage.setItem("userEmail", parsedSession.email);
-
-        localStorage.setItem("userLoggedIn", "true");
-        localStorage.setItem("userRole", parsedSession.role || "viewer");
-        localStorage.setItem("userEmail", parsedSession.email);
-
-        const cleanUrl = `${window.location.pathname}${window.location.hash}`;
-        window.history.replaceState({}, document.title, cleanUrl);
-        return parsedSession;
-      }
-    } catch (error) {
-      console.error("Unable to parse demo session", error);
-    }
-  }
-
-  const isLoggedIn =
-    sessionStorage.getItem("userLoggedIn") === "true" ||
-    localStorage.getItem("userLoggedIn") === "true";
-
-  if (!isLoggedIn) {
-    return null;
-  }
-
-  return {
-    role: sessionStorage.getItem("userRole") || localStorage.getItem("userRole") || "viewer",
-    email: sessionStorage.getItem("userEmail") || localStorage.getItem("userEmail") || "demo@safatrans.com"
-  };
-}
-
 document.querySelectorAll("[data-target]").forEach(button => {
   button.addEventListener("click", () => {
     window.location.href = button.dataset.target;
@@ -443,27 +404,19 @@ document.getElementById("logoutBtn").addEventListener("click", async () => {
     console.error("Logout error", error);
   }
   sessionStorage.clear();
-  localStorage.removeItem("userLoggedIn");
-  localStorage.removeItem("userRole");
-  localStorage.removeItem("userEmail");
   window.location.href = "index.html";
 });
 
 onAuthStateChanged(auth, async user => {
   if (!user) {
-    const demoSession = readDemoSession();
-    if (!demoSession) {
-      window.location.href = "index.html";
-      return;
-    }
-
-    state.role = demoSession.role || "viewer";
-    userRoleLabel.textContent = `الدور الحالي: ${getRoleLabel(state.role)}`;
-    startRealtimeListeners();
+    window.location.href = "index.html";
     return;
   }
 
   state.role = await resolveRole(user);
+  sessionStorage.setItem("userRole", state.role);
+  sessionStorage.setItem("userUID", user.uid);
+  sessionStorage.setItem("userEmail", user.email || "");
   userRoleLabel.textContent = `الدور الحالي: ${getRoleLabel(state.role)}`;
   startRealtimeListeners();
 });
@@ -615,33 +568,13 @@ function escapeHtml(value) {
   const auth = firebase.auth();
   const db = firebase.firestore();
 
-  function readPersistedSession() {
-    const isLoggedIn =
-      sessionStorage.getItem('userLoggedIn') === 'true' ||
-      localStorage.getItem('userLoggedIn') === 'true';
-
-    if (!isLoggedIn) {
-      return null;
-    }
-
-    return {
-      role: sessionStorage.getItem('userRole') || localStorage.getItem('userRole') || 'viewer',
-      email: sessionStorage.getItem('userEmail') || localStorage.getItem('userEmail') || 'demo@safatrans.com'
-    };
-  }
-
   function applyUserSession(userData = {}) {
     const role = userData.role || sessionStorage.getItem('userRole') || 'viewer';
-    const email = userData.email || sessionStorage.getItem('userEmail') || 'demo@safatrans.com';
+    const email = userData.email || sessionStorage.getItem('userEmail') || '';
     const displayName = userData.displayName || email;
 
-    sessionStorage.setItem('userLoggedIn', 'true');
     sessionStorage.setItem('userRole', role);
     sessionStorage.setItem('userEmail', email);
-
-    localStorage.setItem('userLoggedIn', 'true');
-    localStorage.setItem('userRole', role);
-    localStorage.setItem('userEmail', email);
 
     if (userData.uid) {
       sessionStorage.setItem('userUID', userData.uid);
@@ -664,14 +597,6 @@ function escapeHtml(value) {
   // Check authentication state
   auth.onAuthStateChanged((user) => {
     if (!user) {
-      const persistedSession = readPersistedSession();
-
-      if (persistedSession) {
-        applyUserSession(persistedSession);
-        return;
-      }
-
-      // Redirect to login if not authenticated
       window.location.href = 'index.html';
       return;
     }
@@ -713,9 +638,6 @@ function escapeHtml(value) {
       console.error('Logout error:', error);
     }).finally(() => {
       sessionStorage.clear();
-      localStorage.removeItem('userLoggedIn');
-      localStorage.removeItem('userRole');
-      localStorage.removeItem('userEmail');
       window.location.href = 'index.html';
     });
   };

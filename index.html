@@ -1067,14 +1067,14 @@
 
         // Initialize Firebase
         if (typeof firebase !== 'undefined') {
-            // Firebase configuration - using a working config
+            // Firebase configuration
             const firebaseConfig = {
-                apiKey: "AIzaSyDummyKeyForTesting123456789",
-                authDomain: "safatransport.firebaseapp.com",
-                projectId: "safatransport",
-                storageBucket: "safatransport.appspot.com",
-                messagingSenderId: "123456789",
-                appId: "1:123456789:web:abcdef123456"
+                apiKey: "AIzaSyARqSgfh78TqFQ2hhZaAtUaVQFqlPuRM3w",
+                authDomain: "trialsafaprices2026.firebaseapp.com",
+                projectId: "trialsafaprices2026",
+                storageBucket: "trialsafaprices2026.appspot.com",
+                messagingSenderId: "177091434445",
+                appId: "1:177091434445:web:568b6ae3ba270a21d4d684"
             };
 
             try {
@@ -1118,20 +1118,6 @@
                     }
                 }
 
-                function persistDemoSession(sessionData) {
-                    const encodedSession = encodeURIComponent(JSON.stringify(sessionData));
-
-                    sessionStorage.setItem('userLoggedIn', 'true');
-                    sessionStorage.setItem('userRole', sessionData.role);
-                    sessionStorage.setItem('userEmail', sessionData.email);
-
-                    localStorage.setItem('userLoggedIn', 'true');
-                    localStorage.setItem('userRole', sessionData.role);
-                    localStorage.setItem('userEmail', sessionData.email);
-
-                    return `dashboard.html?demoSession=${encodedSession}`;
-                }
-
                 // Login form submission
                 document.getElementById('loginForm').addEventListener('submit', async (e) => {
                     e.preventDefault();
@@ -1158,19 +1144,13 @@
                     loginBtn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Logging in...';
                     
                     try {
-                        // Simulate login for demo purposes (since Firebase API key is not valid)
-                        console.log('Simulating login with:', email);
-                        
-                        // Simulate authentication delay
-                        await new Promise(resolve => setTimeout(resolve, 1000));
+                        await auth.signInWithEmailAndPassword(email, password);
                         
                         // Show success message
                         showSuccess('Login successful! Redirecting to dashboard...');
-                        
-                        const redirectUrl = persistDemoSession({
-                            email,
-                            role: 'admin'
-                        });
+
+                        sessionStorage.removeItem('userRole');
+                        sessionStorage.setItem('userEmail', email);
                         
                         // Close modal
                         const modal = bootstrap.Modal.getInstance(document.getElementById('loginModal'));
@@ -1180,9 +1160,8 @@
                         
                         // Wait a moment then redirect
                         setTimeout(() => {
-                            // Force redirect to dashboard
-                            window.location.href = redirectUrl;
-                        }, 1000);
+                            window.location.href = 'dashboard.html';
+                        }, 300);
                         
                     } catch (error) {
                         console.error('Login error:', error);
