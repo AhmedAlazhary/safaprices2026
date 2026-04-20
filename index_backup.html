@@ -101,26 +101,46 @@
             left: 20px;
         }
 
-        /* Main Header */
+        .rtl .navbar-nav {
+            margin-right: auto;
+            margin-left: 0;
+        }
+
+        .rtl .feature-item {
+            flex-direction: row-reverse;
+        }
+
+        .rtl .feature-icon {
+            margin-right: 0;
+            margin-left: 20px;
+        }
+
         .main-header {
-            background: linear-gradient(135deg, rgba(17, 24, 39, 0.95) 0%, rgba(31, 41, 55, 0.95) 100%);
-            backdrop-filter: blur(10px);
-            border-bottom: 1px solid var(--border-dark);
+            background: linear-gradient(135deg, #374151 0%, #1f2937 100%);
+            box-shadow: 0 4px 30px rgba(0,0,0,0.5);
             position: sticky;
             top: 0;
             z-index: 1000;
+            border-bottom: 2px solid var(--secondary-color);
+            backdrop-filter: blur(10px);
+        }
+
+        .navbar {
+            padding: 15px 0;
         }
 
         .navbar-brand {
-            color: var(--text-dark) !important;
-            font-weight: bold;
             font-size: 24px;
+            font-weight: bold;
+            color: var(--text-dark) !important;
+            text-decoration: none;
             transition: all 0.3s ease;
         }
 
         .navbar-brand:hover {
             color: var(--secondary-color) !important;
             transform: scale(1.05);
+            text-shadow: 0 0 20px rgba(245, 158, 11, 0.5);
         }
 
         .nav-link {
@@ -131,69 +151,60 @@
             position: relative;
         }
 
-        .nav-link:hover {
-            color: var(--secondary-color) !important;
-            transform: translateY(-2px);
-        }
-
         .nav-link::after {
             content: '';
             position: absolute;
             bottom: -5px;
             left: 50%;
             width: 0;
-            height: 2px;
-            background: var(--secondary-color);
+            height: 3px;
+            background: linear-gradient(90deg, var(--secondary-color), #f97316);
+            transition: all 0.4s cubic-bezier(0.175, 0.885, 0.32, 1.275);
             transform: translateX(-50%);
-            transition: width 0.3s ease;
+            border-radius: 2px;
+        }
+
+        .nav-link:hover {
+            color: var(--text-dark) !important;
+            transform: translateY(-3px);
+            text-shadow: 0 2px 10px rgba(245, 158, 11, 0.3);
         }
 
         .nav-link:hover::after {
             width: 80%;
         }
 
-        .dropdown-menu {
-            background: var(--surface-dark);
-            border: 1px solid var(--border-dark);
-            border-radius: 10px;
-            box-shadow: 0 10px 30px rgba(0,0,0,0.3);
-        }
-
-        .dropdown-item {
-            color: var(--text-light);
-            transition: all 0.3s ease;
-        }
-
-        .dropdown-item:hover {
-            background: var(--hover-gray);
-            color: var(--secondary-color);
-        }
-
         .login-btn {
-            background: var(--secondary-color);
-            color: white;
-            padding: 10px 20px;
-            border-radius: 25px;
+            background: linear-gradient(135deg, var(--secondary-color), #f97316);
+            color: white !important;
+            padding: 12px 28px;
+            border-radius: 30px;
             text-decoration: none;
-            transition: all 0.3s ease;
-            font-weight: 500;
+            transition: all 0.4s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+            display: inline-block;
+            border: 2px solid transparent;
+            cursor: pointer;
+            font-weight: 600;
+            box-shadow: 0 4px 15px rgba(245, 158, 11, 0.3);
         }
 
         .login-btn:hover {
-            background: #d97706;
-            transform: translateY(-2px);
-            box-shadow: 0 5px 15px rgba(245, 158, 11, 0.3);
-            color: white;
+            background: linear-gradient(135deg, #f97316, var(--secondary-color));
+            transform: translateY(-3px) scale(1.05);
+            box-shadow: 0 8px 25px rgba(245, 158, 11, 0.5);
+            color: white !important;
+            border-color: var(--secondary-color);
         }
 
         /* Hero Section */
         .hero-section {
             position: relative;
-            height: 100vh;
+            color: white;
+            padding: 100px 0;
             overflow: hidden;
+            height: 100vh;
             display: flex;
             align-items: center;
-            justify-content: center;
         }
 
         .hero-slideshow {
@@ -213,9 +224,8 @@
             height: 100%;
             background-size: cover;
             background-position: center;
-            background-repeat: no-repeat;
             opacity: 0;
-            transition: opacity 1s ease-in-out;
+            transition: opacity 2s ease-in-out;
         }
 
         .hero-slide.active {
@@ -228,41 +238,47 @@
             left: 0;
             width: 100%;
             height: 100%;
-            background: linear-gradient(135deg, rgba(17, 24, 39, 0.7) 0%, rgba(31, 41, 55, 0.8) 100%);
+            background: linear-gradient(135deg, rgba(30, 58, 138, 0.85) 0%, rgba(55, 48, 163, 0.85) 100%);
             z-index: 2;
         }
 
         .hero-content {
             position: relative;
             z-index: 3;
-            text-align: center;
-            color: white;
         }
 
         .hero-title {
             font-size: 48px;
             font-weight: bold;
             margin-bottom: 20px;
-            text-shadow: 0 2px 10px rgba(0,0,0,0.5);
+            animation: fadeInUp 1s ease, glow 2s ease-in-out infinite alternate;
+            text-shadow: 0 0 30px rgba(245, 158, 11, 0.3);
+        }
+
+        @keyframes glow {
+            from { text-shadow: 0 0 30px rgba(245, 158, 11, 0.3); }
+            to { text-shadow: 0 0 40px rgba(245, 158, 11, 0.6), 0 0 50px rgba(245, 158, 11, 0.4); }
         }
 
         .hero-subtitle {
             font-size: 20px;
             margin-bottom: 30px;
-            color: rgba(255,255,255,0.9);
+            opacity: 0.9;
+            animation: fadeInUp 1s ease 0.2s;
+            animation-fill-mode: both;
         }
 
         /* Services Section */
         .services-section {
-            padding: 100px 0;
+            padding: 80px 0;
             background: var(--bg-light);
         }
 
         .section-title {
             text-align: center;
-            font-size: 42px;
+            font-size: 36px;
             font-weight: bold;
-            margin-bottom: 60px;
+            margin-bottom: 50px;
             color: var(--text-dark);
             position: relative;
         }
@@ -379,157 +395,292 @@
         .feature-item:hover {
             transform: translateX(10px);
             background: var(--hover-gray);
+            border-color: var(--secondary-color);
+            box-shadow: 0 10px 30px rgba(245, 158, 11, 0.2);
+        }
+
+        .feature-item:hover .feature-icon {
+            transform: scale(1.2) rotate(15deg);
+            color: var(--secondary-color);
         }
 
         .feature-icon {
-            font-size: 40px;
+            font-size: 36px;
             color: var(--secondary-color);
             margin-right: 20px;
+            min-width: 50px;
+            transition: all 0.4s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+        }
+
+        .feature-content h3 {
+            font-size: 20px;
+            margin-bottom: 10px;
+            color: var(--text-dark);
+        }
+
+        /* Testimonials Section */
+        .testimonials-section {
+            padding: 80px 0;
+            background: var(--bg-light);
+        }
+
+        .testimonial-card {
+            background: var(--surface-dark);
+            padding: 30px;
+            border-radius: 15px;
+            box-shadow: 0 10px 30px rgba(0,0,0,0.3);
+            margin-bottom: 30px;
+            border: 1px solid var(--border-dark);
+            transition: all 0.3s ease;
+        }
+
+        .testimonial-card:hover {
+            transform: translateY(-8px) scale(1.02);
+            box-shadow: 0 20px 50px rgba(245, 158, 11, 0.25);
+            border-color: var(--secondary-color);
+        }
+
+        .testimonial-card:hover .testimonial-text {
+            color: var(--text-dark);
+        }
+
+        .testimonial-text {
+            font-style: italic;
+            margin-bottom: 20px;
+            color: var(--text-light);
+        }
+
+        .testimonial-author {
+            font-weight: bold;
+            color: var(--secondary-color);
+        }
+
+        /* Newsletter Section */
+        .newsletter-section {
+            padding: 60px 0;
+            background: var(--primary-color);
+            color: white;
+            text-align: center;
+        }
+
+        .newsletter-form {
+            max-width: 500px;
+            margin: 0 auto;
+            display: flex;
+            gap: 10px;
+        }
+
+        .newsletter-input {
+            flex: 1;
+            padding: 12px 20px;
+            border: none;
+            border-radius: 25px;
+            font-size: 16px;
+        }
+
+        .newsletter-btn {
+            background: var(--secondary-color);
+            color: white;
+            border: none;
+            padding: 12px 30px;
+            border-radius: 25px;
+            cursor: pointer;
+            font-weight: 600;
+            transition: background 0.3s;
+        }
+
+        .newsletter-btn:hover {
+            background: linear-gradient(135deg, #f97316, var(--secondary-color));
+            transform: scale(1.05);
+            box-shadow: 0 5px 20px rgba(245, 158, 11, 0.4);
         }
 
         /* Contact Section */
         .contact-section {
-            padding: 100px 0;
-            background: var(--bg-light);
+            padding: 80px 0;
+            background: var(--bg-dark);
         }
 
-        .contact-form {
-            background: var(--surface-dark);
-            padding: 40px;
+        .contact-info {
+            display: flex;
+            justify-content: space-around;
+            flex-wrap: wrap;
+            gap: 30px;
+        }
+
+        .contact-item {
+            text-align: center;
+            flex: 1;
+            min-width: 250px;
+            transition: all 0.4s ease;
+            padding: 30px;
             border-radius: 15px;
+            background: var(--surface-dark);
             border: 1px solid var(--border-dark);
         }
 
-        .form-control, .form-select {
-            background: var(--bg-dark);
+        .contact-item:hover {
+            transform: translateY(-10px) scale(1.05);
+            background: var(--hover-gray);
+            border-color: var(--secondary-color);
+            box-shadow: 0 15px 40px rgba(245, 158, 11, 0.3);
+        }
+
+        .contact-item:hover .contact-icon {
+            transform: scale(1.3) rotate(360deg);
+            color: var(--secondary-color);
+        }
+
+        .contact-icon {
+            font-size: 36px;
+            color: var(--secondary-color);
+            margin-bottom: 15px;
+            transition: all 0.6s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+            display: inline-block;
+        }
+
+        /* Contact Form Styles */
+        .contact-input {
+            background: var(--surface-dark);
             border: 1px solid var(--border-dark);
             color: var(--text-dark);
-            border-radius: 10px;
+            padding: 12px 15px;
+            border-radius: 8px;
+            transition: all 0.3s ease;
         }
 
-        .form-control:focus, .form-select:focus {
-            background: var(--bg-dark);
+        .contact-input:focus {
+            background: var(--hover-gray);
             border-color: var(--secondary-color);
             color: var(--text-dark);
-            box-shadow: 0 0 0 0.2rem rgba(245, 158, 11, 0.25);
+            box-shadow: 0 0 15px rgba(245, 158, 11, 0.2);
+        }
+
+        .contact-input::placeholder {
+            color: var(--text-light);
+        }
+
+        .contact-submit-btn {
+            background: linear-gradient(135deg, var(--secondary-color), #f97316);
+            border: none;
+            padding: 12px 30px;
+            border-radius: 25px;
+            color: white;
+            font-weight: 600;
+            transition: all 0.4s ease;
+            box-shadow: 0 4px 15px rgba(245, 158, 11, 0.3);
+        }
+
+        .contact-submit-btn:hover {
+            transform: translateY(-2px) scale(1.05);
+            box-shadow: 0 8px 25px rgba(245, 158, 11, 0.5);
+        }
+
+        .form-label {
+            color: var(--text-dark);
+            font-weight: 600;
+            margin-bottom: 8px;
         }
 
         /* Footer */
         footer {
-            background: var(--bg-dark);
-            color: var(--text-light);
-            padding: 50px 0 20px;
-            border-top: 1px solid var(--border-dark);
+            background: var(--primary-color);
+            color: white;
+            padding: 40px 0 20px;
+            text-align: center;
+        }
+
+        .footer-content {
+            margin-bottom: 30px;
+        }
+
+        .footer-links {
+            display: flex;
+            justify-content: center;
+            gap: 30px;
+            margin-bottom: 20px;
+            flex-wrap: wrap;
         }
 
         .footer-links a {
-            color: var(--text-light);
+            color: white;
             text-decoration: none;
-            margin: 0 15px;
-            transition: all 0.3s ease;
+            transition: color 0.3s;
         }
 
         .footer-links a:hover {
             color: var(--secondary-color);
         }
 
-        .social-links a {
-            color: var(--text-light);
-            margin: 0 10px;
-            transition: all 0.3s ease;
+        .copyright {
+            border-top: 1px solid rgba(255,255,255,0.1);
+            padding-top: 20px;
+            margin-top: 30px;
         }
 
-        .social-links a:hover {
+        .copyright a {
             color: var(--secondary-color);
-            transform: translateY(-3px);
+            text-decoration: none;
+            font-weight: bold;
+        }
+
+        .copyright a:hover {
+            text-decoration: underline;
+        }
+
+        /* Animations */
+        @keyframes fadeInUp {
+            from {
+                opacity: 0;
+                transform: translateY(30px);
+            }
+            to {
+                opacity: 1;
+                transform: translateY(0);
+            }
         }
 
         /* Responsive */
         @media (max-width: 768px) {
             .hero-title {
-                font-size: 32px;
+                font-size: 36px;
             }
             
             .hero-subtitle {
-                font-size: 16px;
+                font-size: 18px;
             }
             
-            .section-title {
-                font-size: 28px;
+            .newsletter-form {
+                flex-direction: column;
             }
             
-            .service-card {
-                height: 300px;
+            .contact-info {
+                flex-direction: column;
             }
-        }
-
-        /* Modal Styles */
-        .modal-content {
-            background: var(--surface-dark);
-            border: 1px solid var(--border-dark);
-        }
-
-        .modal-header {
-            background: var(--bg-dark);
-            border-bottom: 1px solid var(--border-dark);
-        }
-
-        .modal-title {
-            color: var(--text-dark);
-        }
-
-        .btn-close {
-            filter: invert(1);
-        }
-
-        .form-label {
-            color: var(--text-light);
-        }
-
-        /* Loading Spinner */
-        .spinner-border {
-            color: var(--secondary-color);
-        }
-
-        /* Alert Styles */
-        .alert {
-            border: none;
-            border-radius: 10px;
-        }
-
-        .alert-danger {
-            background: rgba(239, 68, 68, 0.1);
-            color: #f87171;
-            border: 1px solid rgba(239, 68, 68, 0.3);
-        }
-
-        .alert-success {
-            background: rgba(34, 197, 94, 0.1);
-            color: #4ade80;
-            border: 1px solid rgba(34, 197, 94, 0.3);
         }
     </style>
 </head>
 <body class="ltr">
+    <!-- Language Switcher -->
+    <div class="language-switcher">
+        <button class="lang-btn active" data-lang="en">EN</button>
+        <button class="lang-btn" data-lang="ar">AR</button>
+    </div>
+
     <!-- Top Header -->
-    <header class="top-header">
+    <div class="top-header">
         <div class="container">
-            <div class="row align-items-center">
+            <div class="row">
                 <div class="col-md-6">
-                    <div class="d-flex align-items-center">
-                        <i class="fas fa-phone-alt me-2"></i>
-                        <span>+20 34842651 | +20 1555541485</span>
-                    </div>
+                    <i class="fas fa-phone"></i> +20 34842651 | 
+                    <i class="fas fa-mobile"></i> +20 1555541485
                 </div>
                 <div class="col-md-6 text-end">
-                    <div class="d-flex align-items-center justify-content-end">
-                        <i class="fas fa-envelope me-2"></i>
-                        <span>omar_sabry11@yahoo.com</span>
-                    </div>
+                    <i class="fas fa-envelope"></i> omar_sabry11@yahoo.com
                 </div>
             </div>
         </div>
-    </header>
+    </div>
 
     <!-- Main Header -->
     <header class="main-header">
@@ -687,12 +838,15 @@
                             Safa Transport is a privately owned and managed family enterprise dedicated to provide full integrated services to the Egyptian and Foreign Companies in Egypt, with a reputation for providing outstanding quality that continues to secure a loyal customer base.
                         </p>
                         <p style="line-height: 1.8; margin-bottom: 20px;">
-                            As a customer-focused company, our team is committed not only to meeting but exceeding our customers' expectations at all times, through specialized services tailored to their needs. This includes all aspects of transportation through highly professional cadres.
+                            As a service orientated company our team is committed not simply meeting, but exceeding our customer's expectations at all times by offering specialized services that are designed to meet our customer's requirements. That comprises all aspects of transportation through high caliber professionals.
+                        </p>
+                        <p style="line-height: 1.8;">
+                            Around the clock and around the globe, Safa Transport teams help customers realize the potential of today's global marketplace, by improving and customizing the processes of their supply chain and maximizing its efficiency with cost-effective services.
                         </p>
                     </div>
                 </div>
                 <div class="col-md-6">
-                    <div class="about-content">
+                    <div class="mission-content">
                         <h3 style="color: var(--secondary-color); margin-bottom: 20px;">Our Mission</h3>
                         <p style="line-height: 1.8; margin-bottom: 20px;">
                             The goal of Safa Transport is to set the standards for industries we serve and to continually strive for excellence in all that we do. The following principles dictate our actions as we continue our quest for excellence:
@@ -708,59 +862,160 @@
         </div>
     </section>
 
-    <!-- Contact Section -->
-    <section id="contact" class="contact-section">
+    <!-- Why Choose Us Section -->
+    <section class="features-section">
         <div class="container">
-            <h2 class="section-title">Get In Touch</h2>
+            <h2 class="section-title">Why Choose Us</h2>
             <div class="row">
-                <div class="col-md-8">
-                    <div class="contact-form">
-                        <form id="contactForm">
-                            <div class="row">
-                                <div class="col-md-6 mb-3">
-                                    <label for="contact-name" class="form-label">Name *</label>
-                                    <input type="text" class="form-control" id="contact-name" required>
-                                </div>
-                                <div class="col-md-6 mb-3">
-                                    <label for="contact-email" class="form-label">Email *</label>
-                                    <input type="email" class="form-control" id="contact-email" required>
-                                </div>
-                            </div>
-                            <div class="mb-3">
-                                <label for="contact-subject" class="form-label">Subject</label>
-                                <input type="text" class="form-control" id="contact-subject">
-                            </div>
-                            <div class="mb-3">
-                                <label for="contact-message" class="form-label">Message *</label>
-                                <textarea class="form-control" id="contact-message" rows="5" required></textarea>
-                            </div>
-                            <button type="submit" class="btn btn-warning btn-lg contact-submit-btn">
-                                <i class="fas fa-paper-plane"></i> Send Message
-                            </button>
-                        </form>
+                <div class="col-md-6">
+                    <div class="feature-item">
+                        <div class="feature-icon">
+                            <i class="fas fa-globe"></i>
+                        </div>
+                        <div class="feature-content">
+                            <h3>Global Coverage</h3>
+                            <p>We cover over 150 locations worldwide with our extensive network of logistics partners.</p>
+                        </div>
+                    </div>
+                    <div class="feature-item">
+                        <div class="feature-icon">
+                            <i class="fas fa-clock"></i>
+                        </div>
+                        <div class="feature-content">
+                            <h3>24/7 Support</h3>
+                            <p>Round-the-clock customer support to ensure your shipments are always on track.</p>
+                        </div>
+                    </div>
+                </div>
+                <div class="col-md-6">
+                    <div class="feature-item">
+                        <div class="feature-icon">
+                            <i class="fas fa-shield-alt"></i>
+                        </div>
+                        <div class="feature-content">
+                            <h3>Safe & Secure</h3>
+                            <p>Advanced security measures and insurance options to protect your valuable cargo.</p>
+                        </div>
+                    </div>
+                    <div class="feature-item">
+                        <div class="feature-icon">
+                            <i class="fas fa-chart-line"></i>
+                        </div>
+                        <div class="feature-content">
+                            <h3>Cost Effective</h3>
+                            <p>Competitive pricing without compromising on service quality and reliability.</p>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- Testimonials Section -->
+    <section class="testimonials-section">
+        <div class="container">
+            <h2 class="section-title">What Our Clients Say</h2>
+            <div class="row">
+                <div class="col-md-4">
+                    <div class="testimonial-card">
+                        <p class="testimonial-text">"Best customer support and response time I have ever seen... Thank you Safa Transport!"</p>
+                        <p class="testimonial-author">- Ahmed Mohamed</p>
                     </div>
                 </div>
                 <div class="col-md-4">
-                    <div class="contact-info">
-                        <h4 style="color: var(--secondary-color); margin-bottom: 20px;">Safa Transport Headquarters</h4>
-                        <div class="mb-3">
-                            <h5 style="color: var(--text-dark); margin-bottom: 10px;">Address</h5>
-                            <p style="color: var(--text-light);">5 Bahri Bak El-Ban<br>Alexandria, Egypt</p>
+                    <div class="testimonial-card">
+                        <p class="testimonial-text">"Thanks for helping me develop my business! Your logistics solutions are outstanding."</p>
+                        <p class="testimonial-author">- Sarah Johnson</p>
+                    </div>
+                </div>
+                <div class="col-md-4">
+                    <div class="testimonial-card">
+                        <p class="testimonial-text">"Safa Transport does a good job of keeping the customer happy. It feels like more than a business relationship."</p>
+                        <p class="testimonial-author">- Michael Chen</p>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- Newsletter Section -->
+    <section class="newsletter-section">
+        <div class="container">
+            <h2 class="mb-4">Newsletter Subscribe</h2>
+            <p class="mb-4">Subscribe to our newsletter and we will inform you about newest projects and promotions.</p>
+            <form class="newsletter-form" onsubmit="handleNewsletterSubmit(event)">
+                <input type="email" class="newsletter-input" placeholder="Enter your email" required>
+                <button type="submit" class="newsletter-btn">Subscribe</button>
+            </form>
+        </div>
+    </section>
+
+    <!-- Contact Section -->
+    <section id="contact" class="contact-section">
+        <div class="container">
+            <h2 class="section-title">Contact Us</h2>
+            <div class="row">
+                <div class="col-md-6">
+                    <div class="contact-form-wrapper">
+                        <h3 style="color: var(--secondary-color); margin-bottom: 30px;">Get In Touch</h3>
+                        <form id="contactForm" class="contact-form">
+                            <div class="mb-3">
+                                <label for="contact-name" class="form-label">Name *</label>
+                                <input type="text" class="form-control contact-input" id="contact-name" required>
+                            </div>
+                            <div class="mb-3">
+                                <label for="contact-email" class="form-label">Email *</label>
+                                <input type="email" class="form-control contact-input" id="contact-email" required>
+                            </div>
+                            <div class="mb-3">
+                                <label for="contact-subject" class="form-label">Subject</label>
+                                <input type="text" class="form-control contact-input" id="contact-subject">
+                            </div>
+                            <div class="mb-3">
+                                <label for="contact-message" class="form-label">Message *</label>
+                                <textarea class="form-control contact-input" id="contact-message" rows="5" required></textarea>
+                            </div>
+                            <button type="submit" class="btn btn-warning contact-submit-btn">
+                                <i class="fas fa-paper-plane"></i> Send Message
+                            </button>
+                        </form>
+                        <div id="contactFormMessage" class="mt-3"></div>
+                    </div>
+                </div>
+                <div class="col-md-6">
+                    <div class="contact-info-wrapper">
+                        <h3 style="color: var(--secondary-color); margin-bottom: 30px;">Safa Transport Headquarters</h3>
+                        
+                        <div class="contact-item">
+                            <div class="contact-icon">
+                                <i class="fas fa-map-marker-alt"></i>
+                            </div>
+                            <h4>Address</h4>
+                            <p>5 BAHARY BEK ST . ELBAN<br>ALEXANDRIA EGYPT</p>
                         </div>
-                        <div class="mb-3">
-                            <h5 style="color: var(--text-dark); margin-bottom: 10px;">Phone</h5>
-                            <p style="color: var(--text-light);">
-                                Landline: +20 34842651<br>
-                                Mobile: +20 1555541485
-                            </p>
+                        
+                        <div class="contact-item">
+                            <div class="contact-icon">
+                                <i class="fas fa-phone"></i>
+                            </div>
+                            <h4>Phone</h4>
+                            <p>Landline: +20 34842651<br>Mobile: +20 1555541485</p>
                         </div>
-                        <div class="mb-3">
-                            <h5 style="color: var(--text-dark); margin-bottom: 10px;">WhatsApp</h5>
-                            <p style="color: var(--text-light);">+20 1220417513</p>
+                        
+                        <div class="contact-item">
+                            <div class="contact-icon">
+                                <i class="fab fa-whatsapp"></i>
+                            </div>
+                            <h4>WhatsApp</h4>
+                            <p>+20 1220417513</p>
                         </div>
-                        <div class="mb-3">
-                            <h5 style="color: var(--text-dark); margin-bottom: 10px;">Email</h5>
-                            <p style="color: var(--text-light);">omar_sabry11@yahoo.com</p>
+                        
+                        <div class="contact-item">
+                            <div class="contact-icon">
+                                <i class="fas fa-envelope"></i>
+                            </div>
+                            <h4>Email</h4>
+                            <p>omar_sabry11@yahoo.com</p>
                         </div>
                     </div>
                 </div>
@@ -786,8 +1041,8 @@
                     <a href="#" class="text-white"><i class="fab fa-linkedin fa-2x"></i></a>
                 </div>
             </div>
-            <div class="copyright text-center mt-4">
-                <p>&copy; 2024 Safa Transport & Logistics. All Rights Reserved.</p>
+            <div class="copyright">
+                <p>&copy; 2024 Safa Transport & Logistics. ALL RIGHTS RESERVED BY <a href="https://wa.me/201142999462" target="_blank">AHMED ALAZHARY</a></p>
             </div>
         </div>
     </footer>
@@ -796,42 +1051,48 @@
     <div class="modal fade" id="loginModal" tabindex="-1" aria-labelledby="loginModalLabel" aria-hidden="true">
         <div class="modal-dialog modal-dialog-centered">
             <div class="modal-content">
-                <div class="modal-header">
-                    <h5 class="modal-title" id="loginModalLabel">Safa Transport Login</h5>
+                <div class="modal-header border-0">
+                    <h5 class="modal-title" id="loginModalLabel">
+                        <i class="fas fa-shipping-fast"></i> Safa Transport Login
+                    </h5>
                     <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
                 </div>
                 <div class="modal-body">
                     <form id="loginForm">
                         <div class="mb-3">
                             <label for="username" class="form-label">Username</label>
-                            <input type="text" class="form-control" id="username" placeholder="Enter username" required>
+                            <div class="input-group">
+                                <span class="input-group-text"><i class="fas fa-user"></i></span>
+                                <input type="text" class="form-control" id="username" placeholder="Enter username" required>
+                            </div>
                         </div>
                         <div class="mb-3">
                             <label for="password" class="form-label">Password</label>
-                            <input type="password" class="form-control" id="password" placeholder="Enter password" required>
+                            <div class="input-group">
+                                <span class="input-group-text"><i class="fas fa-lock"></i></span>
+                                <input type="password" class="form-control" id="password" placeholder="Enter password" required>
+                            </div>
                         </div>
-                        <div class="alert alert-danger d-none" id="loginError"></div>
-                        <div class="alert alert-success d-none" id="loginSuccess"></div>
-                        <div class="d-grid gap-2">
+                        <div class="d-grid">
                             <button type="submit" class="btn btn-warning" id="loginBtn">
                                 <i class="fas fa-sign-in-alt"></i> Login
                             </button>
                         </div>
-                        <div class="text-center mt-3">
-                            <small class="text-muted">Please contact admin if you need login credentials</small>
-                        </div>
                     </form>
+                    <div id="loginError" class="alert alert-danger mt-3 d-none"></div>
+                    <div id="loginSuccess" class="alert alert-success mt-3 d-none"></div>
+                </div>
+                <div class="modal-footer border-0">
+                    <small class="text-muted">
+                        <i class="fas fa-info-circle"></i> Please contact admin if you need login credentials
+                    </small>
                 </div>
             </div>
         </div>
     </div>
 
-    <!-- Language Switcher -->
-    <div class="language-switcher">
-        <button class="lang-btn active" data-lang="en">EN</button>
-        <button class="lang-btn" data-lang="ar">AR</button>
-    </div>
-
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
+    
     <!-- Firebase SDK -->
     <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-app-compat.js"></script>
     <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-auth-compat.js"></script>
@@ -856,29 +1117,33 @@
         });
 
         // Newsletter form submission
-        document.getElementById('newsletterForm')?.addEventListener('submit', function(e) {
-            e.preventDefault();
-            const email = document.getElementById('newsletterEmail').value;
-            console.log('Newsletter subscription:', email);
-            alert('Thank you for subscribing to our newsletter!');
-            this.reset();
+        function handleNewsletterSubmit(event) {
+            event.preventDefault();
+            const email = event.target.querySelector('input[type="email"]').value;
+            
+            // Show success message
+            const form = event.target;
+            const originalContent = form.innerHTML;
+            form.innerHTML = '<div class="alert alert-success">Thank you for subscribing! We will keep you updated.</div>';
+            
+            // Reset form after 3 seconds
+            setTimeout(() => {
+                form.innerHTML = originalContent;
+                form.querySelector('input[type="email"]').value = '';
+            }, 3000);
+        }
+
+        // Add scroll effect to header
+        window.addEventListener('scroll', function() {
+            const header = document.querySelector('.main-header');
+            if (window.scrollY > 100) {
+                header.style.boxShadow = '0 5px 20px rgba(0,0,0,0.1)';
+            } else {
+                header.style.boxShadow = '0 2px 10px rgba(0,0,0,0.1)';
+            }
         });
 
-        // Contact form submission
-        document.getElementById('contactForm')?.addEventListener('submit', function(e) {
-            e.preventDefault();
-            const formData = {
-                name: document.getElementById('contact-name').value,
-                email: document.getElementById('contact-email').value,
-                subject: document.getElementById('contact-subject').value,
-                message: document.getElementById('contact-message').value
-            };
-            console.log('Contact form submission:', formData);
-            alert('Thank you for contacting us! We will get back to you soon.');
-            this.reset();
-        });
-
-        // Translations
+        // Language Switcher
         const translations = {
             en: {
                 home: 'Home',
@@ -890,16 +1155,20 @@
                 heroSubtitle: 'Fast, safe and accurate shipment provided all over the globe. Professional logistics services tailored to your needs.',
                 ourServices: 'Our Services',
                 contactUs: 'Contact Us',
-                aboutUs: 'About Safa Transport',
-                companyProfile: 'Company Profile',
-                ourMission: 'Our Mission',
-                getInTouch: 'Get In Touch',
-                name: 'Name',
-                emailField: 'Email',
-                subject: 'Subject',
-                message: 'Message',
-                sendMessage: 'Send Message',
-                headquarters: 'Safa Transport Headquarters',
+                whatWeOffer: 'What We Offer',
+                inlandTransport: 'Inland Transportation',
+                airFreight: 'International Air Freight',
+                oceanFreight: 'Ocean Freight',
+                warehousing: 'Warehousing & Storage',
+                contractLogistics: 'Contract Logistics',
+                largeProjects: 'Large Projects',
+                customsClearance: 'Customs Clearance',
+                supplyChain: 'Supply Chain Management',
+                whyChooseUs: 'Why Choose Us',
+                globalCoverage: 'Global Coverage',
+                support247: '24/7 Support',
+                secure: 'Safe & Secure',
+                costEffective: 'Cost Effective',
                 whatClientsSay: 'What Our Clients Say',
                 newsletter: 'Newsletter Subscribe',
                 newsletterText: 'Subscribe to our newsletter and we will inform you about newest projects and promotions.',
@@ -971,10 +1240,11 @@
                 btn.classList.toggle('active', btn.dataset.lang === lang);
             });
 
+            // Update text content
             const t = translations[lang];
             
             // Update navigation
-            const homeLink = document.querySelector('a[href="#hero"]');
+            const homeLink = document.querySelector('a[href="#"]');
             if (homeLink) homeLink.textContent = t.home;
             
             const servicesLink = document.querySelector('a[href="#services"]');
@@ -987,7 +1257,9 @@
             if (contactLink) contactLink.textContent = t.contact;
             
             const loginBtn = document.querySelector('.login-btn');
-            if (loginBtn) loginBtn.innerHTML = `<i class="fas fa-sign-in-alt"></i> ${t.login}`;
+            if (loginBtn) {
+                loginBtn.innerHTML = `<i class="fas fa-sign-in-alt"></i> ${t.login}`;
+            }
             
             // Update hero section
             const heroTitle = document.querySelector('.hero-title');
@@ -1004,13 +1276,70 @@
             
             // Update section titles
             const servicesTitle = document.querySelector('#services .section-title');
-            if (servicesTitle) servicesTitle.textContent = t.ourServices;
+            if (servicesTitle) servicesTitle.textContent = t.whatWeOffer;
             
-            const aboutTitle = document.querySelector('#about .section-title');
-            if (aboutTitle) aboutTitle.textContent = t.aboutUs;
+            const featuresTitle = document.querySelector('.features-section .section-title');
+            if (featuresTitle) featuresTitle.textContent = t.whyChooseUs;
+            
+            const testimonialsTitle = document.querySelector('.testimonials-section .section-title');
+            if (testimonialsTitle) testimonialsTitle.textContent = t.whatClientsSay;
+            
+            const newsletterTitle = document.querySelector('.newsletter-section h2');
+            if (newsletterTitle) newsletterTitle.textContent = t.newsletter;
+            
+            const newsletterText = document.querySelector('.newsletter-section p');
+            if (newsletterText) newsletterText.textContent = t.newsletterText;
+            
+            const newsletterBtn = document.querySelector('.newsletter-btn');
+            if (newsletterBtn) newsletterBtn.textContent = t.subscribe;
             
             const contactTitle = document.querySelector('#contact .section-title');
-            if (contactTitle) contactTitle.textContent = t.getInTouch;
+            if (contactTitle) contactTitle.textContent = t.contactInfo;
+            
+            // Update service titles
+            const serviceTitles = document.querySelectorAll('.service-title');
+            if (serviceTitles.length >= 6) {
+                serviceTitles[0].textContent = t.inlandTransport;
+                serviceTitles[1].textContent = t.airFreight;
+                serviceTitles[2].textContent = t.oceanFreight;
+                serviceTitles[3].textContent = t.warehousing;
+                serviceTitles[4].textContent = t.contractLogistics;
+                serviceTitles[5].textContent = t.largeProjects;
+            }
+            
+            // Update dropdown menu items
+            const dropdownItems = document.querySelectorAll('.dropdown-item');
+            const serviceNames = [t.inlandTransport, t.airFreight, t.oceanFreight, t.largeProjects, t.customsClearance, t.contractLogistics, t.warehousing, t.supplyChain];
+            dropdownItems.forEach((item, index) => {
+                if (serviceNames[index]) {
+                    item.textContent = serviceNames[index];
+                }
+            });
+            
+            // Update login modal
+            const modalTitle = document.getElementById('loginModalLabel');
+            if (modalTitle) modalTitle.textContent = t.loginModalTitle;
+            
+            const usernameLabel = document.querySelector('label[for="username"]');
+            if (usernameLabel) usernameLabel.textContent = t.username;
+            
+            const passwordLabel = document.querySelector('label[for="password"]');
+            if (passwordLabel) passwordLabel.textContent = t.password;
+            
+            const usernameInput = document.getElementById('username');
+            if (usernameInput) usernameInput.placeholder = t.enterUsername;
+            
+            const passwordInput = document.getElementById('password');
+            if (passwordInput) passwordInput.placeholder = t.enterPassword;
+            
+            const loginNote = document.querySelector('.modal-footer small');
+            if (loginNote) loginNote.innerHTML = `<i class="fas fa-info-circle"></i> ${t.loginNote}`;
+            
+            // Update About Us section
+            const aboutTitle = document.querySelector('.features-section .section-title');
+            if (aboutTitle && aboutTitle.textContent.includes('About')) {
+                aboutTitle.textContent = t.aboutUs;
+            }
             
             // Update contact form labels
             const nameLabel = document.querySelector('label[for="contact-name"]');
@@ -1029,8 +1358,18 @@
             if (submitBtn) submitBtn.innerHTML = `<i class="fas fa-paper-plane"></i> ${t.sendMessage}`;
             
             // Update contact form title
-            const contactInfoTitle = document.querySelector('.contact-info h4');
+            const contactFormTitle = document.querySelector('.contact-form-wrapper h3');
+            if (contactFormTitle) contactFormTitle.textContent = t.getInTouch;
+            
+            // Update contact info title
+            const contactInfoTitle = document.querySelector('.contact-info-wrapper h3');
             if (contactInfoTitle) contactInfoTitle.textContent = t.headquarters;
+            
+            // Update footer
+            const copyright = document.querySelector('.copyright');
+            if (copyright) {
+                copyright.innerHTML = `&copy; 2024 Safa Transport & Logistics. ${t.allRights} <a href="https://wa.me/201142999462" target="_blank">AHMED ALAZHARY</a>`;
+            }
             
             // Store preference
             localStorage.setItem('preferredLanguage', lang);
@@ -1062,8 +1401,45 @@
             showSlide(currentSlide);
         }
 
-        // Auto-advance slides every 5 seconds
+        // Change slide every 5 seconds
         setInterval(nextSlide, 5000);
+
+        // Animation on scroll
+        const observerOptions = {
+            threshold: 0.1,
+            rootMargin: '0px 0px -50px 0px'
+        };
+
+        const observer = new IntersectionObserver(function(entries) {
+            entries.forEach(entry => {
+                if (entry.isIntersecting) {
+                    entry.target.style.opacity = '1';
+                    entry.target.style.transform = 'translateY(0)';
+                }
+            });
+        }, observerOptions);
+
+        // Observe all service cards and feature items
+        document.querySelectorAll('.service-card, .feature-item').forEach(el => {
+            el.style.opacity = '0';
+            el.style.transform = 'translateY(30px)';
+            el.style.transition = 'opacity 0.6s ease, transform 0.6s ease';
+            observer.observe(el);
+        });
+
+        // ============================================
+        // FIREBASE CONFIGURATION & LOGIN SYSTEM
+        // ============================================
+
+        // Firebase configuration
+        const firebaseConfig = {
+            apiKey: "AIzaSyARqSgfh78TqFQ2hhZaAtUaVQFqlPuRM3w",
+            authDomain: "trialsafaprices2026.firebaseapp.com",
+            projectId: "trialsafaprices2026",
+            storageBucket: "trialsafaprices2026.appspot.com",
+            messagingSenderId: "177091434445",
+            appId: "1:177091434445:web:568b6ae3ba270a21d4d684"
+        };
 
         // Initialize Firebase
         if (typeof firebase !== 'undefined') {
@@ -1225,9 +1601,158 @@
             `;
             document.body.appendChild(errorDiv);
         }
-    </script>
 
-    <!-- Bootstrap JS -->
-    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
+        // Update login button based on auth state
+        function updateLoginButton(isLoggedIn) {
+            const loginBtn = document.querySelector('.login-btn');
+            if (isLoggedIn) {
+                loginBtn.innerHTML = '<i class="fas fa-tachometer-alt"></i> Dashboard';
+                loginBtn.href = 'dashboard.html';
+                loginBtn.removeAttribute('data-bs-toggle');
+                loginBtn.removeAttribute('data-bs-target');
+            } else {
+                loginBtn.innerHTML = '<i class="fas fa-sign-in-alt"></i> Login';
+                loginBtn.href = '#';
+                loginBtn.setAttribute('data-bs-toggle', 'modal');
+                loginBtn.setAttribute('data-bs-target', '#loginModal');
+            }
+        }
+
+        // Login form submission
+        document.getElementById('loginForm').addEventListener('submit', async (e) => {
+            e.preventDefault();
+            
+            const username = document.getElementById('username').value.trim().toLowerCase();
+            const password = document.getElementById('password').value;
+            const loginBtn = document.getElementById('loginBtn');
+            const loginError = document.getElementById('loginError');
+            const loginSuccess = document.getElementById('loginSuccess');
+            
+            // Hide previous messages
+            loginError.classList.add('d-none');
+            loginSuccess.classList.add('d-none');
+            
+            // Validate username
+            const email = usersMap[username];
+            if (!email) {
+                showError('Username not found. Please check your username and try again.');
+                return;
+            }
+            
+            // Show loading state
+            loginBtn.disabled = true;
+            loginBtn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Logging in...';
+            
+            try {
+                // Sign in with Firebase
+                await auth.signInWithEmailAndPassword(email, password);
+                
+                // Show success message
+                showSuccess('Login successful! Redirecting to dashboard...');
+                
+                // Close modal and redirect immediately
+                const modal = bootstrap.Modal.getInstance(document.getElementById('loginModal'));
+                if (modal) {
+                    modal.hide();
+                }
+                
+                // Force redirect immediately
+                window.location.replace('dashboard.html');
+                
+            } catch (error) {
+                console.error('Login error:', error);
+                let errorMessage = 'Login failed. Please try again.';
+                
+                if (error.code === 'auth/user-not-found') {
+                    errorMessage = 'User not found. Please contact administrator.';
+                } else if (error.code === 'auth/wrong-password') {
+                    errorMessage = 'Incorrect password. Please try again.';
+                } else if (error.code === 'auth/too-many-requests') {
+                    errorMessage = 'Too many failed attempts. Please try again later.';
+                } else if (error.code === 'auth/network-request-failed') {
+                    errorMessage = 'Network error. Please check your connection.';
+                }
+                
+                showError(errorMessage);
+            } finally {
+                // Reset button state
+                loginBtn.disabled = false;
+                loginBtn.innerHTML = '<i class="fas fa-sign-in-alt"></i> Login';
+            }
+        });
+
+        // Show error message
+        function showError(message) {
+            const loginError = document.getElementById('loginError');
+            loginError.textContent = message;
+            loginError.classList.remove('d-none');
+            
+            // Auto hide after 5 seconds
+            setTimeout(() => {
+                loginError.classList.add('d-none');
+            }, 5000);
+        }
+
+        // Show success message
+        function showSuccess(message) {
+            const loginSuccess = document.getElementById('loginSuccess');
+            loginSuccess.textContent = message;
+            loginSuccess.classList.remove('d-none');
+        }
+
+        // Add Enter key support for login form
+        document.getElementById('password').addEventListener('keypress', (e) => {
+            if (e.key === 'Enter') {
+                document.getElementById('loginForm').dispatchEvent(new Event('submit'));
+            }
+        });
+
+        // Clear form when modal is closed
+        document.getElementById('loginModal').addEventListener('hidden.bs.modal', () => {
+            document.getElementById('loginForm').reset();
+            document.getElementById('loginError').classList.add('d-none');
+            document.getElementById('loginSuccess').classList.add('d-none');
+        });
+
+        console.log('Firebase login system initialized successfully!');
+
+        // Contact Form Functionality
+        document.getElementById('contactForm').addEventListener('submit', function(e) {
+            e.preventDefault();
+            
+            const name = document.getElementById('contact-name').value;
+            const email = document.getElementById('contact-email').value;
+            const subject = document.getElementById('contact-subject').value;
+            const message = document.getElementById('contact-message').value;
+            const submitBtn = document.querySelector('.contact-submit-btn');
+            const messageDiv = document.getElementById('contactFormMessage');
+            
+            // Show loading state
+            submitBtn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Sending...';
+            submitBtn.disabled = true;
+            
+            // Simulate form submission (replace with actual email service)
+            setTimeout(() => {
+                // Show success message
+                messageDiv.innerHTML = `
+                    <div class="alert alert-success">
+                        <i class="fas fa-check-circle"></i> Thank you for your message! We'll get back to you soon.
+                    </div>
+                `;
+                
+                // Reset form
+                document.getElementById('contactForm').reset();
+                
+                // Reset button
+                submitBtn.innerHTML = '<i class="fas fa-paper-plane"></i> Send Message';
+                submitBtn.disabled = false;
+                
+                // Hide message after 5 seconds
+                setTimeout(() => {
+                    messageDiv.innerHTML = '';
+                }, 5000);
+            }, 2000);
+        });
+    </script>
 </body>
 </html>
