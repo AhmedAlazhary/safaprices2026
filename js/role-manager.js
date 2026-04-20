@@ -7,6 +7,7 @@ let functions;
 let assignUserRoleFunction;
 let getAllUsersFunction;
 let deleteUserFunction;
+let createUserWithRoleFunction;
 const ORIGINAL_ADMIN_EMAILS = new Set([
     'ahmed@safatrans.com',
     'hesham@safatrans.com',
@@ -26,6 +27,7 @@ async function initFunctions() {
         assignUserRoleFunction = httpsCallable(functions, 'assignUserRole');
         getAllUsersFunction = httpsCallable(functions, 'getAllUsers');
         deleteUserFunction = httpsCallable(functions, 'deleteUser');
+        createUserWithRoleFunction = httpsCallable(functions, 'createUserWithRole');
     }
 }
 
@@ -73,6 +75,25 @@ export async function deleteUser(uid, deletedBy = null) {
         return result.data;
     } catch (error) {
         console.error('Error deleting user:', error);
+        throw new Error(error.message);
+    }
+}
+
+export async function createUserWithRole(email, password, displayName, role = 'viewer', createdBy = null) {
+    try {
+        await initFunctions();
+
+        const result = await createUserWithRoleFunction({
+            email,
+            password,
+            displayName,
+            role,
+            createdBy: createdBy || auth.currentUser?.uid || null
+        });
+
+        return result.data;
+    } catch (error) {
+        console.error('Error creating user with role:', error);
         throw new Error(error.message);
     }
 }

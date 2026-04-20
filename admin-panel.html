@@ -103,6 +103,20 @@
         .logout-btn:hover {
             background: #d32f2f;
         }
+
+        .back-btn {
+            background: #2196f3;
+            color: white;
+            border: none;
+            padding: 0.5rem 1rem;
+            border-radius: 8px;
+            cursor: pointer;
+            transition: background 0.3s;
+        }
+
+        .back-btn:hover {
+            background: #1976d2;
+        }
         
         /* Main Container */
         .container {
@@ -140,6 +154,55 @@
             grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
             gap: 1.5rem;
             margin: 2rem 0;
+        }
+
+        .create-user-card {
+            background: white;
+            padding: 1.5rem;
+            border-radius: 12px;
+            margin: 2rem 0;
+            box-shadow: 0 4px 20px rgba(0, 0, 0, 0.1);
+        }
+
+        .create-user-card h3 {
+            margin-bottom: 1rem;
+            color: #333;
+        }
+
+        .create-user-form {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+            gap: 1rem;
+        }
+
+        .create-user-form input,
+        .create-user-form select {
+            width: 100%;
+            padding: 0.85rem 1rem;
+            border: 2px solid #e0e0e0;
+            border-radius: 8px;
+            font-size: 1rem;
+        }
+
+        .create-user-form input:focus,
+        .create-user-form select:focus {
+            outline: none;
+            border-color: #2196f3;
+        }
+
+        .primary-btn {
+            background: #4caf50;
+            color: white;
+            border: none;
+            padding: 0.85rem 1.2rem;
+            border-radius: 8px;
+            cursor: pointer;
+            font-weight: 700;
+            transition: background 0.3s;
+        }
+
+        .primary-btn:hover {
+            background: #43a047;
         }
         
         .stat-card {
@@ -476,6 +539,9 @@
                 <h1>لوحة تحكم المشرف</h1>
             </div>
             <div class="user-info">
+                <button class="back-btn" onclick="goToDashboard()">
+                    <i class="fas fa-arrow-right"></i> العودة للداشبورد
+                </button>
                 <div class="user-avatar" id="user-avatar">م</div>
                 <span id="user-name">المستخدم</span>
                 <button class="logout-btn" onclick="logout()">
@@ -520,6 +586,23 @@
             </div>
         </div>
 
+        <section class="create-user-card">
+            <h3><i class="fas fa-user-plus"></i> إضافة مستخدم جديد</h3>
+            <form id="create-user-form" class="create-user-form">
+                <input type="text" id="new-user-name" placeholder="اسم المستخدم" required>
+                <input type="email" id="new-user-email" placeholder="البريد الإلكتروني" required>
+                <input type="password" id="new-user-password" placeholder="كلمة المرور" required minlength="6">
+                <select id="new-user-role" required>
+                    <option value="viewer">Viewer</option>
+                    <option value="manager">Manager</option>
+                    <option value="admin">Admin</option>
+                </select>
+                <button type="submit" class="primary-btn" id="create-user-btn">
+                    <i class="fas fa-user-plus"></i> إنشاء المستخدم
+                </button>
+            </form>
+        </section>
+
         <!-- Users Table -->
         <div id="users-table-container">
             <div class="loading">
@@ -533,28 +616,33 @@
     <script type="module">
         // Import Firebase modules
         import { auth, onAuthStateChanged } from './firebase-config.js';
-        import { initRBAC } from './js/rbac-main.js';
         import { initUserManagement } from './js/user-management.js';
-        import { logout } from './js/auth-guard.js';
+        import { logout, getCurrentUserRole } from './js/auth-guard.js';
 
         // Make logout available globally
         window.logout = logout;
+        window.goToDashboard = () => {
+            window.location.href = 'dashboard.html';
+        };
 
         // Initialize the application
         document.addEventListener('DOMContentLoaded', async () => {
             try {
-                // Initialize RBAC system
-                await initRBAC();
-                
-                // Check if user is admin
                 onAuthStateChanged(auth, async (user) => {
                     if (user) {
+                        sessionStorage.setItem('userEmail', user.email || '');
+
                         // Update user info in header
                         const userAvatar = document.getElementById('user-avatar');
                         const userName = document.getElementById('user-name');
                         
                         userName.textContent = user.displayName || user.email;
                         userAvatar.textContent = (user.displayName || user.email).charAt(0).toUpperCase();
+
+                        if (getCurrentUserRole() !== 'admin') {
+                            window.location.href = 'dashboard.html';
+                            return;
+                        }
                         
                         // Initialize user management
                         await initUserManagement();

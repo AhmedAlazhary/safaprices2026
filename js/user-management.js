@@ -1,10 +1,11 @@
 // js/user-management.js - User Management Interface
-import { auth, db, collection, getDocs, doc, getDoc } from './firebase-config.js';
-import { 
-    getAllUsers, 
-    assignUserRole, 
-    deleteUser, 
-    isOriginalUser, 
+import { auth } from './firebase-config.js';
+import {
+    getAllUsers,
+    assignUserRole,
+    deleteUser,
+    createUserWithRole,
+    isOriginalUser,
     getOriginalUsers,
     canChangeUserRole,
     logRoleChange,
@@ -16,43 +17,37 @@ import {
 } from './role-manager.js';
 import { getCurrentUserRole, isAdmin } from './auth-guard.js';
 
-// عرض جميع المستخدمين في جدول
+let currentUsers = [];
+let currentSort = { column: 'email', order: 'asc' };
+let autoRefreshInterval = null;
+
 export async function renderUsersTable(containerId) {
     try {
         const container = document.getElementById(containerId);
         if (!container) {
-            console.error(`Container with id '${containerId}' not found`);
             return;
         }
 
-        container.innerHTML = '<div class="loading">جاري تحميل المستخدمين...</div>';
-        
-        // جلب جميع المستخدمين
+        container.innerHTML = '<div class="loading">جارٍ تحميل المستخدمين...</div>';
+
         const users = await fetchAllUsers();
-        
-        // جلب قائمة المستخدمين الأصليين
         const originalUsers = await getOriginalUsers();
-        const originalUserEmails = new Set(originalUsers.map(user => user.email));
-        
-        // إضافة خاصية isOriginal لكل مستخدم
-        const usersWithOriginalFlag = users.map(user => ({
+        const originalUserEmails = new Set(originalUsers.map(user => String(user.email || '').toLowerCase()));
+
+        currentUsers = users.map(user => ({
             ...user,
-            isOriginal: originalUserEmails.has(user.email)
+            isOriginal: Boolean(user.isOriginal || originalUserEmails.has(String(user.email || '').toLowerCase()))
         }));
-        
-        // عرض الجدول
-        renderTable(container, usersWithOriginalFlag);
-        
-        // إضافة أحداث الجدول
-        setupTableEvents();
-        
+
+        renderTable(container, currentUsers);
+        bindFilters();
     } catch (error) {
         console.error('Error rendering users table:', error);
         const container = document.getElementById(containerId);
         if (container) {
             container.innerHTML = `
                 <div class="error-message">
-                    <h3>❌ خطأ في تحميل المستخدمين</h3>
+                    <h3>خطأ في تحميل المستخدمين</h3>
                     <p>${error.message}</p>
                     <button onclick="location.reload()" class="retry-btn">إعادة المحاولة</button>
                 </div>
@@ -61,7 +56,6 @@ export async function renderUsersTable(containerId) {
     }
 }
 
-// جلب جميع المستخدمين مع التحقق من الصلاحيات
 export async function fetchAllUsers() {
     try {
         const result = await getAllUsers();
@@ -72,11 +66,10 @@ export async function fetchAllUsers() {
     }
 }
 
-// عرض الجدول
 function renderTable(container, users) {
     const currentUserUID = auth.currentUser?.uid;
     const currentUserRole = getCurrentUserRole();
-    
+
     container.innerHTML = `
         <div class="users-controls">
             <div class="search-filter">
@@ -87,7 +80,7 @@ function renderTable(container, users) {
                     <option value="manager">Manager</option>
                     <option value="viewer">Viewer</option>
                 </select>
-                <button id="export-users" class="export-btn">📥 تصدير CSV</button>
+                <button id="export-users" class="export-btn"><i class="fas fa-file-export"></i> تصدير CSV</button>
             </div>
             <div class="stats">
                 <span class="stat-item">المجموع: ${users.length}</span>
@@ -96,16 +89,16 @@ function renderTable(container, users) {
                 <span class="stat-item">Viewer: ${users.filter(u => u.role === 'viewer').length}</span>
             </div>
         </div>
-        
+
         <div class="table-container">
             <table class="users-table">
                 <thead>
                     <tr>
-                        <th onclick="sortUsersByColumn('displayName')">الاسم ↕</th>
-                        <th onclick="sortUsersByColumn('email')">البريد الإلكتروني ↕</th>
-                        <th onclick="sortUsersByColumn('role')">الدور ↕</th>
-                        <th onclick="sortUsersByColumn('createdAt')">تاريخ الإنشاء ↕</th>
-                        <th onclick="sortUsersByColumn('lastSignIn')">آخر تسجيل دخول ↕</th>
+                        <th onclick="sortUsersByColumn('displayName')">الاسم</th>
+                        <th onclick="sortUsersByColumn('email')">البريد الإلكتروني</th>
+                        <th onclick="sortUsersByColumn('role')">الدور</th>
+                        <th onclick="sortUsersByColumn('createdAt')">تاريخ الإنشاء</th>
+                        <th onclick="sortUsersByColumn('lastSignIn')">آخر تسجيل دخول</th>
                         <th>الإجراءات</th>
                     </tr>
                 </thead>
@@ -117,302 +110,277 @@ function renderTable(container, users) {
     `;
 }
 
-// عرض صف مستخدم واحد
-function renderUserRow(user, currentUserUID, currentUserRole) {
+function renderUserRow(user, currentUserUID) {
     const isOriginal = user.isOriginal;
     const cannotChangeRole = isOriginal || user.uid === currentUserUID;
     const cannotDelete = isOriginal || user.uid === currentUserUID;
-    
+
     return `
         <tr data-uid="${user.uid}" class="${isOriginal ? 'original-user-row' : ''}">
             <td>
                 ${user.displayName || 'غير محدد'}
-                ${isOriginal ? '<span class="badge-original">⭐ أصلي</span>' : ''}
+                ${isOriginal ? '<span class="badge-original">أصلي</span>' : ''}
             </td>
             <td>${user.email}</td>
             <td>
                 <select class="role-select" data-uid="${user.uid}" ${cannotChangeRole ? 'disabled' : ''}>
-                    <option value="viewer" ${user.role === 'viewer' ? 'selected' : ''}>👁️ Viewer</option>
-                    <option value="manager" ${user.role === 'manager' ? 'selected' : ''}>📊 Manager</option>
-                    <option value="admin" ${user.role === 'admin' ? 'selected' : ''}>👑 Admin</option>
+                    <option value="viewer" ${user.role === 'viewer' ? 'selected' : ''}>Viewer</option>
+                    <option value="manager" ${user.role === 'manager' ? 'selected' : ''}>Manager</option>
+                    <option value="admin" ${user.role === 'admin' ? 'selected' : ''}>Admin</option>
                 </select>
-                ${isOriginal ? '<br><small class="original-note">🔒 مستخدم أصلي</small>' : ''}
+                ${isOriginal ? '<br><small class="original-note">مستخدم أصلي</small>' : ''}
             </td>
-            <td>${user.createdAt ? new Date(user.createdAt).toLocaleDateString('ar-EG') : 'غير معروف'}</td>
-            <td>${user.lastSignIn ? new Date(user.lastSignIn).toLocaleDateString('ar-EG') : 'لم يسجل بعد'}</td>
+            <td>${formatDate(user.createdAt)}</td>
+            <td>${formatDate(user.lastSignIn, 'لم يسجل بعد')}</td>
             <td class="actions-cell">
-                ${!cannotDelete ? 
-                    `<button class="delete-user-btn" data-uid="${user.uid}" data-email="${user.email}" data-name="${user.displayName || user.email}">🗑️ حذف</button>` : 
-                    isOriginal ? '<span class="protected-user">🔒 محمي</span>' : 
-                    '<span class="current-user">أنت</span>'
+                ${!cannotDelete
+                    ? `<button class="delete-user-btn" data-uid="${user.uid}" data-email="${user.email}" data-name="${user.displayName || user.email}">حذف</button>`
+                    : isOriginal
+                        ? '<span class="protected-user">محمي</span>'
+                        : '<span class="current-user">أنت</span>'
                 }
             </td>
         </tr>
     `;
 }
 
-// إعداد أحداث الجدول
-function setupTableEvents() {
-    let currentUsers = [];
-    let currentSort = { column: 'email', order: 'asc' };
-    
-    // جلب المستخدمين الحاليين
-    fetchAllUsers().then(users => {
-        currentUsers = users;
-    });
-    
-    // البحث
+function bindFilters() {
     const searchInput = document.getElementById('user-search');
-    if (searchInput) {
+    if (searchInput && !searchInput.dataset.bound) {
+        searchInput.dataset.bound = 'true';
         searchInput.addEventListener('input', async (e) => {
-            const searchTerm = e.target.value;
-            const filtered = await searchUsers(searchTerm);
-            updateTable(filtered);
+            const searchTerm = e.target.value.trim();
+            const searchedUsers = await searchUsers(searchTerm);
+            const originalEmails = new Set(currentUsers.filter(user => user.isOriginal).map(user => user.email));
+            const normalized = searchedUsers.map(user => ({
+                ...user,
+                isOriginal: Boolean(user.isOriginal || originalEmails.has(user.email))
+            }));
+            updateTable(normalized);
         });
     }
-    
-    // فلترة حسب الدور
+
     const roleFilter = document.getElementById('role-filter');
-    if (roleFilter) {
-        roleFilter.addEventListener('change', async (e) => {
-            const role = e.target.value;
-            const filtered = filterUsersByRole(currentUsers, role);
-            updateTable(filtered);
+    if (roleFilter && !roleFilter.dataset.bound) {
+        roleFilter.dataset.bound = 'true';
+        roleFilter.addEventListener('change', (e) => {
+            updateTable(filterUsersByRole(currentUsers, e.target.value));
         });
     }
-    
-    // التصدير
+
     const exportBtn = document.getElementById('export-users');
-    if (exportBtn) {
+    if (exportBtn && !exportBtn.dataset.bound) {
+        exportBtn.dataset.bound = 'true';
         exportBtn.addEventListener('click', () => {
             exportUsersToCSV(currentUsers);
         });
     }
-    
-    // تغيير الدور
-    document.querySelectorAll('.role-select').forEach(select => {
-        select.addEventListener('change', async (e) => {
-            const uid = e.target.dataset.uid;
-            const newRole = e.target.value;
-            const user = currentUsers.find(u => u.uid === uid);
-            
-            if (user && user.role !== newRole) {
-                await handleRoleChange(uid, newRole, user);
-            }
-        });
-    });
-    
-    // الحذف
-    document.querySelectorAll('.delete-user-btn').forEach(btn => {
-        btn.addEventListener('click', async (e) => {
-            const uid = e.target.dataset.uid;
-            const email = e.target.dataset.email;
-            const name = e.target.dataset.name;
-            
-            if (confirm(`هل أنت متأكد من حذف المستخدم "${name}" (${email})؟\n\nهذا الإجراء لا يمكن التراجع عنه!`)) {
-                await handleUserDeletion(uid, email, name);
-            }
-        });
-    });
-    
-    // تحديث الجدول
-    function updateTable(users) {
-        const tbody = document.querySelector('.users-table tbody');
-        if (tbody) {
-            const currentUserUID = auth.currentUser?.uid;
-            const currentUserRole = getCurrentUserRole();
-            
-            tbody.innerHTML = users.map(user => renderUserRow(user, currentUserUID, currentUserRole)).join('');
-            
-            // إعادة إعداد الأحداث
-            setupTableEvents();
-        }
-    }
-    
-    // الترتيب
-    window.sortUsersByColumn = (column) => {
-        if (currentSort.column === column) {
-            currentSort.order = currentSort.order === 'asc' ? 'desc' : 'asc';
-        } else {
-            currentSort.column = column;
-            currentSort.order = 'asc';
-        }
-        
-        const sorted = sortUsers(currentUsers, currentSort.column, currentSort.order);
-        updateTable(sorted);
-    };
 }
 
-// معالجة تغيير الدور
+function updateTable(users) {
+    const tbody = document.querySelector('.users-table tbody');
+    if (!tbody) {
+        return;
+    }
+
+    const currentUserUID = auth.currentUser?.uid;
+    tbody.innerHTML = users.map(user => renderUserRow(user, currentUserUID)).join('');
+}
+
 async function handleRoleChange(uid, newRole, user) {
     try {
-        // التحقق من الصلاحيات
-        const isOriginal = await isOriginalUser(uid);
-        const permissionCheck = canChangeUserRole(user.role, getCurrentUserRole(), isOriginal);
-        
+        const original = await isOriginalUser(uid);
+        const permissionCheck = canChangeUserRole(user.role, getCurrentUserRole(), original);
+
         if (!permissionCheck.allowed) {
-            alert(`❌ ${permissionCheck.reason}`);
-            // إعادة القيمة القديمة
-            const select = document.querySelector(`.role-select[data-uid="${uid}"]`);
-            if (select) select.value = user.role;
+            showNotification('error', permissionCheck.reason);
+            await renderUsersTable('users-table-container');
             return;
         }
-        
-        // تغيير الدور
+
         await assignUserRole(uid, newRole);
-        
-        // تسجيل التغيير
         await logRoleChange(uid, user.email, user.role, newRole, auth.currentUser.uid);
-        
-        // تحديث الواجهة
-        user.role = newRole;
-        
-        // عرض رسالة نجاح
-        showNotification('success', `✅ تم تغيير دور "${user.email}" إلى ${newRole}`);
-        
+        showNotification('success', `تم تغيير دور ${user.email} إلى ${newRole}`);
     } catch (error) {
         console.error('Error changing user role:', error);
-        alert(`❌ فشل تغيير الدور: ${error.message}`);
-        
-        // إعادة القيمة القديمة
-        const select = document.querySelector(`.role-select[data-uid="${uid}"]`);
-        if (select) select.value = user.role;
+        showNotification('error', `فشل تغيير الدور: ${error.message}`);
     }
 }
 
-// معالجة حذف المستخدم
 async function handleUserDeletion(uid, email, name) {
     try {
-        // التحقق من أن المستخدم ليس أصلياً
-        const isOriginal = await isOriginalUser(uid);
-        if (isOriginal) {
-            alert('❌ لا يمكن حذف المستخدمين الأصليين في النظام');
+        const original = await isOriginalUser(uid);
+        if (original) {
+            showNotification('error', 'لا يمكن حذف المستخدمين الأصليين');
             return;
         }
-        
-        // حذف المستخدم
+
         await deleteUser(uid);
-        
-        // إزالة الصف من الجدول
-        const row = document.querySelector(`tr[data-uid="${uid}"]`);
-        if (row) {
-            row.remove();
-        }
-        
-        // عرض رسالة نجاح
-        showNotification('success', `✅ تم حذف المستخدم "${name}" بنجاح`);
-        
+        showNotification('success', `تم حذف المستخدم ${name || email}`);
     } catch (error) {
         console.error('Error deleting user:', error);
-        alert(`❌ فشل حذف المستخدم: ${error.message}`);
+        showNotification('error', `فشل حذف المستخدم: ${error.message}`);
     }
 }
 
-// عرض الإشعارات
+async function handleCreateUser(form) {
+    const nameInput = document.getElementById('new-user-name');
+    const emailInput = document.getElementById('new-user-email');
+    const passwordInput = document.getElementById('new-user-password');
+    const roleInput = document.getElementById('new-user-role');
+    const submitBtn = document.getElementById('create-user-btn');
+
+    const displayName = nameInput?.value.trim();
+    const email = emailInput?.value.trim().toLowerCase();
+    const password = passwordInput?.value;
+    const role = roleInput?.value || 'viewer';
+
+    if (!displayName || !email || !password) {
+        showNotification('error', 'يرجى إدخال جميع بيانات المستخدم الجديد');
+        return;
+    }
+
+    try {
+        submitBtn.disabled = true;
+        submitBtn.textContent = 'جارٍ إنشاء المستخدم...';
+
+        await createUserWithRole(email, password, displayName, role);
+        form.reset();
+        showNotification('success', `تم إنشاء المستخدم ${email} بنجاح`);
+    } catch (error) {
+        console.error('Error creating user:', error);
+        showNotification('error', `فشل إنشاء المستخدم: ${error.message}`);
+    } finally {
+        submitBtn.disabled = false;
+        submitBtn.innerHTML = '<i class="fas fa-user-plus"></i> إنشاء المستخدم';
+    }
+}
+
 function showNotification(type, message) {
     const notification = document.createElement('div');
     notification.className = `notification ${type}`;
-    notification.innerHTML = message;
-    notification.style.cssText = `
-        position: fixed;
-        top: 20px;
-        right: 20px;
-        padding: 15px 20px;
-        border-radius: 8px;
-        color: white;
-        font-weight: bold;
-        z-index: 10000;
-        direction: rtl;
-        ${type === 'success' ? 'background: #4caf50;' : 'background: #f44336;'}
-    `;
-    
+    notification.textContent = message;
     document.body.appendChild(notification);
-    
+
     setTimeout(() => {
         notification.remove();
     }, 3000);
 }
 
-// تحديث إحصائيات المستخدمين
+function formatDate(value, fallback = 'غير معروف') {
+    if (!value) {
+        return fallback;
+    }
+
+    const date = new Date(value);
+    if (Number.isNaN(date.getTime())) {
+        return fallback;
+    }
+
+    return date.toLocaleDateString('ar-EG');
+}
+
 export async function updateUserStatistics(containerId) {
     try {
         const stats = await getRoleStatistics();
         const container = document.getElementById(containerId);
-        
-        if (container) {
-            container.innerHTML = `
-                <div class="stats-grid">
-                    <div class="stat-card">
-                        <h3>👥 إجمالي المستخدمين</h3>
-                        <span class="stat-number">${stats.total}</span>
-                    </div>
-                    <div class="stat-card admin">
-                        <h3>👑 المشرفون</h3>
-                        <span class="stat-number">${stats.admin}</span>
-                    </div>
-                    <div class="stat-card manager">
-                        <h3>📊 المديرون</h3>
-                        <span class="stat-number">${stats.manager}</span>
-                    </div>
-                    <div class="stat-card viewer">
-                        <h3>👁️ المشاهدون</h3>
-                        <span class="stat-number">${stats.viewer}</span>
-                    </div>
-                    <div class="stat-card original">
-                        <h3>⭐ المستخدمون الأصليون</h3>
-                        <span class="stat-number">${stats.originalUsers}</span>
-                    </div>
-                </div>
-            `;
+        if (!container) {
+            return;
         }
+
+        container.innerHTML = `
+            <div class="stat-card">
+                <h3>إجمالي المستخدمين</h3>
+                <span class="stat-number">${stats.total}</span>
+            </div>
+            <div class="stat-card admin">
+                <h3>المشرفون</h3>
+                <span class="stat-number">${stats.admin}</span>
+            </div>
+            <div class="stat-card manager">
+                <h3>المديرون</h3>
+                <span class="stat-number">${stats.manager}</span>
+            </div>
+            <div class="stat-card viewer">
+                <h3>المشاهدون</h3>
+                <span class="stat-number">${stats.viewer}</span>
+            </div>
+            <div class="stat-card original">
+                <h3>المستخدمون الأصليون</h3>
+                <span class="stat-number">${stats.originalUsers}</span>
+            </div>
+        `;
     } catch (error) {
         console.error('Error updating user statistics:', error);
     }
 }
 
-// تهيئة صفحة إدارة المستخدمين
 export async function initUserManagement() {
     if (!isAdmin()) {
         console.warn('User management requires admin privileges');
         return;
     }
-    
-    // عرض جدول المستخدمين
+
     await renderUsersTable('users-table-container');
-    
-    // عرض الإحصائيات
     await updateUserStatistics('user-stats-container');
-    
-    // إعداد أحداث إضافية
     setupAdditionalEvents();
 }
 
-// إعداد أحداث إضافية
 function setupAdditionalEvents() {
-    // تحديث تلقائي كل 30 ثانية
-    setInterval(async () => {
-        try {
+    const tableContainer = document.getElementById('users-table-container');
+    if (tableContainer && !tableContainer.dataset.bound) {
+        tableContainer.dataset.bound = 'true';
+
+        tableContainer.addEventListener('change', async (e) => {
+            if (!e.target.classList.contains('role-select')) {
+                return;
+            }
+
+            const uid = e.target.dataset.uid;
+            const user = currentUsers.find(item => item.uid === uid);
+            if (!user || user.role === e.target.value) {
+                return;
+            }
+
+            await handleRoleChange(uid, e.target.value, user);
             await renderUsersTable('users-table-container');
             await updateUserStatistics('user-stats-container');
-        } catch (error) {
-            console.error('Auto-refresh error:', error);
-        }
-    }, 30000);
-    
-    // اختصارات لوحة المفاتيح
-    document.addEventListener('keydown', (e) => {
-        // Ctrl+E للتصدير
-        if (e.ctrlKey && e.key === 'e') {
+        });
+
+        tableContainer.addEventListener('click', async (e) => {
+            const button = e.target.closest('.delete-user-btn');
+            if (!button) {
+                return;
+            }
+
+            const { uid, email, name } = button.dataset;
+            if (confirm(`هل أنت متأكد من حذف المستخدم "${name}" (${email})؟\n\nهذا الإجراء لا يمكن التراجع عنه!`)) {
+                await handleUserDeletion(uid, email, name);
+                await renderUsersTable('users-table-container');
+                await updateUserStatistics('user-stats-container');
+            }
+        });
+    }
+
+    const createForm = document.getElementById('create-user-form');
+    if (createForm && !createForm.dataset.bound) {
+        createForm.dataset.bound = 'true';
+        createForm.addEventListener('submit', async (e) => {
             e.preventDefault();
-            const exportBtn = document.getElementById('export-users');
-            if (exportBtn) exportBtn.click();
-        }
-        
-        // Ctrl+F للبحث
-        if (e.ctrlKey && e.key === 'f') {
-            e.preventDefault();
-            const searchInput = document.getElementById('user-search');
-            if (searchInput) searchInput.focus();
-        }
-    });
+            await handleCreateUser(createForm);
+            await renderUsersTable('users-table-container');
+            await updateUserStatistics('user-stats-container');
+        });
+    }
+
+    if (!autoRefreshInterval) {
+        autoRefreshInterval = setInterval(async () => {
+            try {
+                await renderUsersTable('users-table-container');
+                await updateUserStatistics('user-stats-container');
+            } catch (error) {
+                console.error('Auto-refresh error:', error);
+            }
+        }, 30000);
+    }
 }
