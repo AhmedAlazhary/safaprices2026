@@ -117,6 +117,20 @@
         .back-btn:hover {
             background: #1976d2;
         }
+
+        .secondary-btn {
+            background: #607d8b;
+            color: white;
+            border: none;
+            padding: 0.5rem 1rem;
+            border-radius: 8px;
+            cursor: pointer;
+            transition: background 0.3s;
+        }
+
+        .secondary-btn:hover {
+            background: #546e7a;
+        }
         
         /* Main Container */
         .container {
@@ -616,13 +630,17 @@
     <script type="module">
         // Import Firebase modules
         import { auth, onAuthStateChanged } from './firebase-config.js';
-        import { initUserManagement } from './js/user-management.js';
-        import { logout, getCurrentUserRole } from './js/auth-guard.js';
+        import { initUserManagement, renderUsersTable, updateUserStatistics } from './js/user-management.js';
+        import { logout, getCurrentUserRole } from './js/auth-guard-module.js';
 
         // Make logout available globally
         window.logout = logout;
         window.goToDashboard = () => {
             window.location.href = 'dashboard.html';
+        };
+        window.refreshAdminPanel = async () => {
+            await renderUsersTable('users-table-container');
+            await updateUserStatistics('user-stats-container');
         };
 
         // Initialize the application

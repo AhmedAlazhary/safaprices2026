@@ -349,6 +349,36 @@ button:hover,
   </section>
 </div>
 
+<script>
+  window.goToDashboardPage = function(target) {
+    if (!target) return;
+    window.location.href = target;
+  };
+
+  document.addEventListener('DOMContentLoaded', function() {
+    document.querySelectorAll('button[data-target]').forEach(function(button) {
+      const target = button.getAttribute('data-target');
+      button.setAttribute('type', 'button');
+      button.onclick = function(event) {
+        event.preventDefault();
+        event.stopPropagation();
+        window.location.href = target;
+      };
+    });
+  });
+
+  document.addEventListener('click', function(event) {
+    const button = event.target.closest('button[data-target]');
+    if (!button) return;
+
+    const target = button.getAttribute('data-target');
+    if (!target) return;
+
+    event.preventDefault();
+    window.location.href = target;
+  });
+</script>
+
 <script type="module">
 import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-app.js";
 import {

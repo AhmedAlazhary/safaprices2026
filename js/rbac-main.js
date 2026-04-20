@@ -1,6 +1,6 @@
 // js/rbac-main.js - Main RBAC Initialization File
 import { auth, onAuthStateChanged } from './firebase-config.js';
-import { initRouteGuard, getUserRole } from './auth-guard.js';
+import { initRouteGuard, getUserRole, logout } from './auth-guard-module.js';
 import { initUIRestrictions } from './ui-restrict.js';
 import { ensureUserHasRole } from './role-manager.js';
 
@@ -153,8 +153,10 @@ function showWelcomeNotification(user) {
 
 // حماية جميع الروابط في الصفحة
 function protectAllLinks() {
-    const { protectLinks } = require('./ui-restrict.js');
-    protectLinks();
+    const role = sessionStorage.getItem('userRole');
+    if (role) {
+        initUIRestrictions(role);
+    }
 }
 
 // إعداد أحداث عامة
@@ -181,7 +183,6 @@ function setupGlobalEvents() {
         // Ctrl+Shift+L لتسجيل الخروج
         if (e.ctrlKey && e.shiftKey && e.key === 'L') {
             e.preventDefault();
-            const { logout } = require('./auth-guard.js');
             logout();
         }
         

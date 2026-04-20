@@ -1,5 +1,5 @@
 // js/ui-restrict.js - UI Restrictions Based on User Role
-import { getCurrentUserRole, isAdmin, isManagerOrAbove, isViewerOrAbove } from './auth-guard.js';
+import { getCurrentUserRole, isAdmin, isManagerOrAbove, isViewerOrAbove } from './auth-guard-module.js';
 
 // تهيئة قيود الواجهة
 export function initUIRestrictions(userRole = null) {
