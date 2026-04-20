@@ -296,16 +296,19 @@
         }
 
         .service-card {
-            background: var(--surface-dark);
-            padding: 30px;
-            border-radius: 15px;
-            text-align: center;
-            box-shadow: 0 10px 30px rgba(0,0,0,0.3);
-            transition: all 0.4s cubic-bezier(0.175, 0.885, 0.32, 1.275);
-            height: 100%;
             position: relative;
+            background: var(--surface-dark);
+            border-radius: 15px;
             overflow: hidden;
+            transition: all 0.4s ease;
             border: 1px solid var(--border-dark);
+            height: 400px;
+            display: flex;
+            flex-direction: column;
+            justify-content: flex-end;
+            background-size: cover;
+            background-position: center;
+            background-repeat: no-repeat;
         }
 
         .service-card::before {
@@ -315,15 +318,14 @@
             left: 0;
             right: 0;
             bottom: 0;
-            background-size: cover;
-            background-position: center;
-            opacity: 0.1;
-            z-index: 0;
+            background: linear-gradient(to bottom, rgba(17, 24, 39, 0.3) 0%, rgba(17, 24, 39, 0.95) 100%);
+            transition: all 0.4s ease;
+            z-index: 1;
         }
 
         .service-card > * {
             position: relative;
-            z-index: 1;
+            z-index: 2;
         }
 
         .service-card:hover {
@@ -338,8 +340,15 @@
         }
 
         .service-card:hover::before {
-            opacity: 0.2;
+            opacity: 0.4;
             transform: scale(1.1);
+        }
+
+        .service-content {
+            padding: 30px;
+            text-align: center;
+            position: relative;
+            z-index: 2;
         }
 
         .service-icon {
@@ -348,13 +357,22 @@
             margin-bottom: 20px;
             transition: all 0.6s cubic-bezier(0.175, 0.885, 0.32, 1.275);
             display: inline-block;
+            text-shadow: 0 0 20px rgba(245, 158, 11, 0.5);
         }
 
         .service-title {
-            font-size: 20px;
+            font-size: 24px;
             font-weight: bold;
             margin-bottom: 15px;
             color: var(--text-dark);
+            text-shadow: 0 2px 10px rgba(0, 0, 0, 0.8);
+        }
+
+        .service-card p {
+            color: var(--text-dark);
+            line-height: 1.6;
+            font-size: 14px;
+            text-shadow: 0 1px 5px rgba(0, 0, 0, 0.8);
         }
 
         /* Features Section */
@@ -684,14 +702,14 @@
                                 Services
                             </a>
                             <ul class="dropdown-menu">
-                                <li><a class="dropdown-item" href="#">Inland Transportation</a></li>
-                                <li><a class="dropdown-item" href="#">Air Freight</a></li>
-                                <li><a class="dropdown-item" href="#">Ocean Freight</a></li>
-                                <li><a class="dropdown-item" href="#">Large Projects</a></li>
-                                <li><a class="dropdown-item" href="#">Customs Clearance</a></li>
-                                <li><a class="dropdown-item" href="#">Contract Logistics</a></li>
-                                <li><a class="dropdown-item" href="#">Warehousing</a></li>
-                                <li><a class="dropdown-item" href="#">Supply Chain Management</a></li>
+                                <li><a class="dropdown-item" href="#services">Inland Transportation</a></li>
+                                <li><a class="dropdown-item" href="#services">Air Freight</a></li>
+                                <li><a class="dropdown-item" href="#services">Ocean Freight</a></li>
+                                <li><a class="dropdown-item" href="#services">Large Projects</a></li>
+                                <li><a class="dropdown-item" href="#services">Customs Clearance</a></li>
+                                <li><a class="dropdown-item" href="#services">Contract Logistics</a></li>
+                                <li><a class="dropdown-item" href="#services">Warehousing</a></li>
+                                <li><a class="dropdown-item" href="#services">Supply Chain Management</a></li>
                             </ul>
                         </li>
                         <li class="nav-item">
@@ -740,56 +758,68 @@
             <div class="row">
                 <div class="col-md-4 mb-4">
                     <div class="service-card" style="background-image: url('pictures/inland.jpg');">
-                        <div class="service-icon">
-                            <i class="fas fa-truck"></i>
+                        <div class="service-content">
+                            <div class="service-icon">
+                                <i class="fas fa-truck"></i>
+                            </div>
+                            <h3 class="service-title">Ground Shipping</h3>
+                            <p>We have a wide experience in overland industry specific logistic solutions like pharmaceutical logistics, retail and automotive logistics by train or road.</p>
                         </div>
-                        <h3 class="service-title">Ground Shipping</h3>
-                        <p>We have a wide experience in overland industry specific logistic solutions like pharmaceutical logistics, retail and automotive logistics by train or road.</p>
                     </div>
                 </div>
                 <div class="col-md-4 mb-4">
                     <div class="service-card" style="background-image: url('pictures/large projects.jpg');">
-                        <div class="service-icon">
-                            <i class="fas fa-project-diagram"></i>
+                        <div class="service-content">
+                            <div class="service-icon">
+                                <i class="fas fa-project-diagram"></i>
+                            </div>
+                            <h3 class="service-title">Large Projects</h3>
+                            <p>We bring your goods safely to worldwide destinations with our great sea freight services. We offer LLC and FLC shipments that are fast and effective with no delays.</p>
                         </div>
-                        <h3 class="service-title">Large Projects</h3>
-                        <p>We bring your goods safely to worldwide destinations with our great sea freight services. We offer LLC and FLC shipments that are fast and effective with no delays.</p>
                     </div>
                 </div>
                 <div class="col-md-4 mb-4">
                     <div class="service-card" style="background-image: url('pictures/air freight.jpg');">
-                        <div class="service-icon">
-                            <i class="fas fa-plane"></i>
+                        <div class="service-content">
+                            <div class="service-icon">
+                                <i class="fas fa-plane"></i>
+                            </div>
+                            <h3 class="service-title">International Air Freight</h3>
+                            <p>We provide full supply chain management package including cost effective and fast air freight. You can also combine this package with other means of transportation.</p>
                         </div>
-                        <h3 class="service-title">International Air Freight</h3>
-                        <p>We provide full supply chain management package including cost effective and fast air freight. You can also combine this package with other means of transportation.</p>
                     </div>
                 </div>
                 <div class="col-md-4 mb-4">
                     <div class="service-card" style="background-image: url('pictures/warehousing.jpg');">
-                        <div class="service-icon">
-                            <i class="fas fa-warehouse"></i>
+                        <div class="service-content">
+                            <div class="service-icon">
+                                <i class="fas fa-warehouse"></i>
+                            </div>
+                            <h3 class="service-title">Warehousing & Storage</h3>
+                            <p>Modern warehouse solutions with intelligent storage and inventory management systems.</p>
                         </div>
-                        <h3 class="service-title">Warehousing & Storage</h3>
-                        <p>Modern warehouse solutions with intelligent storage and inventory management systems.</p>
                     </div>
                 </div>
                 <div class="col-md-4 mb-4">
                     <div class="service-card" style="background-image: url('pictures/contract logistics.jpg');">
-                        <div class="service-icon">
-                            <i class="fas fa-cogs"></i>
+                        <div class="service-content">
+                            <div class="service-icon">
+                                <i class="fas fa-cogs"></i>
+                            </div>
+                            <h3 class="service-title">Contract Logistics</h3>
+                            <p>Customized logistics solutions designed to meet your specific business requirements.</p>
                         </div>
-                        <h3 class="service-title">Contract Logistics</h3>
-                        <p>Customized logistics solutions designed to meet your specific business requirements.</p>
                     </div>
                 </div>
                 <div class="col-md-4 mb-4">
                     <div class="service-card" style="background-image: url('pictures/large projects.jpg');">
-                        <div class="service-icon">
-                            <i class="fas fa-project-diagram"></i>
+                        <div class="service-content">
+                            <div class="service-icon">
+                                <i class="fas fa-project-diagram"></i>
+                            </div>
+                            <h3 class="service-title">Large Projects</h3>
+                            <p>Specialized logistics solutions for large-scale projects and complex supply chains.</p>
                         </div>
-                        <h3 class="service-title">Large Projects</h3>
-                        <p>Specialized logistics solutions for large-scale projects and complex supply chains.</p>
                     </div>
                 </div>
             </div>
