@@ -4,7 +4,9 @@
 // Initialize route guards
 function initRouteGuards() {
     // Check if user is logged in (using sessionStorage for demo)
-    const isLoggedIn = sessionStorage.getItem('userLoggedIn') === 'true';
+    const isLoggedIn =
+        sessionStorage.getItem('userLoggedIn') === 'true' ||
+        localStorage.getItem('userLoggedIn') === 'true';
     const currentPath = window.location.pathname;
     const currentPage = currentPath.split('/').pop() || 'index.html';
     
@@ -50,7 +52,7 @@ function checkUserRole(user, page) {
 
 // Function to get current user role
 function getCurrentUserRole() {
-    return sessionStorage.getItem('userRole') || 'viewer';
+    return sessionStorage.getItem('userRole') || localStorage.getItem('userRole') || 'viewer';
 }
 
 // Function to protect buttons based on role
@@ -67,6 +69,9 @@ function protectButton(buttonId, requiredRole) {
 // Logout function
 function logout() {
     sessionStorage.clear();
+    localStorage.removeItem('userLoggedIn');
+    localStorage.removeItem('userRole');
+    localStorage.removeItem('userEmail');
     window.location.href = 'index.html';
 }
 

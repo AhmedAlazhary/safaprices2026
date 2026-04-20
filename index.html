@@ -1118,6 +1118,20 @@
                     }
                 }
 
+                function persistDemoSession(sessionData) {
+                    const encodedSession = encodeURIComponent(JSON.stringify(sessionData));
+
+                    sessionStorage.setItem('userLoggedIn', 'true');
+                    sessionStorage.setItem('userRole', sessionData.role);
+                    sessionStorage.setItem('userEmail', sessionData.email);
+
+                    localStorage.setItem('userLoggedIn', 'true');
+                    localStorage.setItem('userRole', sessionData.role);
+                    localStorage.setItem('userEmail', sessionData.email);
+
+                    return `dashboard.html?demoSession=${encodedSession}`;
+                }
+
                 // Login form submission
                 document.getElementById('loginForm').addEventListener('submit', async (e) => {
                     e.preventDefault();
@@ -1153,10 +1167,10 @@
                         // Show success message
                         showSuccess('Login successful! Redirecting to dashboard...');
                         
-                        // Set user session for auth guard
-                        sessionStorage.setItem('userLoggedIn', 'true');
-                        sessionStorage.setItem('userRole', 'admin'); // Default role for demo
-                        sessionStorage.setItem('userEmail', email);
+                        const redirectUrl = persistDemoSession({
+                            email,
+                            role: 'admin'
+                        });
                         
                         // Close modal
                         const modal = bootstrap.Modal.getInstance(document.getElementById('loginModal'));
@@ -1167,7 +1181,7 @@
                         // Wait a moment then redirect
                         setTimeout(() => {
                             // Force redirect to dashboard
-                            window.location.href = 'dashboard.html';
+                            window.location.href = redirectUrl;
                         }, 1000);
                         
                     } catch (error) {
