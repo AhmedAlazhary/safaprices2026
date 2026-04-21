@@ -929,11 +929,23 @@
                 loginBtn.href = 'dashboard.html';
                 loginBtn.removeAttribute('data-bs-toggle');
                 loginBtn.removeAttribute('data-bs-target');
+                
+                // Add click handler for dashboard navigation
+                loginBtn.onclick = function(e) {
+                    e.preventDefault();
+                    console.log('Dashboard button clicked, navigating to dashboard...');
+                    window.location.href = 'dashboard.html';
+                };
+                
+                console.log('Dashboard button configured successfully');
             } else {
                 loginBtn.innerHTML = '<i class="fas fa-sign-in-alt"></i> Login';
                 loginBtn.href = '#';
                 loginBtn.setAttribute('data-bs-toggle', 'modal');
                 loginBtn.setAttribute('data-bs-target', '#loginModal');
+                
+                // Remove dashboard click handler
+                loginBtn.onclick = null;
             }
         }
 
