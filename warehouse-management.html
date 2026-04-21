@@ -754,7 +754,7 @@ const firebaseConfig = {
 
 firebase.initializeApp(firebaseConfig);
 
-const db = firebase.database();
+const db = firebase.firestore();
 const auth = firebase.auth();
 
 // IMMEDIATE GLOBAL FUNCTIONS - Available before everything else
@@ -817,18 +817,24 @@ function setupWarehouseDateSelector() {
 
 // Load warehouse day status
 function loadWarehouseDayStatus() {
-  const dayStatusRef = db.ref('warehouseDayStatus');
-  dayStatusRef.on('value', snapshot => {
-    warehouseDayStatus = snapshot.val() || {};
+  const dayStatusRef = db.collection('warehouseDayStatus');
+  dayStatusRef.onSnapshot(snapshot => {
+    warehouseDayStatus = {};
+    snapshot.forEach(doc => {
+      warehouseDayStatus[doc.id] = doc.data();
+    });
     updateWarehouseDayClosureButton();
   });
 }
 
 // Load warehouse opening balances
 function loadWarehouseOpeningBalances() {
-  const openingBalancesRef = db.ref('warehouseOpeningBalances');
-  openingBalancesRef.on('value', snapshot => {
-    warehouseOpeningBalances = snapshot.val() || {};
+  const openingBalancesRef = db.collection('warehouseOpeningBalances');
+  openingBalancesRef.onSnapshot(snapshot => {
+    warehouseOpeningBalances = {};
+    snapshot.forEach(doc => {
+      warehouseOpeningBalances[doc.id] = doc.data();
+    });
   });
 }
 
@@ -846,7 +852,9 @@ function getPreviousDayWarehouseBalance(branch) {
     }
     
     // Calculate from all previous transactions
-    const branchRef = db.ref(`warehouse/${branch}`);
+    const branchRef = db.collection('warehouse').where('branch', '==', branch);
+    branchRef.get().then(snapshot => {
+      const allTransactions = snapshot.docs.map(doc => ({ ...doc.data(), id: doc.id }));
     branchRef.once('value', snapshot => {
       const allData = snapshot.val() || {};
       const allTransactions = Object.keys(allData).map(key => ({
@@ -871,11 +879,10 @@ function getPreviousDayWarehouseBalance(branch) {
 // Setup real-time listeners (like daily.html)
 function setupRealtimeListeners() {
   // Listen to Alexandria warehouse data
-  db.ref('warehouse/alexandria').on('value', snapshot => {
-    const raw = snapshot.val() || {};
-    warehouseData.alexandria = Object.keys(raw).map(key => ({
-      id: key,
-      ...raw[key]
+  db.collection('warehouse').where('branch', '==', 'alexandria').onSnapshot(snapshot => {
+    warehouseData.alexandria = snapshot.docs.map(doc => ({
+      id: doc.id,
+      ...doc.data()
     })).filter(row => row.date === selectedWarehouseDate); // Filter by selected date
     
     renderTable('alexandria');
@@ -884,11 +891,10 @@ function setupRealtimeListeners() {
   });
 
   // Listen to Dekkela warehouse data
-  db.ref('warehouse/dekkela').on('value', snapshot => {
-    const raw = snapshot.val() || {};
-    warehouseData.dekkela = Object.keys(raw).map(key => ({
-      id: key,
-      ...raw[key]
+  db.collection('warehouse').where('branch', '==', 'dekkela').onSnapshot(snapshot => {
+    warehouseData.dekkela = snapshot.docs.map(doc => ({
+      id: doc.id,
+      ...doc.data()
     })).filter(row => row.date === selectedWarehouseDate); // Filter by selected date
     
     renderTable('dekkela');
@@ -1002,7 +1008,7 @@ function renderTable(branch) {
 
 // Generate row ID (like daily.html)
 function generateRowId() {
-  return db.ref().push().key;
+  return db.collection('warehouse').doc().id;
 }
 
 // Create warehouse row (like daily.html)
@@ -1014,8 +1020,8 @@ function createWarehouseRow(overrides = {}) {
     credit: overrides.credit || 0,
     debit: overrides.debit || 0,
     notes: overrides.notes || '',
-    createdAt: overrides.createdAt || firebase.database.ServerValue.TIMESTAMP,
-    updatedAt: overrides.updatedAt || firebase.database.ServerValue.TIMESTAMP
+    createdAt: overrides.createdAt || firebase.firestore.FieldValue.serverTimestamp(),
+    updatedAt: overrides.updatedAt || firebase.firestore.FieldValue.serverTimestamp()
   };
 }
 
