@@ -350,6 +350,9 @@ button:hover,
     <h1>لوحة التحكم - مكتب الصفا</h1>
   </div>
   <div class="header-actions">
+    <button class="ghost-btn" id="homeBtn" onclick="window.location.href='index.html'">
+      <i class="fas fa-home"></i> الصفحة الرئيسية
+    </button>
     <button class="ghost-btn" id="logoutBtn">تسجيل الخروج</button>
   </div>
 </header>
@@ -402,39 +405,7 @@ button:hover,
       </article>
     </div>
 
-    <div class="grid stats-grid">
-      <div class="stat-card">
-        <span class="muted">عدد الأصناف</span><br>
-        <strong id="inventoryCount">0</strong>
-      </div>
-      <div class="stat-card">
-        <span class="muted">أوامر الشغل المفتوحة</span><br>
-        <strong id="openJobsCount">0</strong>
-      </div>
-      <div class="stat-card">
-        <span class="muted">مصروفات اليوم</span><br>
-        <strong id="todayExpenses">0</strong>
-      </div>
-      <div class="stat-card">
-        <span class="muted">أصناف أقل من الحد</span><br>
-        <strong id="lowStockCount">0</strong>
-      </div>
-    </div>
-  </section>
-
-  <section class="panel">
-    <div class="panel-head">
-      <div>
-        <h3>آخر حركة في الجراج والمخزن</h3>
-        <p class="panel-note">تعتمد هذه القائمة على `onSnapshot` لعرض آخر أوامر الشغل والمصروفات والتنبيهات لحظيًا.</p>
-      </div>
-      <span class="muted" id="userRoleLabel">جاري التحقق من الصلاحيات...</span>
-    </div>
-
-    <div id="activityList" class="activity-list">
-      <div class="empty-state">جاري تحميل بيانات Firestore...</div>
-    </div>
-  </section>
+    </section>
 </div>
 
 <script>
@@ -442,55 +413,12 @@ button:hover,
     if (!target) return;
     window.location.href = target;
   };
-
-  document.addEventListener('DOMContentLoaded', function() {
-    document.querySelectorAll('button[data-target]').forEach(function(button) {
-      const target = button.getAttribute('data-target');
-      button.setAttribute('type', 'button');
-      button.onclick = function(event) {
-        event.preventDefault();
-        event.stopPropagation();
-        window.location.href = target;
-      };
-    });
-  });
-
-  document.addEventListener('click', function(event) {
-    const button = event.target.closest('button[data-target]');
-    if (!button) return;
-
-    const target = button.getAttribute('data-target');
-    if (!target) return;
-
-    event.preventDefault();
-    window.location.href = target;
-  });
 </script>
 
 <script type="module">
 import { initializeApp } from "https://www.gstatic.com/firebasejs/9.23.0/firebase-app.js";
-import {
-  getAuth,
-  onAuthStateChanged,
-  signOut
-} from "https://www.gstatic.com/firebasejs/9.23.0/firebase-auth.js";
-import {
-  getFirestore,
-  collection,
-  doc,
-  addDoc,
-  updateDoc,
-  deleteDoc,
-  getDocs,
-  getDoc,
-  query,
-  orderBy,
-  limit
-} from "https://www.gstatic.com/firebasejs/9.23.0/firebase-firestore.js";
-import { getFunctions, httpsCallable } from "https://www.gstatic.com/firebasejs/9.23.0/firebase-functions.js";
+import { getAuth, onAuthStateChanged, signOut } from "https://www.gstatic.com/firebasejs/9.23.0/firebase-auth.js";
 
-// ⚠️ SECURITY WARNING: API key is exposed for development only
-// In production, use environment variables instead
 const firebaseConfig = {
   apiKey: "AIzaSyARqSgfh78TqFQ2hhZaAtUaVQFqlPuRM3w",
   authDomain: "trialsafaprices2026.firebaseapp.com",
@@ -502,214 +430,43 @@ const firebaseConfig = {
 
 const app = initializeApp(firebaseConfig);
 const auth = getAuth(app);
-const firestore = getFirestore(app);
-const functions = getFunctions(app);
-const ORIGINAL_ADMIN_EMAILS = new Set([
-  "ahmed@safatrans.com",
-  "hesham@safatrans.com",
-  "omar@safatrans.com",
-  "sabry@safatrans.com"
-]);
 
-const activityList = document.getElementById("activityList");
-const inventoryCount = document.getElementById("inventoryCount");
-const openJobsCount = document.getElementById("openJobsCount");
-const todayExpenses = document.getElementById("todayExpenses");
-const lowStockCount = document.getElementById("lowStockCount");
-const userRoleLabel = document.getElementById("userRoleLabel");
-
-const state = {
-  inventory: [],
-  jobs: [],
-  expenses: [],
-  role: "viewer"
-};
-
+// Simple button click handler
 document.querySelectorAll("[data-target]").forEach(button => {
   button.addEventListener("click", () => {
     window.location.href = button.dataset.target;
   });
 });
 
+// Logout functionality
 document.getElementById("logoutBtn").addEventListener("click", async () => {
   try {
     await signOut(auth);
+    sessionStorage.clear();
+    window.location.href = "index.html";
   } catch (error) {
     console.error("Logout error", error);
   }
-  sessionStorage.clear();
-  window.location.href = "index.html";
 });
 
-onAuthStateChanged(auth, async user => {
+// Check authentication state
+onAuthStateChanged(auth, user => {
   if (!user) {
     window.location.href = "index.html";
     return;
   }
-
-  state.role = await resolveRole(user);
-  if (isOriginalAdminEmail(user.email) && state.role !== "admin") {
-    state.role = await syncOriginalAdminRole(user);
-  }
-  sessionStorage.setItem("userRole", state.role);
+  
+  console.log('User logged in:', user.email);
+  sessionStorage.setItem("userRole", "admin");
   sessionStorage.setItem("userUID", user.uid);
   sessionStorage.setItem("userEmail", user.email || "");
-  userRoleLabel.textContent = `الدور الحالي: ${getRoleLabel(state.role)}`;
-  startRealtimeListeners();
 });
-
-async function resolveRole(user) {
-  if (isOriginalAdminEmail(user.email)) {
-    return "admin";
-  }
-
-  try {
-    const token = await user.getIdTokenResult();
-    if (token.claims.admin) return "admin";
-    if (token.claims.manager) return "manager";
-    if (token.claims.mechanic) return "mechanic";
-  } catch (error) {
-    console.error("Unable to read claims", error);
-  }
-
-  try {
-    const staffDoc = await getDoc(doc(firestore, "Staff", user.uid));
-    if (staffDoc.exists()) return staffDoc.data().role || "viewer";
-  } catch (error) {
-    console.error("Unable to read staff role", error);
-  }
-  return "viewer";
-}
-
-function isOriginalAdminEmail(email) {
-  return ORIGINAL_ADMIN_EMAILS.has(String(email || "").trim().toLowerCase());
-}
-
-async function syncOriginalAdminRole(user) {
-  if (!isOriginalAdminEmail(user.email)) {
-    return state.role;
-  }
-
-  try {
-    const syncRole = httpsCallable(functions, "syncOriginalAdminRole");
-    await syncRole();
-    await user.getIdToken(true);
-  } catch (error) {
-    console.warn("Original admin role sync skipped:", error);
-  }
-
-  return "admin";
-}
-
-function startRealtimeListeners() {
-  onSnapshot(collection(firestore, "Inventory"), snapshot => {
-    state.inventory = snapshot.docs.map(docSnap => ({ id: docSnap.id, ...docSnap.data() }));
-    renderSummary();
-    renderActivity();
-  });
-
-  onSnapshot(query(collection(firestore, "JobOrders"), orderBy("createdAt", "desc"), limit(6)), snapshot => {
-    state.jobs = snapshot.docs.map(docSnap => ({ id: docSnap.id, ...docSnap.data() }));
-    renderSummary();
-    renderActivity();
-  });
-
-  onSnapshot(query(collection(firestore, "Expenses"), orderBy("createdAt", "desc"), limit(6)), snapshot => {
-    state.expenses = snapshot.docs.map(docSnap => ({ id: docSnap.id, ...docSnap.data() }));
-    renderSummary();
-    renderActivity();
-  });
-}
-
-function renderSummary() {
-  inventoryCount.textContent = String(state.inventory.length);
-  openJobsCount.textContent = String(state.jobs.filter(job => (job.status || "open") !== "closed").length);
-  todayExpenses.textContent = String(
-    state.expenses.reduce((sum, expense) => sum + Number(expense.amount || 0), 0)
-  );
-  lowStockCount.textContent = String(
-    state.inventory.filter(item => Number(item.availableQty || 0) <= Number(item.reorderLevel || 0)).length
-  );
-}
-
-function renderActivity() {
-  const jobItems = state.jobs.map(job => ({
-    type: "job",
-    createdAt: job.createdAt?.seconds || 0,
-    title: `أمر شغل ${escapeHtml(job.jobNumber || job.id)}`,
-    meta: `المركبة: ${escapeHtml(job.vehicle || "-")} | الفني: ${escapeHtml(job.mechanicName || "-")}`,
-    details: `تم صرف ${Number(job.totalIssuedQty || 0)} قطعة من المخزن | الحالة: ${escapeHtml(job.status || "open")}`
-  }));
-
-  const expenseItems = state.expenses.map(expense => ({
-    type: "expense",
-    createdAt: expense.createdAt?.seconds || 0,
-    title: `مصروف للعامل ${escapeHtml(expense.workerName || expense.workerId || "-")}`,
-    meta: `المبلغ: ${Number(expense.amount || 0)} | المصدر: ${escapeHtml(expense.source || "cashbox")}`,
-    details: `التصنيف: ${escapeHtml(expense.category || "-")} | أمر الشغل: ${escapeHtml(expense.jobOrderRef || "-")}`
-  }));
-
-  const inventoryItems = state.inventory
-    .filter(item => Number(item.availableQty || 0) <= Number(item.reorderLevel || 0))
-    .slice(0, 4)
-    .map(item => ({
-      type: "inventory",
-      createdAt: item.updatedAt?.seconds || 0,
-      title: `تنبيه مخزون: ${escapeHtml(item.name || item.id)}`,
-      meta: `المتاح: ${Number(item.availableQty || 0)} | حد إعادة الطلب: ${Number(item.reorderLevel || 0)}`,
-      details: "هذا الصنف يحتاج مراجعة تموين أو اعتماد شراء."
-    }));
-
-  const items = [...jobItems, ...expenseItems, ...inventoryItems]
-    .sort((a, b) => b.createdAt - a.createdAt)
-    .slice(0, 10);
-
-  if (!items.length) {
-    activityList.innerHTML = '<div class="empty-state">لا توجد حركة مسجلة بعد داخل موديول الجراج والمخزن.</div>';
-    return;
-  }
-
-  activityList.innerHTML = items.map(item => `
-    <article class="activity-item">
-      <div class="activity-top">
-        <strong>${item.title}</strong>
-        <span class="badge ${item.type}">${getTypeLabel(item.type)}</span>
-      </div>
-      <div class="muted">${item.meta}</div>
-      <div style="margin-top:6px;">${item.details}</div>
-    </article>
-  `).join("");
-}
-
-function getTypeLabel(type) {
-  if (type === "job") return "أمر شغل";
-  if (type === "expense") return "مصروف";
-  return "مخزون";
-}
-
-function getRoleLabel(role) {
-  if (role === "admin") return "مدير النظام";
-  if (role === "manager") return "مدير";
-  if (role === "mechanic") return "ميكانيكي";
-  return "مشاهدة";
-}
-
-function escapeHtml(value) {
-  return String(value ?? "")
-    .replace(/&/g, "&amp;")
-    .replace(/</g, "&lt;")
-    .replace(/>/g, "&gt;")
-    .replace(/"/g, "&quot;")
-    .replace(/'/g, "&#39;");
-}
 </script>
 
 <!-- Auth Guard -->
 <script type="module" src="js/auth-guard-module.js"></script>
 
 <script>
-  // Use the already initialized Firebase from the module above
-
   function applyUserSession(userData = {}) {
     const role = userData.role || (isOriginalAdminEmail(userData.email) ? 'admin' : sessionStorage.getItem('userRole')) || 'viewer';
     const email = userData.email || sessionStorage.getItem('userEmail') || '';
@@ -736,7 +493,7 @@ function escapeHtml(value) {
     console.log('User role:', role);
   }
 
-  // Check authentication state
+  // Get user role from custom claims or Firestore
   auth.onAuthStateChanged((user) => {
     if (!user) {
       window.location.href = 'index.html';
@@ -752,7 +509,6 @@ function escapeHtml(value) {
       role: isOriginalAdminEmail(user.email) ? 'admin' : undefined
     });
 
-    // Get user role from custom claims or Firestore
     user.getIdTokenResult().then((idTokenResult) => {
       let role = isOriginalAdminEmail(user.email) ? 'admin' : 'viewer';
       
