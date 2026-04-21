@@ -1,0 +1,237 @@
+<!DOCTYPE html>
+<html lang="ar" dir="rtl">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>اختبار تسجيل الدخول - Safa Transport</title>
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <style>
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            min-height: 100vh;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            padding: 20px;
+        }
+        .test-container {
+            background: white;
+            border-radius: 20px;
+            padding: 30px;
+            box-shadow: 0 20px 40px rgba(0,0,0,0.1);
+            max-width: 500px;
+            width: 100%;
+        }
+        .test-section {
+            margin: 20px 0;
+            padding: 20px;
+            border: 1px solid #e0e0e0;
+            border-radius: 10px;
+            background: #f8f9fa;
+        }
+        .test-result {
+            margin: 10px 0;
+            padding: 10px;
+            border-radius: 5px;
+        }
+        .success { background: #d4edda; color: #155724; border: 1px solid #c3e6cb; }
+        .error { background: #f8d7da; color: #721c24; border: 1px solid #f5c6cb; }
+        .warning { background: #fff3cd; color: #856404; border: 1px solid #ffeaa7; }
+        .info { background: #d1ecf1; color: #0c5460; border: 1px solid #bee5eb; }
+        .btn-test {
+            background: #007bff;
+            color: white;
+            border: none;
+            padding: 10px 20px;
+            border-radius: 5px;
+            cursor: pointer;
+            margin: 5px;
+            transition: all 0.3s ease;
+        }
+        .btn-test:hover {
+            background: #0056b3;
+            transform: translateY(-2px);
+        }
+        .dashboard-btn {
+            background: #28a745;
+            color: white;
+            text-decoration: none;
+            padding: 15px 30px;
+            border-radius: 10px;
+            display: inline-block;
+            margin: 10px 0;
+            font-weight: bold;
+            transition: all 0.3s ease;
+        }
+        .dashboard-btn:hover {
+            background: #218838;
+            transform: translateY(-3px);
+            box-shadow: 0 10px 20px rgba(40, 167, 69, 0.3);
+        }
+    </style>
+</head>
+<body>
+    <div class="test-container">
+        <h1 class="text-center mb-4">
+            <i class="fas fa-truck"></i> اختبار نظام Safa Transport
+        </h1>
+        
+        <div class="test-section">
+            <h3><i class="fas fa-user-check"></i> اختبار تسجيل الدخول</h3>
+            <div class="mb-3">
+                <label class="form-label">اسم المستخدم:</label>
+                <input type="text" class="form-control" id="test-username" placeholder="ahmed, hesham, omar, sabry">
+            </div>
+            <div class="mb-3">
+                <label class="form-label">كلمة المرور:</label>
+                <input type="password" class="form-control" id="test-password" placeholder="أدخل كلمة المرور">
+            </div>
+            <button class="btn-test" onclick="testLogin()">
+                <i class="fas fa-sign-in-alt"></i> اختبار تسجيل الدخول
+            </button>
+            <div id="login-result"></div>
+        </div>
+
+        <div class="test-section">
+            <h3><i class="fas fa-tachometer-alt"></i> اختبار زر الداشبورد</h3>
+            <p>بعد تسجيل الدخول بنجاح، يجب أن يظهر زر الداشبورد:</p>
+            <div id="dashboard-button-container">
+                <span class="text-muted">سيظهر زر الداشبورد هنا بعد تسجيل الدخول...</span>
+            </div>
+            <div id="dashboard-test-result"></div>
+        </div>
+
+        <div class="test-section">
+            <h3><i class="fas fa-mobile-alt"></i> اختبار التوافق مع الموبايل</h3>
+            <div id="mobile-test-result"></div>
+        </div>
+
+        <div class="text-center mt-4">
+            <a href="index.html" class="btn btn-primary">
+                <i class="fas fa-home"></i> العودة للصفحة الرئيسية
+            </a>
+            <a href="dashboard.html" class="dashboard-btn" id="dashboard-link" style="display: none;">
+                <i class="fas fa-tachometer-alt"></i> الذهاب للوحة التحكم
+            </a>
+        </div>
+    </div>
+
+    <!-- Firebase SDK -->
+    <script type="module">
+        import { initializeApp } from "https://www.gstatic.com/firebasejs/9.23.0/firebase-app.js";
+        import { getAuth, onAuthStateChanged, signInWithEmailAndPassword } from "https://www.gstatic.com/firebasejs/9.23.0/firebase-auth.js";
+        
+        const firebaseConfig = {
+            apiKey: "AIzaSyARqSgfh78TqFQ2hhZaAtUaVQFqlPuRM3w",
+            authDomain: "trialsafaprices2026.firebaseapp.com",
+            projectId: "trialsafaprices2026",
+            storageBucket: "trialsafaprices2026.appspot.com",
+            messagingSenderId: "177091434445",
+            appId: "1:177091434445:web:568b6ae3ba270a21d4d684"
+        };
+
+        const app = initializeApp(firebaseConfig);
+        const auth = getAuth(app);
+
+        function addResult(elementId, message, type = 'info') {
+            const element = document.getElementById(elementId);
+            const div = document.createElement('div');
+            div.className = `test-result ${type}`;
+            div.innerHTML = `<strong>${new Date().toLocaleTimeString()}:</strong> ${message}`;
+            element.appendChild(div);
+        }
+
+        function updateDashboardButton(isLoggedIn) {
+            const container = document.getElementById('dashboard-button-container');
+            const dashboardLink = document.getElementById('dashboard-link');
+            
+            if (isLoggedIn) {
+                container.innerHTML = `
+                    <button class="dashboard-btn" onclick="window.location.href='dashboard.html'">
+                        <i class="fas fa-tachometer-alt"></i> الداشبورد (يعمل!)
+                    </button>
+                `;
+                dashboardLink.style.display = 'inline-block';
+                addResult('dashboard-test-result', '✅ زر الداشبورد يعمل بشكل صحيح', 'success');
+            } else {
+                container.innerHTML = '<span class="text-muted">سيظهر زر الداشبورد هنا بعد تسجيل الدخول...</span>';
+                dashboardLink.style.display = 'none';
+                addResult('dashboard-test-result', '❌ لم يتم تسجيل الدخول بعد', 'warning');
+            }
+        }
+
+        window.testLogin = async function() {
+            const username = document.getElementById('test-username').value.trim().toLowerCase();
+            const password = document.getElementById('test-password').value;
+            
+            if (!username || !password) {
+                addResult('login-result', '❌ يرجى إدخال اسم المستخدم وكلمة المرور', 'error');
+                return;
+            }
+
+            const usersMap = {
+                "ahmed": "ahmed@safatrans.com",
+                "hesham": "hesham@safatrans.com", 
+                "omar": "omar@safatrans.com",
+                "sabry": "sabry@safatrans.com"
+            };
+
+            const email = usersMap[username];
+            if (!email) {
+                addResult('login-result', '❌ اسم المستخدم غير موجود', 'error');
+                return;
+            }
+
+            try {
+                addResult('login-result', '🔄 جاري محاولة تسجيل الدخول...', 'info');
+                await signInWithEmailAndPassword(auth, email, password);
+                addResult('login-result', '✅ تم تسجيل الدخول بنجاح!', 'success');
+                sessionStorage.setItem('userRole', 'admin');
+                sessionStorage.setItem('userEmail', email);
+                updateDashboardButton(true);
+            } catch (error) {
+                addResult('login-result', `❌ فشل تسجيل الدخول: ${error.message}`, 'error');
+            }
+        };
+
+        // Check auth state
+        onAuthStateChanged(auth, (user) => {
+            if (user) {
+                addResult('login-result', `✅ المستخدم مسجل دخوله بالفعل: ${user.email}`, 'success');
+                updateDashboardButton(true);
+            } else {
+                addResult('login-result', 'ℹ️ لا يوجد مستخدم مسجل دخوله', 'info');
+                updateDashboardButton(false);
+            }
+        });
+
+        // Test mobile compatibility
+        function testMobileCompatibility() {
+            const isMobile = /Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(navigator.userAgent);
+            const screenWidth = window.innerWidth;
+            
+            if (isMobile) {
+                addResult('mobile-test-result', `📱 تم الكشف على جهاز محمول (${screenWidth}px)`, 'info');
+            } else {
+                addResult('mobile-test-result', `🖥️ تم الكشف على جهاز كمبيوتر (${screenWidth}px)`, 'info');
+            }
+            
+            if (screenWidth <= 768) {
+                addResult('mobile-test-result', '📱 حجم الشاشة مناسب للموبايل - التصميم متجاوب', 'success');
+            } else {
+                addResult('mobile-test-result', '🖥️ حجم الشاشة مناسب للكمبيوتر', 'success');
+            }
+        }
+
+        // Run mobile test on load
+        testMobileCompatibility();
+        
+        // Test on resize
+        window.addEventListener('resize', testMobileCompatibility);
+
+        addResult('login-result', '🔧 صفحة الاختبار جاهزة', 'success');
+    </script>
+</body>
+</html>

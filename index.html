@@ -768,22 +768,42 @@
         </div>
     </section>
 
+    <!-- Newsletter Section -->
+    <section class="py-5" style="background: var(--bg-light);">
+        <div class="container">
+            <div class="row">
+                <div class="col-lg-6 mx-auto text-center">
+                    <h3 class="mb-4" style="color: var(--text-dark);">Newsletter Subscribe</h3>
+                    <p class="mb-4" style="color: var(--text-light);">Subscribe to our newsletter and we will inform you about newest projects and promotions.</p>
+                    <form id="newsletterForm" class="row g-3">
+                        <div class="col-md-9">
+                            <input type="email" class="form-control" id="newsletterEmail" placeholder="Enter your email" required>
+                        </div>
+                        <div class="col-md-3">
+                            <button type="submit" class="btn btn-warning w-100">Subscribe</button>
+                        </div>
+                    </form>
+                </div>
+            </div>
+        </div>
+    </section>
+
     <!-- Footer -->
     <footer>
         <div class="container">
             <div class="footer-content">
                 <div class="footer-links">
-                    <a href="#">About Us</a>
-                    <a href="#">Services</a>
-                    <a href="#">Locations</a>
+                    <a href="#about">About Us</a>
+                    <a href="#services">Services</a>
+                    <a href="#contact">Locations</a>
                     <a href="#contact">Contact</a>
-                    <a href="#">Privacy Policy</a>
+                    <a href="#" onclick="showPrivacyPolicy()">Privacy Policy</a>
                 </div>
                 <div class="social-links">
-                    <a href="https://wa.me/2011220417513" class="text-white me-3"><i class="fab fa-whatsapp fa-2x"></i></a>
-                    <a href="#" class="text-white me-3"><i class="fab fa-facebook fa-2x"></i></a>
-                    <a href="#" class="text-white me-3"><i class="fab fa-twitter fa-2x"></i></a>
-                    <a href="#" class="text-white"><i class="fab fa-linkedin fa-2x"></i></a>
+                    <a href="https://wa.me/2011220417513" class="text-white me-3" target="_blank"><i class="fab fa-whatsapp fa-2x"></i></a>
+                    <a href="https://facebook.com/safatransport" class="text-white me-3" target="_blank"><i class="fab fa-facebook fa-2x"></i></a>
+                    <a href="https://twitter.com/safatransport" class="text-white me-3" target="_blank"><i class="fab fa-twitter fa-2x"></i></a>
+                    <a href="https://linkedin.com/company/safatransport" class="text-white" target="_blank"><i class="fab fa-linkedin fa-2x"></i></a>
                 </div>
             </div>
             <div class="copyright text-center mt-4">
@@ -833,10 +853,35 @@
     </div>
 
     <!-- Firebase SDK -->
-    <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-app-compat.js"></script>
-    <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-auth-compat.js"></script>
-    <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-firestore-compat.js"></script>
-    <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-functions-compat.js"></script>
+    <script type="module">
+        import { initializeApp } from "https://www.gstatic.com/firebasejs/9.23.0/firebase-app.js";
+        import { getAuth, onAuthStateChanged, signInWithEmailAndPassword } from "https://www.gstatic.com/firebasejs/9.23.0/firebase-auth.js";
+        import { getFirestore } from "https://www.gstatic.com/firebasejs/9.23.0/firebase-firestore.js";
+        import { getFunctions } from "https://www.gstatic.com/firebasejs/9.23.0/firebase-functions.js";
+        
+        // Firebase configuration
+        const firebaseConfig = {
+            apiKey: "AIzaSyARqSgfh78TqFQ2hhZaAtUaVQFqlPuRM3w",
+            authDomain: "trialsafaprices2026.firebaseapp.com",
+            projectId: "trialsafaprices2026",
+            storageBucket: "trialsafaprices2026.appspot.com",
+            messagingSenderId: "177091434445",
+            appId: "1:177091434445:web:568b6ae3ba270a21d4d684"
+        };
+
+        // Initialize Firebase
+        const app = initializeApp(firebaseConfig);
+        const auth = getAuth(app);
+        const db = getFirestore(app);
+        const functions = getFunctions(app);
+
+        // Make Firebase available globally for other scripts
+        window.firebaseApp = app;
+        window.firebaseAuth = auth;
+        window.firebaseDb = db;
+        window.firebaseFunctions = functions;
+        window.firebase = { auth, db, functions };
+    </script>
     <script>
         // Smooth scrolling for navigation links
         document.querySelectorAll('a[href^="#"]').forEach(anchor => {
@@ -877,6 +922,44 @@
             alert('Thank you for contacting us! We will get back to you soon.');
             this.reset();
         });
+
+        // Privacy Policy function
+        function showPrivacyPolicy() {
+            const modal = document.createElement('div');
+            modal.className = 'modal fade';
+            modal.innerHTML = `
+                <div class="modal-dialog modal-dialog-centered modal-lg">
+                    <div class="modal-content">
+                        <div class="modal-header">
+                            <h5 class="modal-title">Privacy Policy</h5>
+                            <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+                        </div>
+                        <div class="modal-body">
+                            <h6>Information Collection</h6>
+                            <p>We collect information you provide directly to us, such as when you create an account, use our services, or contact us.</p>
+                            
+                            <h6>Information Use</h6>
+                            <p>We use the information we collect to provide, maintain, and improve our services, process transactions, and communicate with you.</p>
+                            
+                            <h6>Information Sharing</h6>
+                            <p>We do not sell, trade, or otherwise transfer your personal information to third parties without your consent.</p>
+                            
+                            <h6>Data Security</h6>
+                            <p>We implement appropriate security measures to protect your personal information against unauthorized access.</p>
+                        </div>
+                        <div class="modal-footer">
+                            <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Close</button>
+                        </div>
+                    </div>
+                </div>
+            `;
+            document.body.appendChild(modal);
+            const bsModal = new bootstrap.Modal(modal);
+            bsModal.show();
+            modal.addEventListener('hidden.bs.modal', () => {
+                document.body.removeChild(modal);
+            });
+        }
 
         // Translations
         const translations = {
@@ -920,43 +1003,43 @@
                 loginNote: 'Please contact admin if you need login credentials'
             },
             ar: {
-                home: 'Home',
-                services: 'Services',
-                about: 'About',
-                contact: 'Contact',
-                login: 'Login',
-                heroTitle: 'Powerful Transport & Logistics Solution',
-                heroSubtitle: 'Fast, safe and accurate shipment provided all over the globe. Professional logistics services tailored to your needs.',
-                ourServices: 'Our Services',
-                contactUs: 'Contact Us',
-                aboutUs: 'About Safa Transport',
-                companyProfile: 'Company Profile',
-                ourMission: 'Our Mission',
-                getInTouch: 'Get In Touch',
-                name: 'Name',
-                emailField: 'Email',
-                subject: 'Subject',
-                message: 'Message',
-                sendMessage: 'Send Message',
-                headquarters: 'Safa Transport Headquarters',
-                whatClientsSay: 'What Our Clients Say',
-                newsletter: 'Newsletter Subscribe',
-                newsletterText: 'Subscribe to our newsletter and we will inform you about newest projects and promotions.',
-                subscribe: 'Subscribe',
-                contactInfo: 'Contact Us',
-                address: 'Address',
-                phone: 'Phone',
-                whatsapp: 'WhatsApp',
-                email: 'Email',
-                allRights: 'ALL RIGHTS RESERVED BY',
-                loginModalTitle: 'Safa Transport Login',
-                username: 'Username',
-                password: 'Password',
-                enterUsername: 'Enter username',
-                enterPassword: 'Enter password',
-                loggingIn: 'Logging in...',
-                loginSuccess: 'Login successful! Redirecting to dashboard...',
-                loginNote: 'Please contact admin if you need login credentials'
+                home: 'الرئيسية',
+                services: 'الخدمات',
+                about: 'من نحن',
+                contact: 'اتصل بنا',
+                login: 'تسجيل الدخول',
+                heroTitle: 'حلول النقل والخدمات اللوجستية القوية',
+                heroSubtitle: 'شحن سريع وآمن ودقيق في جميع أنحاء العالم. خدمات لوجستية احترافية مصممة لتلبية احتياجاتك.',
+                ourServices: 'خدماتنا',
+                contactUs: 'اتصل بنا',
+                aboutUs: 'معلومات عن الصفا للنقل',
+                companyProfile: 'الملف التعريفي للشركة',
+                ourMission: 'مهمتنا',
+                getInTouch: 'تواصل معنا',
+                name: 'الاسم',
+                emailField: 'البريد الإلكتروني',
+                subject: 'الموضوع',
+                message: 'الرسالة',
+                sendMessage: 'إرسال الرسالة',
+                headquarters: 'مقر الصفا للنقل',
+                whatClientsSay: 'ماذا يقول عملاؤنا',
+                newsletter: 'الاشتراك في النشرة البريدية',
+                newsletterText: 'اشترك في نشرتنا البريدية وسنقوم بإبلاغك بأحدث المشاريع والعروض الترويجية.',
+                subscribe: 'اشترك',
+                contactInfo: 'معلومات الاتصال',
+                address: 'العنوان',
+                phone: 'الهاتف',
+                whatsapp: 'واتساب',
+                email: 'البريد الإلكتروني',
+                allRights: 'جميع الحقوق محفوظة لـ',
+                loginModalTitle: 'تسجيل دخول الصفا للنقل',
+                username: 'اسم المستخدم',
+                password: 'كلمة المرور',
+                enterUsername: 'أدخل اسم المستخدم',
+                enterPassword: 'أدخل كلمة المرور',
+                loggingIn: 'جاري تسجيل الدخول...',
+                loginSuccess: 'تم تسجيل الدخول بنجاح! جاري التحويل إلى لوحة التحكم...',
+                loginNote: 'يرجى الاتصال بالإدارة إذا كنت بحاجة إلى بيانات اعتماد تسجيل الدخول'
             }
         };
 
@@ -1066,21 +1149,11 @@
         setInterval(nextSlide, 5000);
 
         // Initialize Firebase
-        if (typeof firebase !== 'undefined') {
-            // Firebase configuration
-            const firebaseConfig = {
-                apiKey: "AIzaSyARqSgfh78TqFQ2hhZaAtUaVQFqlPuRM3w",
-                authDomain: "trialsafaprices2026.firebaseapp.com",
-                projectId: "trialsafaprices2026",
-                storageBucket: "trialsafaprices2026.appspot.com",
-                messagingSenderId: "177091434445",
-                appId: "1:177091434445:web:568b6ae3ba270a21d4d684"
-            };
-
+        if (window.firebaseAuth) {
             try {
-                firebase.initializeApp(firebaseConfig);
-                const auth = firebase.auth();
-                const db = firebase.firestore();
+                const auth = window.firebaseAuth;
+                const db = window.firebaseDb;
+                const functions = window.firebaseFunctions;
 
                 // Users mapping (for existing users)
                 const usersMap = {
@@ -1097,7 +1170,7 @@
                     }
 
                     try {
-                        const syncRole = firebase.functions().httpsCallable('syncOriginalAdminRole');
+                        const syncRole = functions.httpsCallable('syncOriginalAdminRole');
                         await syncRole();
                         if (auth.currentUser) {
                             await auth.currentUser.getIdToken(true);
@@ -1108,7 +1181,7 @@
                 }
 
                 // Check if user is already logged in
-                auth.onAuthStateChanged((user) => {
+                onAuthStateChanged(auth, (user) => {
                     if (user) {
                         // User is logged in, show dashboard link
                         updateLoginButton(true);
@@ -1161,7 +1234,7 @@
                     loginBtn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Logging in...';
                     
                     try {
-                        await auth.signInWithEmailAndPassword(email, password);
+                        await signInWithEmailAndPassword(auth, email, password);
                         await syncOriginalAdminRole(email);
                         
                         // Show success message
@@ -1238,48 +1311,7 @@
 
             } catch (error) {
                 console.error('Firebase initialization error:', error);
-                // Show error message to user
-                const errorDiv = document.createElement('div');
-                errorDiv.innerHTML = `
-                    <div style="
-                        position: fixed;
-                        top: 0;
-                        left: 0;
-                        right: 0;
-                        background: #f44336;
-                        color: white;
-                        padding: 20px;
-                        text-align: center;
-                        z-index: 9999;
-                    ">
-                        <h3>System Error</h3>
-                        <p>Firebase could not be loaded. Please refresh the page.</p>
-                    </div>
-                `;
-                document.body.appendChild(errorDiv);
             }
-
-        } else {
-            console.error('Firebase is not loaded properly');
-            // Show error message to user
-            const errorDiv = document.createElement('div');
-            errorDiv.innerHTML = `
-                <div style="
-                    position: fixed;
-                    top: 0;
-                    left: 0;
-                    right: 0;
-                    background: #f44336;
-                    color: white;
-                    padding: 20px;
-                    text-align: center;
-                    z-index: 9999;
-                ">
-                    <h3>System Error</h3>
-                    <p>Firebase could not be loaded. Please refresh the page.</p>
-                </div>
-            `;
-            document.body.appendChild(errorDiv);
         }
     </script>
 

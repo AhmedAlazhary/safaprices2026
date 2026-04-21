@@ -1,5 +1,5 @@
 // js/rbac-main.js - Main RBAC Initialization File
-import { auth, onAuthStateChanged } from './firebase-config.js';
+import { auth, onAuthStateChanged } from '../firebase-config.js';
 import { initRouteGuard, getUserRole, logout } from './auth-guard-module.js';
 import { initUIRestrictions } from './ui-restrict.js';
 import { ensureUserHasRole } from './role-manager.js';

@@ -1,0 +1,111 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Firebase Test</title>
+    <style>
+        body { font-family: Arial, sans-serif; padding: 20px; background: #f5f5f5; }
+        .container { max-width: 800px; margin: 0 auto; background: white; padding: 20px; border-radius: 10px; }
+        .test { margin: 20px 0; padding: 15px; border: 1px solid #ddd; border-radius: 5px; }
+        .success { background: #d4edda; border-color: #c3e6cb; color: #155724; }
+        .error { background: #f8d7da; border-color: #f5c6cb; color: #721c24; }
+        .info { background: #d1ecf1; border-color: #bee5eb; color: #0c5460; }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>Firebase Integration Test</h1>
+        <div id="results"></div>
+        
+        <div class="test">
+            <h3>Test Login</h3>
+            <input type="text" id="username" placeholder="Username (ahmed, hesham, omar, sabry)" style="width: 200px; padding: 5px;">
+            <input type="password" id="password" placeholder="Password" style="width: 200px; padding: 5px;">
+            <button onclick="testLogin()" style="padding: 5px 15px;">Test Login</button>
+        </div>
+    </div>
+
+    <script type="module">
+        import { initializeApp } from "https://www.gstatic.com/firebasejs/9.23.0/firebase-app.js";
+        import { getAuth, onAuthStateChanged, signInWithEmailAndPassword } from "https://www.gstatic.com/firebasejs/9.23.0/firebase-auth.js";
+        import { getFirestore } from "https://www.gstatic.com/firebasejs/9.23.0/firebase-firestore.js";
+        import { getFunctions } from "https://www.gstatic.com/firebasejs/9.23.0/firebase-functions.js";
+        
+        const firebaseConfig = {
+            apiKey: "AIzaSyARqSgfh78TqFQ2hhZaAtUaVQFqlPuRM3w",
+            authDomain: "trialsafaprices2026.firebaseapp.com",
+            projectId: "trialsafaprices2026",
+            storageBucket: "trialsafaprices2026.appspot.com",
+            messagingSenderId: "177091434445",
+            appId: "1:177091434445:web:568b6ae3ba270a21d4d684"
+        };
+
+        const app = initializeApp(firebaseConfig);
+        const auth = getAuth(app);
+        const db = getFirestore(app);
+        const functions = getFunctions(app);
+
+        function addResult(message, type = 'info') {
+            const results = document.getElementById('results');
+            const div = document.createElement('div');
+            div.className = `test ${type}`;
+            div.innerHTML = `<strong>${new Date().toLocaleTimeString()}:</strong> ${message}`;
+            results.appendChild(div);
+        }
+
+        // Test Firebase initialization
+        try {
+            addResult('✅ Firebase initialized successfully', 'success');
+            addResult(`✅ Auth: ${auth ? 'Available' : 'Not available'}`, 'success');
+            addResult(`✅ Firestore: ${db ? 'Available' : 'Not available'}`, 'success');
+            addResult(`✅ Functions: ${functions ? 'Available' : 'Not available'}`, 'success');
+        } catch (error) {
+            addResult(`❌ Firebase initialization failed: ${error.message}`, 'error');
+        }
+
+        // Test auth state
+        onAuthStateChanged(auth, (user) => {
+            if (user) {
+                addResult(`✅ User logged in: ${user.email}`, 'success');
+            } else {
+                addResult('ℹ️ No user currently logged in', 'info');
+            }
+        });
+
+        // Make test function global
+        window.testLogin = async function() {
+            const username = document.getElementById('username').value.trim().toLowerCase();
+            const password = document.getElementById('password').value;
+            
+            if (!username || !password) {
+                addResult('❌ Please enter username and password', 'error');
+                return;
+            }
+
+            const usersMap = {
+                "ahmed": "ahmed@safatrans.com",
+                "hesham": "hesham@safatrans.com", 
+                "omar": "omar@safatrans.com",
+                "sabry": "sabry@safatrans.com"
+            };
+
+            const email = usersMap[username];
+            if (!email) {
+                addResult('❌ Username not found', 'error');
+                return;
+            }
+
+            try {
+                addResult(`🔄 Attempting login for ${email}...`, 'info');
+                await signInWithEmailAndPassword(auth, email, password);
+                addResult(`✅ Login successful for ${email}`, 'success');
+            } catch (error) {
+                addResult(`❌ Login failed: ${error.message}`, 'error');
+            }
+        };
+
+        addResult('🔧 Firebase test page loaded successfully', 'success');
+    </script>
+</body>
+</html>

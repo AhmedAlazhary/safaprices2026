@@ -1,14 +1,14 @@
 // Initial Data Setup for Inventory and Assets Management System
 // Run this script once to populate initial data
 
-import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-app.js";
+import { initializeApp } from "https://www.gstatic.com/firebasejs/9.23.0/firebase-app.js";
 import { 
   getFirestore, 
   collection, 
   doc, 
   setDoc, 
   serverTimestamp 
-} from "https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore.js";
+} from "https://www.gstatic.com/firebasejs/9.23.0/firebase-firestore.js";
 
 // ⚠️ SECURITY WARNING: API key is exposed for development only
 // In production, use environment variables instead

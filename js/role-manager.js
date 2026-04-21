@@ -1,5 +1,5 @@
 // js/role-manager.js - Role Management and Assignment
-import { auth, db, doc, setDoc, getDoc, collection, getDocs, query, where, updateDoc } from './firebase-config.js';
+import { auth, db, doc, setDoc, getDoc, collection, getDocs, query, where, updateDoc } from '../firebase-config.js';
 import { httpsCallable } from 'https://www.gstatic.com/firebasejs/9.23.0/firebase-functions.js';
 
 // Cloud Functions references

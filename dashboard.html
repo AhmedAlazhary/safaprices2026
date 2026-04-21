@@ -121,13 +121,72 @@ button:hover,
 }
 
 .nav-grid {
-  grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+  grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
   margin: 18px 0;
 }
 
 .stats-grid {
   grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
   margin-top: 16px;
+}
+
+/* Mobile Responsive Design */
+@media (max-width: 768px) {
+  .nav-grid {
+    grid-template-columns: 1fr;
+    gap: 12px;
+  }
+  
+  .nav-card {
+    padding: 20px;
+  }
+  
+  .nav-card h3 {
+    font-size: 1.1rem;
+    margin-bottom: 12px;
+  }
+  
+  .nav-card p {
+    font-size: 0.9rem;
+    min-height: 40px;
+    margin-bottom: 16px;
+  }
+  
+  .nav-card button {
+    padding: 14px 20px;
+    font-size: 1rem;
+  }
+  
+  .stats-grid {
+    grid-template-columns: 1fr;
+    gap: 12px;
+  }
+  
+  .hero h2 {
+    font-size: 1.5rem;
+  }
+  
+  .hero p {
+    font-size: 0.95rem;
+  }
+}
+
+@media (max-width: 480px) {
+  .container {
+    padding: 10px;
+  }
+  
+  header {
+    padding: 12px 16px;
+  }
+  
+  .brand h1 {
+    font-size: 1.2rem;
+  }
+  
+  .nav-card {
+    padding: 16px;
+  }
 }
 
 .nav-card,
@@ -139,32 +198,61 @@ button:hover,
 }
 
 .nav-card {
-  background: linear-gradient(180deg, #ffffff 0%, #f8fbff 100%);
+  background: linear-gradient(135deg, #ffffff 0%, #f0f7ff 100%);
+  border: 2px solid var(--border);
+  transition: all 0.3s ease;
+}
+
+.nav-card:hover {
+  transform: translateY(-5px);
+  box-shadow: 0 15px 35px rgba(31, 51, 71, 0.15);
+  border-color: var(--accent);
 }
 
 .nav-card h3,
 .stat-card strong {
   color: var(--primary);
+  font-weight: 700;
+  margin-bottom: 8px;
 }
 
 .nav-card p {
   min-height: 50px;
-  color: var(--muted);
+  color: var(--text);
+  font-size: 0.95rem;
+  line-height: 1.5;
 }
 
 .nav-card button {
   width: 100%;
   background: var(--accent);
   color: #fff;
+  font-weight: 600;
+  padding: 12px 16px;
+  border-radius: 8px;
+  transition: all 0.3s ease;
+}
+
+.nav-card button:hover {
+  background: #1e7bc7;
+  transform: translateY(-2px);
+  box-shadow: 0 8px 20px rgba(47, 137, 217, 0.3);
 }
 
 .nav-card.highlight {
-  border-color: rgba(39, 174, 96, 0.28);
-  box-shadow: 0 14px 30px rgba(39, 174, 96, 0.08);
+  border-color: var(--success);
+  background: linear-gradient(135deg, #ffffff 0%, #f0fff4 100%);
+  box-shadow: 0 14px 30px rgba(39, 174, 96, 0.12);
 }
 
 .nav-card.highlight button {
   background: var(--success);
+  font-weight: 700;
+}
+
+.nav-card.highlight button:hover {
+  background: #219653;
+  box-shadow: 0 8px 20px rgba(39, 174, 96, 0.4);
 }
 
 .panel {
@@ -380,23 +468,26 @@ button:hover,
 </script>
 
 <script type="module">
-import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-app.js";
+import { initializeApp } from "https://www.gstatic.com/firebasejs/9.23.0/firebase-app.js";
 import {
   getAuth,
   onAuthStateChanged,
   signOut
-} from "https://www.gstatic.com/firebasejs/10.12.2/firebase-auth.js";
+} from "https://www.gstatic.com/firebasejs/9.23.0/firebase-auth.js";
 import {
   getFirestore,
   collection,
   doc,
+  addDoc,
+  updateDoc,
+  deleteDoc,
+  getDocs,
   getDoc,
-  onSnapshot,
   query,
   orderBy,
   limit
-} from "https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore.js";
-import { getFunctions, httpsCallable } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-functions.js";
+} from "https://www.gstatic.com/firebasejs/9.23.0/firebase-firestore.js";
+import { getFunctions, httpsCallable } from "https://www.gstatic.com/firebasejs/9.23.0/firebase-functions.js";
 
 // ⚠️ SECURITY WARNING: API key is exposed for development only
 // In production, use environment variables instead
@@ -613,30 +704,11 @@ function escapeHtml(value) {
 }
 </script>
 
-<!-- Firebase SDK -->
-<script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-app-compat.js"></script>
-<script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-auth-compat.js"></script>
-<script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-firestore-compat.js"></script>
-<script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-functions-compat.js"></script>
-
 <!-- Auth Guard -->
-<script src="js/auth-guard.js"></script>
+<script type="module" src="js/auth-guard-module.js"></script>
 
 <script>
-  // Firebase configuration
-  const firebaseConfig = {
-    apiKey: "AIzaSyARqSgfh78TqFQ2hhZaAtUaVQFqlPuRM3w",
-    authDomain: "trialsafaprices2026.firebaseapp.com",
-    projectId: "trialsafaprices2026",
-    storageBucket: "trialsafaprices2026.appspot.com",
-    messagingSenderId: "177091434445",
-    appId: "1:177091434445:web:568b6ae3ba270a21d4d684"
-  };
-
-  // Initialize Firebase
-  firebase.initializeApp(firebaseConfig);
-  const auth = firebase.auth();
-  const db = firebase.firestore();
+  // Use the already initialized Firebase from the module above
 
   function applyUserSession(userData = {}) {
     const role = userData.role || (isOriginalAdminEmail(userData.email) ? 'admin' : sessionStorage.getItem('userRole')) || 'viewer';
