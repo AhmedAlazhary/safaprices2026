@@ -1,0 +1,179 @@
+<!DOCTYPE html>
+<html lang="ar" dir="rtl">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Debug Login - Safa Transport</title>
+    <style>
+        body { font-family: Arial, sans-serif; padding: 20px; background: #f5f5f5; }
+        .container { max-width: 600px; margin: 0 auto; background: white; padding: 20px; border-radius: 10px; }
+        .test { margin: 20px 0; padding: 15px; border: 1px solid #ddd; border-radius: 5px; }
+        .success { background: #d4edda; color: #155724; }
+        .error { background: #f8d7da; color: #721c24; }
+        .info { background: #d1ecf1; color: #0c5460; }
+        input, button { padding: 10px; margin: 5px; border: 1px solid #ddd; border-radius: 5px; }
+        button { background: #007bff; color: white; cursor: pointer; }
+        button:hover { background: #0056b3; }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>Debug Login System</h1>
+        
+        <div class="test info">
+            <h3>Step 1: Test Firebase Connection</h3>
+            <button onclick="testFirebaseConnection()">Test Firebase</button>
+            <div id="firebase-result"></div>
+        </div>
+
+        <div class="test info">
+            <h3>Step 2: Test Login</h3>
+            <input type="text" id="username" placeholder="Username (ahmed, hesham, omar, sabry)" value="ahmed">
+            <input type="password" id="password" placeholder="Password" value="password123">
+            <button onclick="testLogin()">Test Login</button>
+            <div id="login-result"></div>
+        </div>
+
+        <div class="test info">
+            <h3>Step 3: Check Auth State</h3>
+            <button onclick="checkAuthState()">Check Current User</button>
+            <div id="auth-result"></div>
+        </div>
+
+        <div class="test info">
+            <h3>Step 4: Console Log</h3>
+            <button onclick="showConsole()">Show Console</button>
+            <div id="console-result"></div>
+        </div>
+    </div>
+
+    <script type="module">
+        import { initializeApp } from "https://www.gstatic.com/firebasejs/9.23.0/firebase-app.js";
+        import { getAuth, onAuthStateChanged, signInWithEmailAndPassword } from "https://www.gstatic.com/firebasejs/9.23.0/firebase-auth.js";
+        
+        const firebaseConfig = {
+            apiKey: "AIzaSyARqSgfh78TqFQ2hhZaAtUaVQFqlPuRM3w",
+            authDomain: "trialsafaprices2026.firebaseapp.com",
+            projectId: "trialsafaprices2026",
+            storageBucket: "trialsafaprices2026.appspot.com",
+            messagingSenderId: "177091434445",
+            appId: "1:177091434445:web:568b6ae3ba270a21d4d684"
+        };
+
+        console.log('Starting Firebase initialization...');
+        
+        let app, auth;
+
+        try {
+            app = initializeApp(firebaseConfig);
+            auth = getAuth(app);
+            console.log('Firebase initialized successfully');
+        } catch (error) {
+            console.error('Firebase initialization failed:', error);
+        }
+
+        function addResult(elementId, message, type = 'info') {
+            const element = document.getElementById(elementId);
+            const div = document.createElement('div');
+            div.className = `test ${type}`;
+            div.innerHTML = `<strong>${new Date().toLocaleTimeString()}:</strong> ${message}`;
+            element.appendChild(div);
+        }
+
+        window.testFirebaseConnection = function() {
+            const result = document.getElementById('firebase-result');
+            result.innerHTML = '';
+            
+            if (app && auth) {
+                addResult('firebase-result', 'Firebase App: Initialized', 'success');
+                addResult('firebase-result', 'Firebase Auth: Available', 'success');
+                addResult('firebase-result', 'Project ID: ' + firebaseConfig.projectId, 'info');
+            } else {
+                addResult('firebase-result', 'Firebase not initialized', 'error');
+            }
+        };
+
+        window.testLogin = async function() {
+            const result = document.getElementById('login-result');
+            result.innerHTML = '';
+            
+            const username = document.getElementById('username').value.trim().toLowerCase();
+            const password = document.getElementById('password').value;
+            
+            if (!username || !password) {
+                addResult('login-result', 'Please enter username and password', 'error');
+                return;
+            }
+
+            const usersMap = {
+                "ahmed": "ahmed@safatrans.com",
+                "hesham": "hesham@safatrans.com", 
+                "omar": "omar@safatrans.com",
+                "sabry": "sabry@safatrans.com"
+            };
+
+            const email = usersMap[username];
+            if (!email) {
+                addResult('login-result', 'Username not found', 'error');
+                return;
+            }
+
+            try {
+                addResult('login-result', 'Attempting login for: ' + email, 'info');
+                console.log('Attempting login for:', email);
+                
+                const userCredential = await signInWithEmailAndPassword(auth, email, password);
+                addResult('login-result', 'Login successful!', 'success');
+                addResult('login-result', 'User: ' + userCredential.user.email, 'success');
+                console.log('Login successful:', userCredential.user);
+                
+            } catch (error) {
+                addResult('login-result', 'Login failed: ' + error.message, 'error');
+                addResult('login-result', 'Error code: ' + error.code, 'error');
+                console.error('Login error:', error);
+            }
+        };
+
+        window.checkAuthState = function() {
+            const result = document.getElementById('auth-result');
+            result.innerHTML = '';
+            
+            onAuthStateChanged(auth, (user) => {
+                if (user) {
+                    addResult('auth-result', 'User is logged in: ' + user.email, 'success');
+                    addResult('auth-result', 'User ID: ' + user.uid, 'info');
+                    addResult('auth-result', 'Email verified: ' + user.emailVerified, 'info');
+                } else {
+                    addResult('auth-result', 'No user is currently logged in', 'info');
+                }
+            });
+        };
+
+        window.showConsole = function() {
+            const result = document.getElementById('console-result');
+            result.innerHTML = '<div style="background: #000; color: #0f0; padding: 10px; font-family: monospace; height: 200px; overflow-y: auto;">' +
+                'Open browser console (F12) to see detailed logs<br>' +
+                'Current time: ' + new Date().toISOString() + '<br>' +
+                'Firebase available: ' + (auth ? 'YES' : 'NO') + '<br>' +
+                'Auth state checking...<br>' +
+                '</div>';
+        };
+
+        // Auto-check Firebase on load
+        setTimeout(() => {
+            testFirebaseConnection();
+            checkAuthState();
+        }, 1000);
+
+        // Log all auth state changes
+        onAuthStateChanged(auth, (user) => {
+            if (user) {
+                console.log('Auth state changed - User logged in:', user.email);
+            } else {
+                console.log('Auth state changed - User logged out');
+            }
+        });
+
+    </script>
+</body>
+</html>

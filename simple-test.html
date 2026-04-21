@@ -1,0 +1,134 @@
+<!DOCTYPE html>
+<html lang="ar" dir="rtl">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Simple Login Test</title>
+    <style>
+        body { font-family: Arial, sans-serif; padding: 20px; background: #f0f0f0; }
+        .container { max-width: 400px; margin: 50px auto; background: white; padding: 30px; border-radius: 10px; box-shadow: 0 5px 15px rgba(0,0,0,0.1); }
+        input { width: 100%; padding: 10px; margin: 10px 0; border: 1px solid #ddd; border-radius: 5px; box-sizing: border-box; }
+        button { width: 100%; padding: 12px; background: #007bff; color: white; border: none; border-radius: 5px; cursor: pointer; font-size: 16px; }
+        button:hover { background: #0056b3; }
+        .result { margin: 20px 0; padding: 15px; border-radius: 5px; }
+        .success { background: #d4edda; color: #155724; border: 1px solid #c3e6cb; }
+        .error { background: #f8d7da; color: #721c24; border: 1px solid #f5c6cb; }
+        .info { background: #d1ecf1; color: #0c5460; border: 1px solid #bee5eb; }
+        h1 { text-align: center; color: #333; margin-bottom: 30px; }
+        h3 { color: #666; margin-bottom: 15px; }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1> Safa Transport - Simple Login Test</h1>
+        
+        <div>
+            <h3>Username:</h3>
+            <input type="text" id="username" placeholder="ahmed, hesham, omar, sabry" value="ahmed">
+            
+            <h3>Password:</h3>
+            <input type="password" id="password" placeholder="Password" value="password123">
+            
+            <button onclick="testLogin()">Test Login</button>
+        </div>
+        
+        <div id="result"></div>
+        
+        <div style="margin-top: 30px; text-align: center;">
+            <a href="index.html" style="color: #007bff; text-decoration: none;">Back to Main Page</a>
+        </div>
+    </div>
+
+    <script type="module">
+        import { initializeApp } from "https://www.gstatic.com/firebasejs/9.23.0/firebase-app.js";
+        import { getAuth, signInWithEmailAndPassword, onAuthStateChanged } from "https://www.gstatic.com/firebasejs/9.23.0/firebase-auth.js";
+        
+        const firebaseConfig = {
+            apiKey: "AIzaSyARqSgfh78TqFQ2hhZaAtUaVQFqlPuRM3w",
+            authDomain: "trialsafaprices2026.firebaseapp.com",
+            projectId: "trialsafaprices2026",
+            storageBucket: "trialsafaprices2026.appspot.com",
+            messagingSenderId: "177091434445",
+            appId: "1:177091434445:web:568b6ae3ba270a21d4d684"
+        };
+
+        console.log('Starting simple test...');
+        
+        const app = initializeApp(firebaseConfig);
+        const auth = getAuth(app);
+        
+        const usersMap = {
+            "ahmed": "ahmed@safatrans.com",
+            "hesham": "hesham@safatrans.com", 
+            "omar": "omar@safatrans.com",
+            "sabry": "sabry@safatrans.com"
+        };
+
+        window.testLogin = async function() {
+            const resultDiv = document.getElementById('result');
+            const username = document.getElementById('username').value.trim().toLowerCase();
+            const password = document.getElementById('password').value;
+            
+            resultDiv.innerHTML = '<div class="info">Testing login...</div>';
+            
+            if (!username || !password) {
+                resultDiv.innerHTML = '<div class="error">Please enter username and password</div>';
+                return;
+            }
+
+            const email = usersMap[username];
+            if (!email) {
+                resultDiv.innerHTML = '<div class="error">Username not found</div>';
+                return;
+            }
+
+            try {
+                console.log('Attempting login for:', email);
+                const userCredential = await signInWithEmailAndPassword(auth, email, password);
+                
+                resultDiv.innerHTML = `
+                    <div class="success">
+                        <strong>LOGIN SUCCESSFUL!</strong><br>
+                        User: ${userCredential.user.email}<br>
+                        UID: ${userCredential.user.uid}<br>
+                        <button onclick="window.location.href='dashboard.html'" style="margin-top: 10px;">Go to Dashboard</button>
+                    </div>
+                `;
+                
+                sessionStorage.setItem('userRole', 'admin');
+                sessionStorage.setItem('userEmail', email);
+                
+                console.log('Login successful:', userCredential.user);
+                
+            } catch (error) {
+                console.error('Login failed:', error);
+                resultDiv.innerHTML = `
+                    <div class="error">
+                        <strong>LOGIN FAILED</strong><br>
+                        Error: ${error.message}<br>
+                        Code: ${error.code}<br>
+                        <br>
+                        <small>Note: Make sure you have the correct password for the test user</small>
+                    </div>
+                `;
+            }
+        };
+
+        // Check current auth state
+        onAuthStateChanged(auth, (user) => {
+            const resultDiv = document.getElementById('result');
+            if (user) {
+                resultDiv.innerHTML = `
+                    <div class="success">
+                        <strong>Already logged in as:</strong><br>
+                        ${user.email}<br>
+                        <button onclick="window.location.href='dashboard.html'">Go to Dashboard</button>
+                    </div>
+                `;
+            }
+        });
+
+        console.log('Simple test page loaded');
+    </script>
+</body>
+</html>
