@@ -1468,23 +1468,21 @@ function saveRows(date, rows, showAlert = false, forceSave = false) {
   const processedRows = [];
   rows.forEach(row => {
     const count = Number(row.containerCount || 0);
-    const size = row.size || "";
-    const total = calculateContainerTotal(count, size);
     
-    if (total > 1 && count > 1) {
-      // Create duplicated rows
-      for (let i = 0; i < total; i++) {
+    if (count > 1) {
+      // Create duplicated rows - one row for each container
+      for (let i = 0; i < count; i++) {
         const duplicatedRow = {
           ...row,
           id: generateRowId(), // Generate new ID for each duplicated row
           containerCount: 1, // Each duplicated row has count = 1
-          order: row.order + i, // Adjust order to maintain sequence
+          order: (row.order || 0) + i, // Adjust order to maintain sequence
           baseUpdatedAt: null // Reset base updated time for new rows
         };
         processedRows.push(duplicatedRow);
       }
     } else {
-      // Keep original row as is
+      // Keep original row as is (count = 0 or 1)
       processedRows.push(row);
     }
   });
