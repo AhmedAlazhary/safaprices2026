@@ -232,9 +232,26 @@ function normalizeOptionValue(value) {
 }
 
 function makeOptionKey(value) {
-  const normalized = normalizeOptionValue(value).toLocaleLowerCase("ar");
-  // Create a safe key by replacing problematic characters
-  return normalized.replace(/[^a-z0-9\u0600-\u06ff]/g, "_");
+  const normalized = normalizeOptionValue(value);
+  // Use a simple hash-like approach for Arabic characters
+  let key = "";
+  for (let i = 0; i < normalized.length; i++) {
+    const char = normalized[i];
+    const charCode = normalized.charCodeAt(i);
+    
+    if (charCode >= 48 && charCode <= 57) { // 0-9
+      key += char;
+    } else if (charCode >= 65 && charCode <= 90) { // A-Z
+      key += char.toLowerCase();
+    } else if (charCode >= 97 && charCode <= 122) { // a-z
+      key += char;
+    } else if (charCode >= 1569 && charCode <= 1610) { // Arabic characters
+      key += "a" + (charCode - 1568);
+    } else {
+      key += "_";
+    }
+  }
+  return key;
 }
 
 function getListValues(listId) {
@@ -301,46 +318,8 @@ function addListValue(listId) {
   }
 
   const optionKey = makeOptionKey(value);
-  db.ref("sharedLists/" + listId + "/" + optionKey).set(value)
-    .then(() => {
-      input.value = "";
-      setStatus("تمت إضافة القيمة الجديدة إلى قائمة " + LIST_LABELS[listId] + ".");
-    })
-    .catch(() => {
-      setStatus("تعذر إضافة القيمة الآن.", true);
-    });
-}
-
-function removeListValue(listId, value) {
-  const normalized = normalizeOptionValue(value);
-  if (!normalized) return;
-
-  const confirmed = window.confirm("هل تريد حذف القيمة \"" + normalized + "\" من قائمة " + LIST_LABELS[listId] + "؟");
-  if (!confirmed) return;
-
-  const optionKey = makeOptionKey(normalized);
-  db.ref("sharedLists/" + listId + "/" + optionKey).remove()
-    .then(() => {
-      setStatus("تم حذف القيمة من قائمة " + LIST_LABELS[listId] + ".");
-    })
-    .catch(() => {
-      setStatus("تعذر حذف القيمة الآن.", true);
-    });
-}
-
-function addListValue(listId) {
-  const input = document.getElementById("input-" + listId);
-  const value = normalizeOptionValue(input.value);
-  if (!value) return;
-
-  const existing = getListValues(listId).map(item => item.toLocaleLowerCase("ar"));
-  if (existing.includes(value.toLocaleLowerCase("ar"))) {
-    setStatus("القيمة موجودة بالفعل في قائمة " + LIST_LABELS[listId] + ".");
-    input.value = "";
-    return;
-  }
-
-  const optionKey = makeOptionKey(value);
+  console.log("Adding value:", { listId, value, optionKey });
+  
   db.ref("sharedLists/" + listId + "/" + optionKey).set(value)
     .then(() => {
       input.value = "";
