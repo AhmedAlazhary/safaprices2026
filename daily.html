@@ -1518,6 +1518,7 @@ function processRowsForDuplication(rows) {
     
     if (count > 1) {
       // Create duplicated rows - one row for each container
+      // Original row is NOT included - only duplicated rows remain
       for (let i = 0; i < count; i++) {
         const duplicatedRow = {
           ...row,
@@ -1970,7 +1971,25 @@ function saveDate(date, showAlert = false) {
   // For manual save (showAlert=true), apply duplication logic to all rows at once
   if (showAlert) {
     const processedRows = processRowsForDuplication(rows);
-    return saveRows(date, processedRows, showAlert, showAlert);
+    
+    // First, delete all original rows that need duplication
+    const originalRowIds = rows
+      .filter(row => Number(row.containerCount || 0) > 1)
+      .map(row => row.id);
+    
+    // Delete original rows from Firebase
+    const deletePromises = originalRowIds.map(rowId => 
+      db.ref("daily/" + date + "/rows/" + rowId).remove()
+    );
+    
+    // Then save the duplicated rows
+    return Promise.all(deletePromises)
+      .then(() => saveRows(date, processedRows, showAlert, showAlert))
+      .catch(error => {
+        console.error("Error deleting original rows:", error);
+        // If deletion fails, still try to save the processed rows
+        return saveRows(date, processedRows, showAlert, showAlert);
+      });
   } else {
     // For auto-save, save rows as-is
     return saveRows(date, rows, showAlert, showAlert);
