@@ -1464,30 +1464,11 @@ function saveRows(date, rows, showAlert = false, forceSave = false) {
     setCurrentStatus("جارٍ حفظ بيانات " + date + "...");
   }
 
-  // Process rows for duplication based on container count logic
-  const processedRows = [];
-  rows.forEach(row => {
-    const count = Number(row.containerCount || 0);
-    
-    if (count > 1) {
-      // Create duplicated rows - one row for each container
-      for (let i = 0; i < count; i++) {
-        const duplicatedRow = {
-          ...row,
-          id: generateRowId(), // Generate new ID for each duplicated row
-          containerCount: 1, // Each duplicated row has count = 1
-          order: (row.order || 0) + i, // Adjust order to maintain sequence
-          baseUpdatedAt: null // Reset base updated time for new rows
-        };
-        processedRows.push(duplicatedRow);
-      }
-    } else {
-      // Keep original row as is (count = 0 or 1)
-      processedRows.push(row);
-    }
-  });
+  // For auto-save (showAlert = false), save rows as-is without duplication
+  // For manual save (showAlert = true), apply duplication logic
+  const rowsToSave = showAlert ? processRowsForDuplication(rows) : rows;
 
-  return Promise.all(sortRows(processedRows).map(row => saveSingleRow(date, row)))
+  return Promise.all(sortRows(rowsToSave).map(row => saveSingleRow(date, row)))
     .then(results => {
       const conflicts = results.filter(result => !result.ok);
       if (conflicts.length) {
@@ -1530,10 +1511,36 @@ function saveRows(date, rows, showAlert = false, forceSave = false) {
     });
 }
 
+function processRowsForDuplication(rows) {
+  const processedRows = [];
+  rows.forEach(row => {
+    const count = Number(row.containerCount || 0);
+    
+    if (count > 1) {
+      // Create duplicated rows - one row for each container
+      for (let i = 0; i < count; i++) {
+        const duplicatedRow = {
+          ...row,
+          id: generateRowId(), // Generate new ID for each duplicated row
+          containerCount: 1, // Each duplicated row has count = 1
+          order: (row.order || 0) + i, // Adjust order to maintain sequence
+          baseUpdatedAt: null // Reset base updated time for new rows
+        };
+        processedRows.push(duplicatedRow);
+      }
+    } else {
+      // Keep original row as is (count = 0 or 1)
+      processedRows.push(row);
+    }
+  });
+  return processedRows;
+}
+
 function requestImmediateSave(date, rowId) {
   clearTimeout(saveTimers[date]);
   const row = findRow(date, rowId);
   if (!row) return Promise.resolve();
+  // Use showAlert=false to prevent duplication during immediate saves
   return saveRows(date, [row], false, true);
 }
 
@@ -1958,7 +1965,16 @@ function deleteDay(date) {
 
 function saveDate(date, showAlert = false) {
   syncDateFromDom(date);
-  return saveRows(date, ensureDateRows(date), showAlert, showAlert);
+  const rows = ensureDateRows(date);
+  
+  // For manual save (showAlert=true), apply duplication logic to all rows at once
+  if (showAlert) {
+    const processedRows = processRowsForDuplication(rows);
+    return saveRows(date, processedRows, showAlert, showAlert);
+  } else {
+    // For auto-save, save rows as-is
+    return saveRows(date, rows, showAlert, showAlert);
+  }
 }
 
 async function printDate(date) {
