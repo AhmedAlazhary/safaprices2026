@@ -264,21 +264,26 @@ function getListValues(listId) {
 function renderLists() {
   listsContainer.innerHTML = Object.keys(LIST_LABELS).map(listId => {
     const values = getListValues(listId);
+    const defaultValues = DEFAULT_LIST_OPTIONS[listId] || [];
+    
     return `
       <article class="list-card">
         <h3>${LIST_LABELS[listId]}</h3>
-        <div class="list-meta">عدد العناصر: ${values.length}</div>
+        <div class="list-meta">Count of elements: ${values.length}</div>
         <div class="add-row">
-          <input id="input-${listId}" type="text" placeholder="أضف قيمة جديدة">
-          <button class="add-btn" onclick="addListValue('${listId}')">إضافة</button>
+          <input id="input-${listId}" type="text" placeholder="Add new value">
+          <button class="add-btn" onclick="addListValue('${listId}')">Add</button>
         </div>
         <div class="items">
-          ${values.length ? values.map(value => `
-            <div class="item">
-              <span>${value}</span>
-              <button class="delete-btn" onclick="removeListValue('${listId}', '${escapeForJs(value)}')">حذف</button>
-            </div>
-          `).join("") : '<div class="empty">لا توجد قيم في هذه القائمة.</div>'}
+          ${values.length ? values.map(value => {
+            const isDefaultValue = defaultValues.includes(value);
+            return `
+              <div class="item">
+                <span>${value}${isDefaultValue ? ' (default)' : ''}</span>
+                ${!isDefaultValue ? `<button class="delete-btn" onclick="removeListValue('${listId}', '${escapeForJs(value)}')">Delete</button>` : ''}
+              </div>
+            `;
+          }).join("") : '<div class="empty">No values in this list.</div>'}
         </div>
       </article>
     `;
@@ -339,21 +344,34 @@ function removeListValue(listId, value) {
   const normalized = normalizeOptionValue(value);
   if (!normalized) return;
 
-  const confirmed = window.confirm("هل تريد حذف القيمة \"" + normalized + "\" من قائمة " + LIST_LABELS[listId] + "؟");
+  // Check if this is a default value
+  const defaultValues = DEFAULT_LIST_OPTIONS[listId] || [];
+  const isDefaultValue = defaultValues.includes(normalized);
+  
+  if (isDefaultValue) {
+    setStatus("Cannot delete default value \"" + normalized + "\" from " + LIST_LABELS[listId] + ".", true);
+    return;
+  }
+
+  const confirmed = window.confirm("¿Aqui quieres eliminar el valor \"" + normalized + "\" de la lista " + LIST_LABELS[listId] + "¿");
   if (!confirmed) return;
 
   const optionKey = makeOptionKey(normalized);
+  console.log("Attempting to delete:", { listId, normalized, optionKey, isDefaultValue });
+  
   db.ref("sharedLists/" + listId + "/" + optionKey).remove()
     .then(() => {
-      setStatus("تم حذف القيمة من قائمة " + LIST_LABELS[listId] + ".");
+      console.log("Successfully deleted:", optionKey);
+      setStatus("Se eliminó el valor de la lista " + LIST_LABELS[listId] + ".");
       return logChange("shared_list_remove", {
         listId,
         value: normalized,
-        message: `تم حذف القيمة "${normalized}" من قائمة ${LIST_LABELS[listId]}`
+        message: `Se eliminó el valor "${normalized}" de la lista ${LIST_LABELS[listId]}`
       });
     })
-    .catch(() => {
-      setStatus("تعذر حذف القيمة الآن.", true);
+    .catch(error => {
+      console.error("Error deleting:", error);
+      setStatus("No se pudo eliminar el valor ahora.", true);
     });
 }
 
