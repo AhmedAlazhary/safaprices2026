@@ -233,7 +233,8 @@ function normalizeOptionValue(value) {
 
 function makeOptionKey(value) {
   const normalized = normalizeOptionValue(value).toLocaleLowerCase("ar");
-  return btoa(unescape(encodeURIComponent(normalized))).replace(/[+/=]/g, "_");
+  // Create a safe key by replacing problematic characters
+  return normalized.replace(/[^a-z0-9\u0600-\u06ff]/g, "_");
 }
 
 function getListValues(listId) {

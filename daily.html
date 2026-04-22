@@ -1515,11 +1515,23 @@ function processRowsForDuplication(rows) {
   const processedRows = [];
   rows.forEach(row => {
     const count = Number(row.containerCount || 0);
+    const size = row.size || "";
     
     if (count > 1) {
-      // Create duplicated rows - one row for each container
+      let duplicationCount = count;
+      
+      // Special logic for size 20 containers
+      if (size === "20") {
+        if (count % 2 === 0) {
+          // Even number: divide by 2
+          duplicationCount = count / 2;
+        }
+        // Odd number: keep as-is (no change)
+      }
+      
+      // Create duplicated rows
       // Original row is NOT included - only duplicated rows remain
-      for (let i = 0; i < count; i++) {
+      for (let i = 0; i < duplicationCount; i++) {
         const duplicatedRow = {
           ...row,
           id: generateRowId(), // Generate new ID for each duplicated row
