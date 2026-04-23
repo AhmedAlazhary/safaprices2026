@@ -2,6 +2,9 @@
   "firestore": {
     "rules": "firestore-rbac.rules"
   },
+  "database": {
+    "rules": "database.rules.json"
+  },
   "functions": {
     "source": "functions"
   }

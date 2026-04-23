@@ -1,0 +1,37 @@
+{
+  "rules": {
+    ".read": "auth != null",
+    ".write": "auth != null",
+    
+    "daily": {
+      "$date": {
+        ".read": "auth != null",
+        ".write": "auth != null",
+        "rows": {
+          "$rowId": {
+            ".read": "auth != null",
+            ".write": "auth != null",
+            "lock": {
+              ".read": "auth != null",
+              ".write": "auth != null"
+            }
+          }
+        }
+      }
+    },
+    
+    "sharedLists": {
+      ".read": "auth != null",
+      ".write": "auth != null",
+      "$listId": {
+        ".read": "auth != null",
+        ".write": "auth != null"
+      }
+    },
+    
+    "changeLog": {
+      ".read": "auth != null",
+      ".write": "auth != null"
+    }
+  }
+}
