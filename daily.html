@@ -876,7 +876,12 @@ firebase.auth().onAuthStateChanged(user => {
 
 // Helper Functions
 function getUserId() {
-  return currentUser ? currentUser.uid : "anonymous";
+  if (!currentUser) {
+    console.error("No authenticated user found");
+    window.location = "index.html";
+    return null;
+  }
+  return currentUser.uid;
 }
 
 function getUserLabel() {
@@ -1384,11 +1389,17 @@ function scheduleAutoSave(date) {
 }
 
 function acquireRowLock(date, rowId) {
+  const userId = getUserId();
+  if (!userId) {
+    console.error("Cannot acquire lock: user not authenticated");
+    return Promise.reject(new Error("User not authenticated"));
+  }
+  
   const rowRef = db.ref("daily/" + date + "/rows/" + rowId + "/lock");
   const now = Date.now();
   return rowRef.transaction(currentLock => {
-    if (!currentLock || !currentLock.expiresAt || currentLock.expiresAt < now || currentLock.userId === getUserId()) {
-      return { userId: getUserId(), userName: getUserLabel(), expiresAt: now + LOCK_DURATION_MS };
+    if (!currentLock || !currentLock.expiresAt || currentLock.expiresAt < now || currentLock.userId === userId) {
+      return { userId: userId, userName: getUserLabel(), expiresAt: now + LOCK_DURATION_MS };
     }
     return;
   }, undefined, false).then(result => {
