@@ -178,5 +178,57 @@ service cloud.firestore {
       allow read: if isAuthenticated();
       allow create, update, delete: if isAdmin();
     }
+
+    // garageSystem.* isolated module:
+    // client side can read, while writes are forced through Cloud Functions.
+    match /garageSystem_accounts/{docId} {
+      allow read: if isAuthenticated();
+      allow create, update, delete: if false;
+    }
+
+    match /garageSystem_products/{docId} {
+      allow read: if isAuthenticated();
+      allow create, update, delete: if false;
+    }
+
+    match /garageSystem_vehicles/{docId} {
+      allow read: if isAuthenticated();
+      allow create, update, delete: if false;
+    }
+
+    match /garageSystem_workers/{docId} {
+      allow read: if isAuthenticated();
+      allow create, update, delete: if false;
+    }
+
+    match /garageSystem_liabilities/{docId} {
+      allow read: if isAuthenticated();
+      allow create, update, delete: if false;
+    }
+
+    match /garageSystem_work_orders/{docId} {
+      allow read: if isAuthenticated();
+      allow create, update, delete: if false;
+    }
+
+    match /garageSystem_stock_movements/{docId} {
+      allow read: if isAuthenticated();
+      allow create, update, delete: if false;
+    }
+
+    match /garageSystem_journal_entries/{docId} {
+      allow read: if isAuthenticated();
+      allow create, update, delete: if false;
+    }
+
+    match /garageSystem_audit_logs/{docId} {
+      allow read: if isAdmin();
+      allow create, update, delete: if false;
+    }
+
+    match /garageSystem_counters/{docId} {
+      allow read: if isAdmin();
+      allow create, update, delete: if false;
+    }
   }
 }

@@ -1,0 +1,386 @@
+<!DOCTYPE html>
+<html lang="ar" dir="rtl">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>SAFATRANS Garage System</title>
+  <link rel="stylesheet" href="css/garage-system.css">
+</head>
+<body>
+  <div class="garage-shell">
+    <aside class="garage-sidebar">
+      <div class="garage-brand">
+        <span class="garage-brand-kicker">SAFATRANS ERP Module</span>
+        <h1>نظام إدارة الأسطول والمخازن</h1>
+        <p>وحدة مستقلة للمخزون والصيانة والعهدة والمحاسبة.</p>
+      </div>
+
+      <nav class="garage-tabs" id="garageTabs">
+        <button class="garage-tab is-active" data-tab="overview">الملخص</button>
+        <button class="garage-tab" data-tab="masters">البيانات الأساسية</button>
+        <button class="garage-tab" data-tab="workorders">أوامر الصيانة</button>
+        <button class="garage-tab" data-tab="movements">حركات المخزون</button>
+        <button class="garage-tab" data-tab="liabilities">العهد والتسوية</button>
+        <button class="garage-tab" data-tab="reports">التقارير</button>
+      </nav>
+
+      <div class="garage-user-card">
+        <div>
+          <strong id="garageUserName">...</strong>
+          <span id="garageUserRole">جاري التحميل</span>
+        </div>
+        <button id="garageLogoutBtn" class="ghost-btn" type="button">تسجيل الخروج</button>
+      </div>
+    </aside>
+
+    <main class="garage-main">
+      <header class="garage-header">
+        <div>
+          <span class="section-kicker">garageSystem.*</span>
+          <h2 id="garageSectionTitle">لوحة المتابعة</h2>
+        </div>
+        <div class="garage-header-actions">
+          <button id="garageRefreshBtn" class="ghost-btn" type="button">تحديث البيانات</button>
+        </div>
+      </header>
+
+      <section class="garage-alert" id="garageAlert" hidden></section>
+
+      <section class="garage-panel is-active" data-panel="overview">
+        <div class="metric-grid" id="garageMetrics"></div>
+        <div class="content-grid two-columns">
+          <article class="card">
+            <div class="card-head">
+              <h3>تنبيهات المخزون</h3>
+            </div>
+            <div id="garageLowStockList" class="list-stack"></div>
+          </article>
+          <article class="card">
+            <div class="card-head">
+              <h3>آخر أوامر الصيانة</h3>
+            </div>
+            <div id="garageRecentWorkOrders" class="list-stack"></div>
+          </article>
+        </div>
+      </section>
+
+      <section class="garage-panel" data-panel="masters">
+        <div class="content-grid two-columns">
+          <article class="card">
+            <div class="card-head">
+              <h3>إضافة صنف</h3>
+            </div>
+            <form id="garageProductForm" class="form-grid">
+              <input name="name" type="text" placeholder="اسم الصنف" required>
+              <input name="categoryId" type="text" placeholder="التصنيف" required>
+              <input name="minStock" type="number" min="0" step="1" placeholder="الحد الأدنى" required>
+              <input name="unitPrice" type="number" min="0" step="0.01" placeholder="سعر الوحدة" required>
+              <label class="checkbox-row">
+                <input name="isScrap" type="checkbox">
+                <span>صنف خردة</span>
+              </label>
+              <button type="submit" class="primary-btn">حفظ الصنف</button>
+            </form>
+          </article>
+
+          <article class="card">
+            <div class="card-head">
+              <h3>إضافة مركبة</h3>
+            </div>
+            <form id="garageVehicleForm" class="form-grid">
+              <input name="plate" type="text" placeholder="رقم اللوحة" required>
+              <input name="model" type="text" placeholder="الموديل" required>
+              <input name="customerName" type="text" placeholder="اسم العميل" required>
+              <button type="submit" class="primary-btn">حفظ المركبة</button>
+            </form>
+          </article>
+
+          <article class="card">
+            <div class="card-head">
+              <h3>إضافة عامل</h3>
+            </div>
+            <form id="garageWorkerForm" class="form-grid">
+              <input name="name" type="text" placeholder="اسم العامل" required>
+              <select name="type" required>
+                <option value="">نوع العامل</option>
+                <option value="mechanic">فني</option>
+                <option value="driver">سائق</option>
+                <option value="helper">مساعد</option>
+                <option value="vendor">مورد خدمة</option>
+              </select>
+              <button type="submit" class="primary-btn">حفظ العامل</button>
+            </form>
+          </article>
+
+          <article class="card">
+            <div class="card-head">
+              <h3>إضافة حساب محاسبي</h3>
+            </div>
+            <form id="garageAccountForm" class="form-grid">
+              <input name="name" type="text" placeholder="اسم الحساب" required>
+              <select name="type" required>
+                <option value="">نوع الحساب</option>
+                <option value="Asset">Asset</option>
+                <option value="Liability">Liability</option>
+                <option value="Expense">Expense</option>
+                <option value="Revenue">Revenue</option>
+              </select>
+              <button type="submit" class="primary-btn">حفظ الحساب</button>
+            </form>
+          </article>
+        </div>
+
+        <div class="content-grid two-columns">
+          <article class="card">
+            <div class="card-head">
+              <h3>الأصناف</h3>
+            </div>
+            <div class="table-wrap">
+              <table>
+                <thead>
+                  <tr>
+                    <th>الكود</th>
+                    <th>الاسم</th>
+                    <th>الرصيد</th>
+                    <th>سعر الوحدة</th>
+                  </tr>
+                </thead>
+                <tbody id="garageProductsTable"></tbody>
+              </table>
+            </div>
+          </article>
+
+          <article class="card">
+            <div class="card-head">
+              <h3>المركبات</h3>
+            </div>
+            <div class="table-wrap">
+              <table>
+                <thead>
+                  <tr>
+                    <th>اللوحة</th>
+                    <th>الموديل</th>
+                    <th>العميل</th>
+                  </tr>
+                </thead>
+                <tbody id="garageVehiclesTable"></tbody>
+              </table>
+            </div>
+          </article>
+        </div>
+      </section>
+
+      <section class="garage-panel" data-panel="workorders">
+        <div class="content-grid two-columns">
+          <article class="card">
+            <div class="card-head">
+              <h3>إنشاء أمر صيانة</h3>
+            </div>
+            <form id="garageWorkOrderForm" class="form-grid">
+              <select name="vehicleId" id="garageWorkOrderVehicle" required></select>
+              <textarea name="description" placeholder="وصف العطل أو العمل المطلوب" rows="4" required></textarea>
+              <select name="status" required>
+                <option value="OPEN">OPEN</option>
+                <option value="IN_PROGRESS">IN_PROGRESS</option>
+                <option value="CLOSED">CLOSED</option>
+              </select>
+              <button type="submit" class="primary-btn">فتح أمر صيانة</button>
+            </form>
+          </article>
+
+          <article class="card">
+            <div class="card-head">
+              <h3>تحديث حالة أمر صيانة</h3>
+            </div>
+            <form id="garageWorkOrderStatusForm" class="form-grid">
+              <select name="workOrderId" id="garageStatusWorkOrder" required></select>
+              <select name="status" required>
+                <option value="OPEN">OPEN</option>
+                <option value="IN_PROGRESS">IN_PROGRESS</option>
+                <option value="CLOSED">CLOSED</option>
+              </select>
+              <button type="submit" class="primary-btn">حفظ الحالة</button>
+            </form>
+          </article>
+        </div>
+
+        <div class="content-grid">
+          <article class="card">
+            <div class="card-head">
+              <h3>سجل الأوامر</h3>
+            </div>
+            <div class="table-wrap">
+              <table>
+                <thead>
+                  <tr>
+                    <th>المرجع</th>
+                    <th>المركبة</th>
+                    <th>الحالة</th>
+                    <th>التكلفة</th>
+                  </tr>
+                </thead>
+                <tbody id="garageWorkOrdersTable"></tbody>
+              </table>
+            </div>
+          </article>
+        </div>
+      </section>
+
+      <section class="garage-panel" data-panel="movements">
+        <div class="content-grid two-columns">
+          <article class="card">
+            <div class="card-head">
+              <h3>توريد / صرف مخزني</h3>
+            </div>
+            <form id="garageMovementForm" class="form-grid">
+              <select name="type" required>
+                <option value="IN">IN - توريد</option>
+                <option value="OUT">OUT - صرف</option>
+                <option value="RETURN">RETURN - مرتجع</option>
+              </select>
+              <select name="productId" id="garageMovementProduct" required></select>
+              <input name="quantity" type="number" min="1" step="1" placeholder="الكمية" required>
+              <input name="cost" type="number" min="0" step="0.01" placeholder="التكلفة الإجمالية" required>
+              <select name="vehicleId" id="garageMovementVehicle">
+                <option value="">بدون مركبة</option>
+              </select>
+              <select name="workerId" id="garageMovementWorker">
+                <option value="">بدون عامل</option>
+              </select>
+              <select name="workOrderId" id="garageMovementWorkOrder">
+                <option value="">بدون أمر صيانة</option>
+              </select>
+              <select name="liabilityId" id="garageMovementLiability">
+                <option value="">بدون عهدة</option>
+              </select>
+              <input name="description" type="text" placeholder="وصف الحركة">
+              <button type="submit" class="primary-btn">تنفيذ الحركة</button>
+            </form>
+          </article>
+
+          <article class="card">
+            <div class="card-head">
+              <h3>تسجيل خردة مرتبطة بالاستبدال</h3>
+            </div>
+            <form id="garageScrapForm" class="form-grid">
+              <select name="newProductId" id="garageScrapNewProduct" required></select>
+              <select name="scrapProductId" id="garageScrapOldProduct" required></select>
+              <input name="quantity" type="number" min="1" step="1" placeholder="الكمية" required>
+              <input name="newPartCost" type="number" min="0" step="0.01" placeholder="تكلفة القطعة الجديدة" required>
+              <input name="scrapValue" type="number" min="0" step="0.01" placeholder="قيمة الخردة" required>
+              <select name="vehicleId" id="garageScrapVehicle" required></select>
+              <select name="workOrderId" id="garageScrapWorkOrder" required></select>
+              <button type="submit" class="primary-btn">تسجيل الاستبدال والخردة</button>
+            </form>
+          </article>
+        </div>
+
+        <article class="card">
+          <div class="card-head">
+            <h3>آخر الحركات</h3>
+          </div>
+          <div class="table-wrap">
+            <table>
+              <thead>
+                <tr>
+                  <th>المرجع</th>
+                  <th>النوع</th>
+                  <th>الصنف</th>
+                  <th>الكمية</th>
+                  <th>التكلفة</th>
+                  <th>المركبة</th>
+                </tr>
+              </thead>
+              <tbody id="garageMovementsTable"></tbody>
+            </table>
+          </div>
+        </article>
+      </section>
+
+      <section class="garage-panel" data-panel="liabilities">
+        <div class="content-grid two-columns">
+          <article class="card">
+            <div class="card-head">
+              <h3>فتح عهدة</h3>
+            </div>
+            <form id="garageLiabilityForm" class="form-grid">
+              <input name="type" type="text" placeholder="نوع العهدة" required>
+              <input name="amount" type="number" min="0.01" step="0.01" placeholder="القيمة" required>
+              <button type="submit" class="primary-btn">حفظ العهدة</button>
+            </form>
+          </article>
+
+          <article class="card">
+            <div class="card-head">
+              <h3>تسوية عهدة</h3>
+            </div>
+            <form id="garageSettlementForm" class="form-grid">
+              <select name="liabilityId" id="garageSettlementLiability" required></select>
+              <input name="description" type="text" placeholder="وصف التسوية" required>
+              <button type="submit" class="primary-btn danger-btn">تنفيذ التسوية</button>
+            </form>
+          </article>
+        </div>
+
+        <article class="card">
+          <div class="card-head">
+            <h3>كشف العهد</h3>
+          </div>
+          <div class="table-wrap">
+            <table>
+              <thead>
+                <tr>
+                  <th>المرجع</th>
+                  <th>النوع</th>
+                  <th>القيمة</th>
+                  <th>المتبقي</th>
+                  <th>الحالة</th>
+                </tr>
+              </thead>
+              <tbody id="garageLiabilitiesTable"></tbody>
+            </table>
+          </div>
+        </article>
+      </section>
+
+      <section class="garage-panel" data-panel="reports">
+        <div class="content-grid three-columns">
+          <article class="card">
+            <div class="card-head">
+              <h3>ربحية السيارة</h3>
+            </div>
+            <select id="garageProfitVehicle"></select>
+            <button id="garageProfitReportBtn" class="primary-btn" type="button">إصدار PDF</button>
+          </article>
+
+          <article class="card">
+            <div class="card-head">
+              <h3>كشف حساب العهدة</h3>
+            </div>
+            <select id="garageLiabilityReportSelect"></select>
+            <button id="garageLiabilityReportBtn" class="primary-btn" type="button">إصدار PDF</button>
+          </article>
+
+          <article class="card">
+            <div class="card-head">
+              <h3>الجرد الدوري</h3>
+            </div>
+            <button id="garageInventoryReportBtn" class="primary-btn" type="button">إصدار PDF</button>
+          </article>
+        </div>
+
+        <article class="card">
+          <div class="card-head">
+            <h3>معاينة التقرير</h3>
+          </div>
+          <div id="garageReportPreview" class="report-preview">
+            اختر تقريراً لإظهار المعاينة هنا، ثم استخدم الطباعة للحفظ كـ PDF.
+          </div>
+        </article>
+      </section>
+    </main>
+  </div>
+
+  <script type="module" src="js/garage-system.js"></script>
+</body>
+</html>
