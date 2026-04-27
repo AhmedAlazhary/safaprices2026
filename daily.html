@@ -1161,6 +1161,67 @@ function calculateContainerTotal(count, size) {
   return numCount;
 }
 
+function isMeaningfulRow(row) {
+  if (!row) return false;
+  return [
+    row.containerCount,
+    row.size,
+    row.place,
+    row.move,
+    row.agency,
+    row.type,
+    row.client,
+    row.notes,
+    row.carType,
+    row.carNumber,
+    row.driverName
+  ].some(value => String(value || "").trim() !== "");
+}
+
+function cloneRowForSave(row, overrides = {}) {
+  return createRow({
+    id: overrides.id || generateRowId(),
+    order: overrides.order !== undefined ? overrides.order : row.order,
+    containerCount: overrides.containerCount !== undefined ? overrides.containerCount : row.containerCount,
+    size: overrides.size !== undefined ? overrides.size : row.size,
+    place: overrides.place !== undefined ? overrides.place : row.place,
+    move: overrides.move !== undefined ? overrides.move : row.move,
+    agency: overrides.agency !== undefined ? overrides.agency : row.agency,
+    type: overrides.type !== undefined ? overrides.type : row.type,
+    client: overrides.client !== undefined ? overrides.client : row.client,
+    notes: overrides.notes !== undefined ? overrides.notes : row.notes,
+    carType: overrides.carType !== undefined ? overrides.carType : row.carType,
+    carNumber: overrides.carNumber !== undefined ? overrides.carNumber : row.carNumber,
+    driverName: overrides.driverName !== undefined ? overrides.driverName : row.driverName,
+    updatedAt: overrides.updatedAt !== undefined ? overrides.updatedAt : row.updatedAt,
+    baseUpdatedAt: overrides.baseUpdatedAt !== undefined ? overrides.baseUpdatedAt : row.baseUpdatedAt,
+    updatedBy: overrides.updatedBy !== undefined ? overrides.updatedBy : row.updatedBy,
+    lock: overrides.lock !== undefined ? overrides.lock : row.lock
+  });
+}
+
+function expandRowsForSave(rows) {
+  const meaningfulRows = sortRows(rows).filter(isMeaningfulRow);
+  if (!meaningfulRows.length) return [createRow()];
+
+  const expandedRows = [];
+  meaningfulRows.forEach((row, index) => {
+    const copiesCount = Math.max(0, calculateContainerTotal(row.containerCount, row.size));
+    if (copiesCount <= 0) return;
+
+    for (let copyIndex = 0; copyIndex < copiesCount; copyIndex += 1) {
+      expandedRows.push(cloneRowForSave(row, {
+        id: copyIndex === 0 ? row.id : generateRowId(),
+        order: Number(row.order || index) + (copyIndex * 0.001),
+        containerCount: "1",
+        lock: null
+      }));
+    }
+  });
+
+  return expandedRows.length ? expandedRows : [createRow()];
+}
+
 function calculateMonthTotals(monthKey) {
   let total = 0, officeTotal = 0, marketTotal = 0;
   Object.keys(dailyData).forEach(date => {
@@ -1289,7 +1350,7 @@ function findRow(date, rowId) {
   return (dailyData[date] || []).find(row => row.id === rowId);
 }
 
-function buildRowPayload(row) {
+function buildRowPayload(row, saveMeta = {}) {
   return {
     id: row.id,
     order: row.order,
@@ -1304,14 +1365,14 @@ function buildRowPayload(row) {
     carType: row.carType || "",
     carNumber: row.carNumber || "",
     driverName: row.driverName || "",
-    updatedAt: firebase.database.ServerValue.TIMESTAMP,
-    updatedBy: getUserLabel(),
+    updatedAt: saveMeta.updatedAt !== undefined ? saveMeta.updatedAt : firebase.database.ServerValue.TIMESTAMP,
+    updatedBy: saveMeta.updatedBy || getUserLabel(),
     lock: row.lock || null
   };
 }
 
 // IMPROVED saveSingleRow with transaction fallback
-function saveSingleRow(date, row) {
+function saveSingleRow(date, row, saveMeta = {}) {
   const rowRef = db.ref("daily/" + date + "/rows/" + row.id);
   const localBaseUpdatedAt = row.baseUpdatedAt || null;
   let conflictDetected = false;
@@ -1321,13 +1382,13 @@ function saveSingleRow(date, row) {
       conflictDetected = true;
       return;
     }
-    return buildRowPayload(row);
+    return buildRowPayload(row, saveMeta);
   }, (error, committed, snapshot) => {
     if (error) {
       console.error("Transaction error:", error);
       if (error.code === 'PERMISSION_DENIED') {
         console.warn("Permission denied in transaction, falling back to set");
-        rowRef.set(buildRowPayload(row)).catch(console.error);
+        rowRef.set(buildRowPayload(row, saveMeta)).catch(console.error);
       }
     }
   }, false).then(result => {
@@ -1337,13 +1398,13 @@ function saveSingleRow(date, row) {
     return { ok: true, rowId: row.id };
   }).catch(error => {
     console.error("Transaction failed:", error);
-    return rowRef.set(buildRowPayload(row))
+    return rowRef.set(buildRowPayload(row, saveMeta))
       .then(() => ({ ok: true, rowId: row.id }))
       .catch(() => ({ ok: false, rowId: row.id }));
   });
 }
 
-function saveRows(date, rows, showAlert = false, forceSave = false) {
+function saveRows(date, rows, showAlert = false, forceSave = false, removedRowIds = []) {
   clearTimeout(saveTimers[date]);
   if (!forceSave && !dirtyDates[date]) return Promise.resolve();
   if (savingDates[date]) {
@@ -1353,10 +1414,20 @@ function saveRows(date, rows, showAlert = false, forceSave = false) {
   savingDates[date] = true;
   if (date === currentDate) setCurrentStatus("جارٍ حفظ بيانات " + date + "...");
   const rowsToSave = rows;
-  return Promise.all(sortRows(rowsToSave).map(row => saveSingleRow(date, row)))
-    .then(results => {
+  const saveMeta = { updatedAt: Date.now(), updatedBy: getUserLabel() };
+  const deletePromises = removedRowIds.map(rowId => db.ref("daily/" + date + "/rows/" + rowId).remove());
+  return Promise.all([
+    Promise.all(sortRows(rowsToSave).map(row => saveSingleRow(date, row, saveMeta))),
+    Promise.all(deletePromises)
+  ])
+    .then(([results]) => {
       const conflicts = results.filter(result => !result.ok);
       if (conflicts.length) throw new Error("conflict");
+      rowsToSave.forEach(row => {
+        row.updatedAt = saveMeta.updatedAt;
+        row.baseUpdatedAt = saveMeta.updatedAt;
+        row.updatedBy = saveMeta.updatedBy;
+      });
       clearDateDirty(date);
       clearDraft(date);
       if (date === currentDate) setCurrentStatus("تم الحفظ تلقائيًا في " + new Date().toLocaleTimeString("ar-EG", { hour: "2-digit", minute: "2-digit" }));
@@ -1378,8 +1449,17 @@ function saveRows(date, rows, showAlert = false, forceSave = false) {
 
 function saveDate(date, showAlert = false) {
   updateDateRowsFromDom(date);
-  const rows = ensureDateRows(date);
-  return saveRows(date, rows, showAlert, showAlert);
+  const originalRows = ensureDateRows(date);
+  const expandedRows = expandRowsForSave(originalRows);
+  const nextRowIds = new Set(expandedRows.map(row => row.id));
+  const removedRowIds = originalRows
+    .map(row => row.id)
+    .filter(rowId => rowId && !nextRowIds.has(rowId));
+
+  dailyData[date] = expandedRows;
+  saveDraft(date);
+  renderAll();
+  return saveRows(date, expandedRows, showAlert, showAlert, removedRowIds);
 }
 
 function scheduleAutoSave(date) {
