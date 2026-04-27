@@ -131,6 +131,18 @@
             position: relative;
         }
 
+        .nav-link.dropdown-toggle {
+            color: white !important;
+            background: rgba(245, 158, 11, 0.8);
+            padding: 8px 16px;
+            border-radius: 20px;
+        }
+
+        .nav-link.dropdown-toggle:hover {
+            background: var(--secondary-color);
+            color: white !important;
+        }
+
         .nav-link:hover {
             color: var(--secondary-color) !important;
             transform: translateY(-2px);
@@ -152,6 +164,7 @@
             width: 80%;
         }
 
+        
         .dropdown-menu {
             background: var(--surface-dark);
             border: 1px solid var(--border-dark);
@@ -170,20 +183,23 @@
         }
 
         .login-btn {
-            background: var(--secondary-color);
-            color: white;
+            background: white;
+            color: var(--primary-color);
             padding: 10px 20px;
             border-radius: 25px;
             text-decoration: none;
             transition: all 0.3s ease;
-            font-weight: 500;
+            font-weight: 600;
+            border: 2px solid white;
+            box-shadow: 0 4px 15px rgba(255, 255, 255, 0.2);
         }
 
         .login-btn:hover {
-            background: #d97706;
-            transform: translateY(-2px);
-            box-shadow: 0 5px 15px rgba(245, 158, 11, 0.3);
+            background: var(--secondary-color);
             color: white;
+            transform: translateY(-2px);
+            box-shadow: 0 8px 25px rgba(245, 158, 11, 0.4);
+            border-color: var(--secondary-color);
         }
 
         /* Hero Section */
