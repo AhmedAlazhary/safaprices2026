@@ -733,6 +733,163 @@ tr:hover {
           </tbody>
         </table>
       </div>
+
+      <div style="display: grid; grid-template-columns: 1.1fr 0.9fr; gap: 20px; margin-top: 20px;">
+        <div class="panel">
+          <h3>أوامر الصيانة</h3>
+          <form id="garageWorkOrderForm">
+            <div class="form-grid">
+              <div class="form-group">
+                <label>المركبة *</label>
+                <select id="garageWorkOrderAsset" required>
+                  <option value="">اختر المركبة</option>
+                </select>
+              </div>
+              <div class="form-group">
+                <label>الفني / العامل</label>
+                <select id="garageWorkOrderWorker">
+                  <option value="">اختر العامل</option>
+                </select>
+              </div>
+              <div class="form-group">
+                <label>التاريخ *</label>
+                <input type="date" id="garageWorkOrderDate" required>
+              </div>
+              <div class="form-group">
+                <label>الحالة *</label>
+                <select id="garageWorkOrderStatus" required>
+                  <option value="OPEN">OPEN</option>
+                  <option value="IN_PROGRESS">IN_PROGRESS</option>
+                  <option value="CLOSED">CLOSED</option>
+                </select>
+              </div>
+              <div class="form-group" style="grid-column: 1 / -1;">
+                <label>وصف أمر الصيانة *</label>
+                <input type="text" id="garageWorkOrderDescription" required>
+              </div>
+            </div>
+            <div style="display: flex; gap: 12px; justify-content: center;">
+              <button type="submit" class="primary-btn">حفظ أمر الصيانة</button>
+            </div>
+          </form>
+
+          <div class="table-container" style="margin-top: 18px;">
+            <table>
+              <thead>
+                <tr>
+                  <th>المرجع</th>
+                  <th>المركبة</th>
+                  <th>العامل</th>
+                  <th>التاريخ</th>
+                  <th>الحالة</th>
+                  <th>التكلفة</th>
+                </tr>
+              </thead>
+              <tbody id="garageWorkOrdersTableBody">
+                <tr>
+                  <td colspan="6" class="empty-state">لا توجد أوامر صيانة</td>
+                </tr>
+              </tbody>
+            </table>
+          </div>
+        </div>
+
+        <div class="panel">
+          <h3>صرف قطع غيار للمركبات</h3>
+          <form id="garageIssueForm">
+            <div class="form-grid">
+              <div class="form-group">
+                <label>الصنف *</label>
+                <select id="garageIssueItem" required>
+                  <option value="">اختر الصنف</option>
+                </select>
+              </div>
+              <div class="form-group">
+                <label>أمر الصيانة *</label>
+                <select id="garageIssueWorkOrder" required>
+                  <option value="">اختر أمر الصيانة</option>
+                </select>
+              </div>
+              <div class="form-group">
+                <label>الكمية *</label>
+                <input type="number" id="garageIssueQuantity" min="1" required>
+              </div>
+              <div class="form-group">
+                <label>قيمة الحركة</label>
+                <input type="number" id="garageIssueCost" min="0" step="0.01" placeholder="اتركها فارغة للاعتماد على سعر الصنف">
+              </div>
+              <div class="form-group" style="grid-column: 1 / -1;">
+                <label>ملاحظات</label>
+                <input type="text" id="garageIssueNotes">
+              </div>
+            </div>
+            <div style="display: flex; gap: 12px; justify-content: center;">
+              <button type="submit" class="warning-btn">تنفيذ الصرف</button>
+            </div>
+          </form>
+
+          <div class="table-container" style="margin-top: 18px;">
+            <table>
+              <thead>
+                <tr>
+                  <th>التاريخ</th>
+                  <th>الصنف</th>
+                  <th>المركبة</th>
+                  <th>الكمية</th>
+                  <th>القيمة</th>
+                </tr>
+              </thead>
+              <tbody id="garageMovementsTableBody">
+                <tr>
+                  <td colspan="5" class="empty-state">لا توجد حركات صرف</td>
+                </tr>
+              </tbody>
+            </table>
+          </div>
+        </div>
+      </div>
+
+      <div class="panel" style="margin-top: 20px;">
+        <h3>العمالة والفنيون</h3>
+        <form id="garageWorkerForm">
+          <div class="form-grid">
+            <div class="form-group">
+              <label>الاسم *</label>
+              <input type="text" id="garageWorkerName" required>
+            </div>
+            <div class="form-group">
+              <label>النوع *</label>
+              <select id="garageWorkerType" required>
+                <option value="">اختر النوع</option>
+                <option value="mechanic">فني</option>
+                <option value="driver">سائق</option>
+                <option value="helper">مساعد</option>
+                <option value="vendor">مورد خدمة</option>
+              </select>
+            </div>
+            <div class="form-group" style="display: flex; align-items: end;">
+              <button type="submit" class="success-btn" style="width: 100%;">إضافة عامل</button>
+            </div>
+          </div>
+        </form>
+
+        <div class="table-container" style="margin-top: 18px;">
+          <table>
+            <thead>
+              <tr>
+                <th>الاسم</th>
+                <th>النوع</th>
+                <th>الإجراءات</th>
+              </tr>
+            </thead>
+            <tbody id="garageWorkersTableBody">
+              <tr>
+                <td colspan="3" class="empty-state">لا توجد عمالة مسجلة</td>
+              </tr>
+            </tbody>
+          </table>
+        </div>
+      </div>
     </div>
   </div>
 
@@ -815,6 +972,15 @@ tr:hover {
           <h3>تقرير الأصول</h3>
           <p>تقرير بجميع الأصول وقيمتها وحالتها</p>
           <button class="warning-btn" onclick="generateAssetsReport()">إنشاء التقرير</button>
+        </div>
+
+        <div class="panel" style="text-align: center;">
+          <h3>تقرير ربحية / تكلفة السيارة</h3>
+          <p>يجمع تكلفة قطع الغيار وأوامر الصيانة لكل مركبة من نفس الصفحة</p>
+          <select id="profitabilityAssetSelect" style="margin-bottom: 12px;">
+            <option value="">اختر المركبة</option>
+          </select>
+          <button class="primary-btn" onclick="generateVehicleProfitabilityReport()">إنشاء التقرير</button>
         </div>
       </div>
     </div>
@@ -1108,6 +1274,10 @@ let currentUser = null;
 let currentEditingItem = null;
 let currentEditingAsset = null;
 let settlementItems = [];
+let garageAssetsCache = [];
+let garageWorkersCache = [];
+let garageWorkOrdersCache = [];
+let garageMovementsCache = [];
 
 // Check authentication
 onAuthStateChanged(auth, user => {
@@ -1126,9 +1296,17 @@ function initializeInventorySystem() {
   loadInventory();
   loadCustodyTables();
   loadAssets();
+  loadGarageWorkers();
+  loadGarageWorkOrders();
+  loadGarageMovements();
   loadLookups();
   loadLists();
   updateItemFormOptions();
+  updateAssetFormOptions();
+  const workOrderDateInput = document.getElementById('garageWorkOrderDate');
+  if (workOrderDateInput) {
+    workOrderDateInput.value = new Date().toISOString().split('T')[0];
+  }
 }
 
 // Tab switching
@@ -1165,6 +1343,9 @@ function setupEventListeners() {
   
   // Asset form
   document.getElementById('assetForm').addEventListener('submit', handleAssetSubmit);
+  document.getElementById('garageWorkerForm').addEventListener('submit', handleGarageWorkerSubmit);
+  document.getElementById('garageWorkOrderForm').addEventListener('submit', handleGarageWorkOrderSubmit);
+  document.getElementById('garageIssueForm').addEventListener('submit', handleGarageIssueSubmit);
   
   // Search and filters
   document.getElementById('inventorySearch').addEventListener('input', filterInventory);
@@ -1191,6 +1372,7 @@ async function loadInventory() {
     console.log('Loaded items:', items);
     displayInventory(items);
     updateLookups(items);
+    updateGarageIssueItems();
     
     // If no items exist, show initialization option
     if (items.length === 0) {
@@ -1332,7 +1514,9 @@ async function loadAssets() {
     querySnapshot.forEach((doc) => {
       assets.push({ id: doc.id, ...doc.data() });
     });
+    garageAssetsCache = assets;
     displayAssets(assets);
+    updateGarageAssetSelects();
   } catch (error) {
     console.error('Error loading assets:', error);
     showAlert('Error loading assets: ' + error.message, 'danger');
@@ -1362,6 +1546,134 @@ function displayAssets(assets) {
       </td>
     </tr>
   `).join('');
+}
+
+async function loadGarageWorkers() {
+  try {
+    const querySnapshot = await getDocs(collection(db, 'GarageWorkers'));
+    garageWorkersCache = querySnapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
+    displayGarageWorkers(garageWorkersCache);
+    updateGarageWorkerSelect();
+  } catch (error) {
+    console.error('Error loading garage workers:', error);
+    showAlert('Error loading garage workers', 'danger');
+  }
+}
+
+function displayGarageWorkers(workers) {
+  const tbody = document.getElementById('garageWorkersTableBody');
+  if (!tbody) return;
+  if (!workers.length) {
+    tbody.innerHTML = '<tr><td colspan="3" class="empty-state">لا توجد عمالة مسجلة</td></tr>';
+    return;
+  }
+
+  tbody.innerHTML = workers.map(worker => `
+    <tr>
+      <td>${worker.name || '-'}</td>
+      <td>${worker.type || '-'}</td>
+      <td><button class="danger-btn" onclick="deleteGarageWorker('${worker.id}')">حذف</button></td>
+    </tr>
+  `).join('');
+}
+
+function updateGarageWorkerSelect() {
+  const select = document.getElementById('garageWorkOrderWorker');
+  if (!select) return;
+  select.innerHTML = '<option value="">اختر العامل</option>' + garageWorkersCache
+    .map(worker => `<option value="${worker.id}">${worker.name} - ${worker.type || ''}</option>`)
+    .join('');
+}
+
+function updateGarageAssetSelects() {
+  const assetOptions = '<option value="">اختر المركبة</option>' + garageAssetsCache
+    .map(asset => `<option value="${asset.id}">${asset.plateNumber || asset.type || 'أصل'} - ${asset.driver || asset.status || ''}</option>`)
+    .join('');
+
+  const workOrderAssetSelect = document.getElementById('garageWorkOrderAsset');
+  const reportAssetSelect = document.getElementById('profitabilityAssetSelect');
+  if (workOrderAssetSelect) workOrderAssetSelect.innerHTML = assetOptions;
+  if (reportAssetSelect) reportAssetSelect.innerHTML = assetOptions;
+}
+
+async function loadGarageWorkOrders() {
+  try {
+    const querySnapshot = await getDocs(collection(db, 'GarageWorkOrders'));
+    garageWorkOrdersCache = querySnapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }))
+      .sort((a, b) => String(b.date || '').localeCompare(String(a.date || '')));
+    displayGarageWorkOrders(garageWorkOrdersCache);
+    updateGarageWorkOrderSelect();
+  } catch (error) {
+    console.error('Error loading work orders:', error);
+    showAlert('Error loading work orders', 'danger');
+  }
+}
+
+function displayGarageWorkOrders(workOrders) {
+  const tbody = document.getElementById('garageWorkOrdersTableBody');
+  if (!tbody) return;
+  if (!workOrders.length) {
+    tbody.innerHTML = '<tr><td colspan="6" class="empty-state">لا توجد أوامر صيانة</td></tr>';
+    return;
+  }
+
+  tbody.innerHTML = workOrders.map(order => {
+    const asset = garageAssetsCache.find(item => item.id === order.assetId);
+    const worker = garageWorkersCache.find(item => item.id === order.workerId);
+    return `
+      <tr>
+        <td>${order.code || order.id}</td>
+        <td>${asset?.plateNumber || asset?.type || '-'}</td>
+        <td>${worker?.name || '-'}</td>
+        <td>${order.date || '-'}</td>
+        <td>${order.status || '-'}</td>
+        <td>${Number(order.totalCost || 0).toFixed(2)}</td>
+      </tr>
+    `;
+  }).join('');
+}
+
+function updateGarageWorkOrderSelect() {
+  const select = document.getElementById('garageIssueWorkOrder');
+  if (!select) return;
+  select.innerHTML = '<option value="">اختر أمر الصيانة</option>' + garageWorkOrdersCache
+    .map(order => `<option value="${order.id}">${order.code || order.id} - ${order.status || ''}</option>`)
+    .join('');
+}
+
+async function loadGarageMovements() {
+  try {
+    const querySnapshot = await getDocs(collection(db, 'GarageMovements'));
+    garageMovementsCache = querySnapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }))
+      .sort((a, b) => Number((b.createdAt && b.createdAt.seconds) || 0) - Number((a.createdAt && a.createdAt.seconds) || 0));
+    displayGarageMovements(garageMovementsCache);
+    updateGarageIssueItems();
+  } catch (error) {
+    console.error('Error loading garage movements:', error);
+    showAlert('Error loading garage movements', 'danger');
+  }
+}
+
+function displayGarageMovements(movements) {
+  const tbody = document.getElementById('garageMovementsTableBody');
+  if (!tbody) return;
+  if (!movements.length) {
+    tbody.innerHTML = '<tr><td colspan="5" class="empty-state">لا توجد حركات صرف</td></tr>';
+    return;
+  }
+
+  tbody.innerHTML = movements.map(movement => {
+    const asset = garageAssetsCache.find(item => item.id === movement.assetId);
+    return `
+      <tr>
+        <td>${movement.date || '-'}</td>
+        <td>${movement.itemName || '-'}</td>
+        <td>${asset?.plateNumber || asset?.type || '-'}</td>
+        <td>${movement.quantity || 0}</td>
+        <td>${Number(movement.cost || 0).toFixed(2)}</td>
+      </tr>
+    `;
+  }).join('');
 }
 
 // Load lookups
@@ -1528,8 +1840,62 @@ function generateCustodyReport() {
 }
 
 function generateAssetsReport() {
-  showAlert('جاري إنشاء تقرير الأصول...', 'success');
-  // Implementation for assets report
+  try {
+    const reportHTML = `
+      <div style="direction: rtl; padding: 20px; font-family: Arial, sans-serif;">
+        <h1 style="text-align: center; color: #333;">تقرير الأصول والجراج</h1>
+        <p style="text-align: center; color: #666;">التاريخ: ${new Date().toLocaleDateString('ar-EG')}</p>
+        <table style="width: 100%; border-collapse: collapse; margin-top: 20px;">
+          <thead>
+            <tr>
+              <th style="padding: 10px; border: 1px solid #ddd;">النوع</th>
+              <th style="padding: 10px; border: 1px solid #ddd;">اللوحة</th>
+              <th style="padding: 10px; border: 1px solid #ddd;">العداد</th>
+              <th style="padding: 10px; border: 1px solid #ddd;">السائق</th>
+              <th style="padding: 10px; border: 1px solid #ddd;">الحالة</th>
+              <th style="padding: 10px; border: 1px solid #ddd;">القيمة</th>
+            </tr>
+          </thead>
+          <tbody>
+            ${garageAssetsCache.map(asset => `
+              <tr>
+                <td style="padding: 10px; border: 1px solid #ddd;">${asset.type || '-'}</td>
+                <td style="padding: 10px; border: 1px solid #ddd;">${asset.plateNumber || '-'}</td>
+                <td style="padding: 10px; border: 1px solid #ddd;">${asset.currentCounter || 0}</td>
+                <td style="padding: 10px; border: 1px solid #ddd;">${asset.driver || '-'}</td>
+                <td style="padding: 10px; border: 1px solid #ddd;">${asset.status || '-'}</td>
+                <td style="padding: 10px; border: 1px solid #ddd;">${Number(asset.value || 0).toFixed(2)}</td>
+              </tr>
+            `).join('')}
+          </tbody>
+        </table>
+      </div>
+    `;
+    const reportWindow = window.open('', '_blank');
+    reportWindow.document.write(reportHTML);
+    reportWindow.document.close();
+    showAlert('تم إنشاء تقرير الأصول', 'success');
+  } catch (error) {
+    console.error('Error generating assets report:', error);
+    showAlert('Error generating assets report', 'danger');
+  }
+}
+
+function updateGarageIssueItems() {
+  const select = document.getElementById('garageIssueItem');
+  if (!select) return;
+  getDocs(collection(db, 'Items')).then((querySnapshot) => {
+    const options = ['<option value="">اختر الصنف</option>'];
+    querySnapshot.forEach((itemDoc) => {
+      const item = itemDoc.data();
+      if (Number(item.quantity || 0) > 0) {
+        options.push(`<option value="${itemDoc.id}">${item.name} (${item.quantity})</option>`);
+      }
+    });
+    select.innerHTML = options.join('');
+  }).catch((error) => {
+    console.error('Error loading issue items:', error);
+  });
 }
 
 // Utility functions
@@ -1640,7 +2006,178 @@ async function handleSettlementSubmit(e) {
 // Handle asset submit
 async function handleAssetSubmit(e) {
   e.preventDefault();
-  // Implementation for asset submission
+  try {
+    const formData = {
+      type: document.getElementById('assetType').value,
+      plateNumber: document.getElementById('assetPlateNumber').value.trim(),
+      currentCounter: parseInt(document.getElementById('assetCurrentCounter').value) || 0,
+      driver: document.getElementById('assetDriver').value.trim(),
+      status: document.getElementById('assetStatus').value,
+      value: parseFloat(document.getElementById('assetValue').value) || 0,
+      updatedAt: serverTimestamp()
+    };
+
+    if (!formData.type || !formData.status) {
+      showAlert('يرجى استكمال بيانات الأصل المطلوبة', 'danger');
+      return;
+    }
+
+    if (currentEditingAsset) {
+      await updateDoc(doc(db, 'Assets', currentEditingAsset), formData);
+      showAlert('تم تحديث الأصل بنجاح', 'success');
+    } else {
+      await addDoc(collection(db, 'Assets'), {
+        ...formData,
+        createdAt: serverTimestamp()
+      });
+      showAlert('تمت إضافة الأصل بنجاح', 'success');
+    }
+
+    closeAssetModal();
+    loadAssets();
+  } catch (error) {
+    console.error('Error saving asset:', error);
+    showAlert('Error saving asset: ' + error.message, 'danger');
+  }
+}
+
+async function handleGarageWorkerSubmit(e) {
+  e.preventDefault();
+  try {
+    const name = document.getElementById('garageWorkerName').value.trim();
+    const type = document.getElementById('garageWorkerType').value;
+    if (!name || !type) {
+      showAlert('يرجى إدخال بيانات العامل', 'danger');
+      return;
+    }
+
+    await addDoc(collection(db, 'GarageWorkers'), {
+      name,
+      type,
+      createdAt: serverTimestamp(),
+      updatedAt: serverTimestamp()
+    });
+    document.getElementById('garageWorkerForm').reset();
+    showAlert('تمت إضافة العامل', 'success');
+    loadGarageWorkers();
+  } catch (error) {
+    console.error('Error saving garage worker:', error);
+    showAlert('Error saving garage worker', 'danger');
+  }
+}
+
+async function handleGarageWorkOrderSubmit(e) {
+  e.preventDefault();
+  try {
+    const assetId = document.getElementById('garageWorkOrderAsset').value;
+    const workerId = document.getElementById('garageWorkOrderWorker').value;
+    const date = document.getElementById('garageWorkOrderDate').value;
+    const status = document.getElementById('garageWorkOrderStatus').value;
+    const description = document.getElementById('garageWorkOrderDescription').value.trim();
+
+    if (!assetId || !date || !status || !description) {
+      showAlert('يرجى استكمال بيانات أمر الصيانة', 'danger');
+      return;
+    }
+
+    await addDoc(collection(db, 'GarageWorkOrders'), {
+      code: 'WO-' + Date.now(),
+      assetId,
+      workerId: workerId || '',
+      date,
+      status,
+      description,
+      totalCost: 0,
+      createdAt: serverTimestamp(),
+      updatedAt: serverTimestamp()
+    });
+
+    document.getElementById('garageWorkOrderForm').reset();
+    document.getElementById('garageWorkOrderDate').value = new Date().toISOString().split('T')[0];
+    document.getElementById('garageWorkOrderStatus').value = 'OPEN';
+    showAlert('تم حفظ أمر الصيانة', 'success');
+    loadGarageWorkOrders();
+  } catch (error) {
+    console.error('Error saving work order:', error);
+    showAlert('Error saving work order', 'danger');
+  }
+}
+
+async function handleGarageIssueSubmit(e) {
+  e.preventDefault();
+  try {
+    const itemId = document.getElementById('garageIssueItem').value;
+    const workOrderId = document.getElementById('garageIssueWorkOrder').value;
+    const quantity = parseInt(document.getElementById('garageIssueQuantity').value);
+    const manualCost = parseFloat(document.getElementById('garageIssueCost').value);
+    const notes = document.getElementById('garageIssueNotes').value.trim();
+
+    if (!itemId || !workOrderId || !quantity || quantity < 1) {
+      showAlert('يرجى استكمال بيانات صرف قطع الغيار', 'danger');
+      return;
+    }
+
+    await runTransaction(db, async (transaction) => {
+      const itemRef = doc(db, 'Items', itemId);
+      const workOrderRef = doc(db, 'GarageWorkOrders', workOrderId);
+
+      const [itemSnap, workOrderSnap] = await Promise.all([
+        transaction.get(itemRef),
+        transaction.get(workOrderRef)
+      ]);
+
+      if (!itemSnap.exists()) {
+        throw new Error('الصنف غير موجود');
+      }
+      if (!workOrderSnap.exists()) {
+        throw new Error('أمر الصيانة غير موجود');
+      }
+
+      const item = itemSnap.data();
+      const workOrder = workOrderSnap.data();
+      const currentQuantity = Number(item.quantity || 0);
+      if (quantity > currentQuantity) {
+        throw new Error(`الكمية غير كافية. المتاح: ${currentQuantity}`);
+      }
+
+      const unitPrice = Number(item.unitPrice || 0);
+      const cost = Number.isFinite(manualCost) && manualCost > 0 ? manualCost : (unitPrice * quantity);
+      const assetId = workOrder.assetId || '';
+
+      transaction.update(itemRef, {
+        quantity: currentQuantity - quantity,
+        updatedAt: serverTimestamp()
+      });
+
+      const movementRef = doc(collection(db, 'GarageMovements'));
+      transaction.set(movementRef, {
+        itemId,
+        itemName: item.name || '',
+        assetId,
+        workOrderId,
+        quantity,
+        cost,
+        date: new Date().toISOString().split('T')[0],
+        notes,
+        createdAt: serverTimestamp(),
+        updatedAt: serverTimestamp()
+      });
+
+      transaction.update(workOrderRef, {
+        totalCost: Number(workOrder.totalCost || 0) + cost,
+        updatedAt: serverTimestamp()
+      });
+    });
+
+    document.getElementById('garageIssueForm').reset();
+    showAlert('تم صرف قطع الغيار وربطها بأمر الصيانة', 'success');
+    loadInventory();
+    loadGarageMovements();
+    loadGarageWorkOrders();
+  } catch (error) {
+    console.error('Error issuing garage item:', error);
+    showAlert(error.message || 'Error issuing garage item', 'danger');
+  }
 }
 
 // Edit item
@@ -1656,6 +2193,54 @@ async function editItem(itemId) {
   } catch (error) {
     console.error('Error loading item for edit:', error);
     showAlert('Error loading item data', 'danger');
+  }
+}
+
+async function editAsset(assetId) {
+  try {
+    const assetSnap = await getDoc(doc(db, 'Assets', assetId));
+    if (!assetSnap.exists()) {
+      showAlert('الأصل غير موجود', 'danger');
+      return;
+    }
+
+    const asset = assetSnap.data();
+    currentEditingAsset = assetId;
+    document.getElementById('assetModalTitle').textContent = 'تعديل الأصل';
+    document.getElementById('assetType').value = asset.type || '';
+    document.getElementById('assetPlateNumber').value = asset.plateNumber || '';
+    document.getElementById('assetCurrentCounter').value = asset.currentCounter || 0;
+    document.getElementById('assetDriver').value = asset.driver || '';
+    document.getElementById('assetStatus').value = asset.status || '';
+    document.getElementById('assetValue').value = asset.value || 0;
+    document.getElementById('assetModal').style.display = 'block';
+  } catch (error) {
+    console.error('Error editing asset:', error);
+    showAlert('Error loading asset data', 'danger');
+  }
+}
+
+async function deleteAsset(assetId) {
+  if (!confirm('هل أنت متأكد من حذف هذا الأصل؟')) return;
+  try {
+    await deleteDoc(doc(db, 'Assets', assetId));
+    showAlert('تم حذف الأصل بنجاح', 'success');
+    loadAssets();
+  } catch (error) {
+    console.error('Error deleting asset:', error);
+    showAlert('Error deleting asset', 'danger');
+  }
+}
+
+async function deleteGarageWorker(workerId) {
+  if (!confirm('هل أنت متأكد من حذف هذا العامل؟')) return;
+  try {
+    await deleteDoc(doc(db, 'GarageWorkers', workerId));
+    showAlert('تم حذف العامل', 'success');
+    loadGarageWorkers();
+  } catch (error) {
+    console.error('Error deleting garage worker:', error);
+    showAlert('Error deleting garage worker', 'danger');
   }
 }
 
@@ -2032,6 +2617,68 @@ function toggleCustodyReports() {
 // Print custody reports
 function printCustodyReports() {
   window.print();
+}
+
+function generateVehicleProfitabilityReport() {
+  try {
+    const assetId = document.getElementById('profitabilityAssetSelect').value;
+    if (!assetId) {
+      showAlert('اختر المركبة أولاً', 'danger');
+      return;
+    }
+
+    const asset = garageAssetsCache.find(item => item.id === assetId);
+    const workOrders = garageWorkOrdersCache.filter(order => order.assetId === assetId);
+    const movements = garageMovementsCache.filter(movement => movement.assetId === assetId);
+    const partsCost = movements.reduce((sum, movement) => sum + Number(movement.cost || 0), 0);
+    const totalWorkOrderCost = workOrders.reduce((sum, order) => sum + Number(order.totalCost || 0), 0);
+
+    const reportHTML = `
+      <div style="direction: rtl; padding: 20px; font-family: Arial, sans-serif;">
+        <h1 style="text-align: center; color: #333;">تقرير تكلفة السيارة</h1>
+        <p style="text-align: center; color: #666;">التاريخ: ${new Date().toLocaleDateString('ar-EG')}</p>
+        <div style="margin: 20px 0; padding: 16px; background: #f8f9fa; border: 1px solid #ddd;">
+          <div><strong>المركبة:</strong> ${asset?.plateNumber || asset?.type || '-'}</div>
+          <div><strong>السائق:</strong> ${asset?.driver || '-'}</div>
+          <div><strong>الحالة:</strong> ${asset?.status || '-'}</div>
+        </div>
+        <table style="width: 100%; border-collapse: collapse; margin-bottom: 20px;">
+          <tr><td style="padding: 10px; border: 1px solid #ddd;">تكلفة قطع الغيار</td><td style="padding: 10px; border: 1px solid #ddd;">${partsCost.toFixed(2)} ج.م</td></tr>
+          <tr><td style="padding: 10px; border: 1px solid #ddd;">إجمالي أوامر الصيانة</td><td style="padding: 10px; border: 1px solid #ddd;">${totalWorkOrderCost.toFixed(2)} ج.م</td></tr>
+        </table>
+        <h3>أوامر الصيانة</h3>
+        <table style="width: 100%; border-collapse: collapse; margin-bottom: 20px;">
+          <thead>
+            <tr>
+              <th style="padding: 10px; border: 1px solid #ddd;">المرجع</th>
+              <th style="padding: 10px; border: 1px solid #ddd;">التاريخ</th>
+              <th style="padding: 10px; border: 1px solid #ddd;">الحالة</th>
+              <th style="padding: 10px; border: 1px solid #ddd;">الوصف</th>
+              <th style="padding: 10px; border: 1px solid #ddd;">التكلفة</th>
+            </tr>
+          </thead>
+          <tbody>
+            ${workOrders.map(order => `
+              <tr>
+                <td style="padding: 10px; border: 1px solid #ddd;">${order.code || order.id}</td>
+                <td style="padding: 10px; border: 1px solid #ddd;">${order.date || '-'}</td>
+                <td style="padding: 10px; border: 1px solid #ddd;">${order.status || '-'}</td>
+                <td style="padding: 10px; border: 1px solid #ddd;">${order.description || '-'}</td>
+                <td style="padding: 10px; border: 1px solid #ddd;">${Number(order.totalCost || 0).toFixed(2)}</td>
+              </tr>
+            `).join('') || '<tr><td colspan="5" style="padding: 10px; border: 1px solid #ddd; text-align:center;">لا توجد أوامر</td></tr>'}
+          </tbody>
+        </table>
+      </div>
+    `;
+
+    const reportWindow = window.open('', '_blank');
+    reportWindow.document.write(reportHTML);
+    reportWindow.document.close();
+  } catch (error) {
+    console.error('Error generating vehicle profitability report:', error);
+    showAlert('Error generating vehicle profitability report', 'danger');
+  }
 }
 
 // Lists management functions
@@ -3141,8 +3788,12 @@ window.initializeSampleData = initializeSampleData;
 window.generateInventoryReport = generateInventoryReport;
 window.generateCustodyReport = generateCustodyReport;
 window.generateAssetsReport = generateAssetsReport;
+window.generateVehicleProfitabilityReport = generateVehicleProfitabilityReport;
 window.editItem = editItem;
 window.deleteItem = deleteItem;
+window.editAsset = editAsset;
+window.deleteAsset = deleteAsset;
+window.deleteGarageWorker = deleteGarageWorker;
 window.settleCustody = settleCustody;
 window.addCategory = addCategory;
 window.removeCategory = removeCategory;
