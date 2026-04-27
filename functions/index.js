@@ -1147,3 +1147,5 @@ exports.checkResourceAccess = functions.https.onCall(async (data, context) => {
         action: action
     };
 });
+
+Object.assign(exports, require("../cloud_functions.js"));

@@ -1,15 +1,16 @@
 :root {
-  --garage-bg: #f2efe8;
-  --garage-surface: #fffaf3;
-  --garage-ink: #1c2731;
-  --garage-muted: #6a737a;
-  --garage-accent: #9d4b23;
-  --garage-accent-dark: #733114;
-  --garage-border: #decfbc;
-  --garage-ok: #266447;
-  --garage-warn: #b17218;
-  --garage-danger: #9d2f2f;
-  --garage-shadow: 0 18px 40px rgba(51, 38, 23, 0.12);
+  --garage-bg: #eef3f8;
+  --garage-surface: #ffffff;
+  --garage-surface-soft: #f7fbff;
+  --garage-ink: #152434;
+  --garage-muted: #667789;
+  --garage-accent: #2f89d9;
+  --garage-accent-dark: #1f3347;
+  --garage-border: #d5e1ec;
+  --garage-ok: #27ae60;
+  --garage-warn: #d97706;
+  --garage-danger: #e74c3c;
+  --garage-shadow: 0 18px 40px rgba(31, 51, 71, 0.12);
 }
 
 * {
@@ -19,11 +20,9 @@
 body {
   margin: 0;
   min-height: 100vh;
-  font-family: "Segoe UI", Tahoma, sans-serif;
+  font-family: "Tahoma", "Segoe UI", Arial, sans-serif;
   color: var(--garage-ink);
-  background:
-    radial-gradient(circle at top right, rgba(157, 75, 35, 0.16), transparent 28%),
-    linear-gradient(180deg, #f6f1e7 0%, #ece5d8 100%);
+  background: linear-gradient(180deg, #f7fafe 0%, var(--garage-bg) 100%);
 }
 
 button,
@@ -33,37 +32,86 @@ textarea {
   font: inherit;
 }
 
+.page-header {
+  padding: 18px 22px;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 14px;
+  flex-wrap: wrap;
+  color: #fff;
+  background: linear-gradient(135deg, #1a2b3b 0%, #2c3e50 100%);
+  box-shadow: 0 8px 24px rgba(20, 31, 44, 0.18);
+}
+
+.page-brand {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+
+.page-brand img {
+  height: 56px;
+  width: auto;
+}
+
+.page-brand h1 {
+  margin: 2px 0 0;
+  font-size: clamp(1.1rem, 2.4vw, 1.55rem);
+}
+
+.page-kicker {
+  font-size: 12px;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: rgba(255, 255, 255, 0.72);
+}
+
+.page-actions {
+  display: flex;
+  gap: 10px;
+  flex-wrap: wrap;
+}
+
+.header-btn {
+  background: rgba(255, 255, 255, 0.16);
+  color: #fff;
+  border-color: rgba(255, 255, 255, 0.28);
+}
+
 .garage-shell {
   display: grid;
   grid-template-columns: 320px 1fr;
-  min-height: 100vh;
+  min-height: calc(100vh - 92px);
 }
 
 .garage-sidebar {
   padding: 28px 22px;
-  background: linear-gradient(180deg, #231e1a 0%, #342922 100%);
-  color: #f7efe2;
-  border-left: 1px solid rgba(255, 255, 255, 0.08);
+  background: linear-gradient(180deg, #f8fbff 0%, #edf5fd 100%);
+  color: var(--garage-ink);
+  border-left: 1px solid var(--garage-border);
 }
 
-.garage-brand h1 {
+.garage-brand h2 {
   margin: 8px 0 10px;
-  font-size: 28px;
+  font-size: 24px;
   line-height: 1.3;
+  color: var(--garage-accent-dark);
 }
 
 .garage-brand p,
-.garage-user-card span {
-  color: rgba(247, 239, 226, 0.7);
+.garage-user-card span,
+.garage-user-note {
+  color: var(--garage-muted);
 }
 
 .garage-brand-kicker,
 .section-kicker {
   display: inline-block;
   font-size: 12px;
-  letter-spacing: 0.14em;
+  letter-spacing: 0.1em;
   text-transform: uppercase;
-  color: #e0ab8b;
+  color: var(--garage-accent);
 }
 
 .garage-tabs {
@@ -85,23 +133,32 @@ textarea {
 .garage-tab {
   padding: 14px 16px;
   text-align: right;
-  color: #f8ecdf;
-  background: rgba(255, 255, 255, 0.06);
+  color: var(--garage-ink);
+  background: #fff;
+  border: 1px solid var(--garage-border);
 }
 
 .garage-tab:hover,
 .garage-tab.is-active {
-  background: linear-gradient(135deg, #9d4b23, #bf6c38);
-  box-shadow: 0 8px 20px rgba(157, 75, 35, 0.35);
+  color: #fff;
+  background: linear-gradient(135deg, var(--garage-accent) 0%, #57a5ea 100%);
+  box-shadow: 0 8px 20px rgba(47, 137, 217, 0.24);
   transform: translateY(-1px);
+  border-color: transparent;
 }
 
 .garage-user-card {
   margin-top: auto;
   padding: 18px;
-  border: 1px solid rgba(255, 255, 255, 0.08);
+  border: 1px solid var(--garage-border);
   border-radius: 20px;
-  background: rgba(255, 255, 255, 0.04);
+  background: #fff;
+}
+
+.garage-user-note {
+  display: inline-block;
+  margin-top: 8px;
+  font-size: 13px;
 }
 
 .garage-main {
@@ -114,6 +171,11 @@ textarea {
   justify-content: space-between;
   gap: 16px;
   margin-bottom: 18px;
+  padding: 20px 22px;
+  border-radius: 22px;
+  background: linear-gradient(135deg, #f9fcff 0%, #ecf5fd 100%);
+  border: 1px solid rgba(47, 137, 217, 0.12);
+  box-shadow: var(--garage-shadow);
 }
 
 .garage-header h2 {
@@ -162,7 +224,7 @@ textarea {
 .metric-card {
   background: var(--garage-surface);
   border: 1px solid var(--garage-border);
-  border-radius: 24px;
+  border-radius: 22px;
   box-shadow: var(--garage-shadow);
 }
 
@@ -207,17 +269,19 @@ input,
 select,
 textarea {
   width: 100%;
-  padding: 12px 14px;
-  border-radius: 14px;
+  padding: 11px 12px;
+  border-radius: 10px;
   border: 1px solid var(--garage-border);
-  background: #fffdf9;
+  background: #fff;
   color: var(--garage-ink);
+  text-align: right;
 }
 
 input:focus,
 select:focus,
 textarea:focus {
-  outline: 2px solid rgba(157, 75, 35, 0.22);
+  outline: none;
+  box-shadow: 0 0 0 3px rgba(47, 137, 217, 0.14);
   border-color: var(--garage-accent);
 }
 
@@ -238,8 +302,8 @@ textarea:focus {
 }
 
 .primary-btn {
-  background: linear-gradient(135deg, var(--garage-accent), #bf6c38);
-  color: #fffaf6;
+  background: var(--garage-accent);
+  color: #fff;
 }
 
 .ghost-btn {
@@ -249,7 +313,7 @@ textarea:focus {
 }
 
 .danger-btn {
-  background: linear-gradient(135deg, var(--garage-danger), #bf4848);
+  background: var(--garage-danger);
   color: white;
 }
 
@@ -261,6 +325,9 @@ textarea:focus {
 
 .table-wrap {
   overflow: auto;
+  border: 1px solid var(--garage-border);
+  border-radius: 16px;
+  background: var(--garage-surface-soft);
 }
 
 table {
@@ -271,7 +338,7 @@ table {
 th,
 td {
   padding: 12px 10px;
-  border-bottom: 1px solid #efe3d2;
+  border-bottom: 1px solid #e9f0f7;
   text-align: right;
   white-space: nowrap;
 }
@@ -290,7 +357,7 @@ th {
   padding: 14px;
   border: 1px solid var(--garage-border);
   border-radius: 16px;
-  background: #fffdf9;
+  background: #fff;
 }
 
 .status-pill {
@@ -323,7 +390,7 @@ th {
   min-height: 220px;
   padding: 18px;
   border-radius: 18px;
-  background: #fffdf9;
+  background: #fff;
   border: 1px dashed var(--garage-border);
   line-height: 1.8;
 }
@@ -335,7 +402,7 @@ th {
 
   .garage-sidebar {
     border-left: 0;
-    border-bottom: 1px solid rgba(255, 255, 255, 0.08);
+    border-bottom: 1px solid var(--garage-border);
   }
 
   .two-columns,
@@ -347,6 +414,10 @@ th {
 @media (max-width: 720px) {
   .garage-main {
     padding: 16px;
+  }
+
+  .page-header {
+    padding: 14px 16px;
   }
 
   .garage-header {

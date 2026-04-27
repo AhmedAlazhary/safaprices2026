@@ -7,11 +7,25 @@
   <link rel="stylesheet" href="css/garage-system.css">
 </head>
 <body>
+  <header class="page-header">
+    <div class="page-brand">
+      <img src="logo.png" alt="SAFATRANS Logo">
+      <div>
+        <span class="page-kicker">SAFATRANS ERP Module</span>
+        <h1>نظام إدارة الجراج والأسطول</h1>
+      </div>
+    </div>
+    <div class="page-actions">
+      <button id="garageBackBtn" class="ghost-btn header-btn" type="button">العودة للداشبورد</button>
+      <button id="garageHeaderLogoutBtn" class="ghost-btn header-btn" type="button">تسجيل الخروج</button>
+    </div>
+  </header>
+
   <div class="garage-shell">
     <aside class="garage-sidebar">
       <div class="garage-brand">
-        <span class="garage-brand-kicker">SAFATRANS ERP Module</span>
-        <h1>نظام إدارة الأسطول والمخازن</h1>
+        <span class="garage-brand-kicker">إدارة تشغيلية ومالية</span>
+        <h2>نظام إدارة الأسطول والمخازن</h2>
         <p>وحدة مستقلة للمخزون والصيانة والعهدة والمحاسبة.</p>
       </div>
 
@@ -29,7 +43,7 @@
           <strong id="garageUserName">...</strong>
           <span id="garageUserRole">جاري التحميل</span>
         </div>
-        <button id="garageLogoutBtn" class="ghost-btn" type="button">تسجيل الخروج</button>
+        <span class="garage-user-note">متصل بالنظام الحالي</span>
       </div>
     </aside>
 

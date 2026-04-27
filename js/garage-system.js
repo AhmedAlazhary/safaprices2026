@@ -58,8 +58,10 @@ const els = {
   movementsTable: document.getElementById("garageMovementsTable"),
   liabilitiesTable: document.getElementById("garageLiabilitiesTable"),
   reportPreview: document.getElementById("garageReportPreview"),
+  backBtn: document.getElementById("garageBackBtn"),
   refreshBtn: document.getElementById("garageRefreshBtn"),
   logoutBtn: document.getElementById("garageLogoutBtn"),
+  headerLogoutBtn: document.getElementById("garageHeaderLogoutBtn"),
   userName: document.getElementById("garageUserName"),
   userRole: document.getElementById("garageUserRole"),
   forms: {
@@ -521,7 +523,17 @@ function bindEvents() {
     clearAlert();
     await refreshView("تم تحديث البيانات بنجاح.");
   });
-  els.logoutBtn.addEventListener("click", () => logout());
+  if (els.backBtn) {
+    els.backBtn.addEventListener("click", () => {
+      window.location.href = "dashboard.html";
+    });
+  }
+  if (els.logoutBtn) {
+    els.logoutBtn.addEventListener("click", () => logout());
+  }
+  if (els.headerLogoutBtn) {
+    els.headerLogoutBtn.addEventListener("click", () => logout());
+  }
 
   els.forms.product.addEventListener("submit", async (event) => {
     event.preventDefault();
