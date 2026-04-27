@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Warehouse Management - Safa Transport</title>
+    <title>إدارة العهد والمخازن - سفا ترانس</title>
     <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
     <style>
@@ -291,33 +291,33 @@
 <body>
     <header>
         <div class="brand">
-            <h1>Warehouse Management - Safa Transport</h1>
+            <h1>إدارة العهد والمخازن - سفا ترانس</h1>
         </div>
         <div class="header-actions">
             <button class="ghost-btn" onclick="window.location.href='dashboard.html'">
-                <i class="fas fa-arrow-left"></i> Dashboard
+                <i class="fas fa-arrow-left"></i> لوحة التحكم
             </button>
-            <button class="ghost-btn" id="logoutBtn">Logout</button>
+            <button class="ghost-btn" id="logoutBtn">تسجيل الخروج</button>
         </div>
     </header>
 
     <div class="container">
         <section class="hero">
-            <h2>Warehouse Management System</h2>
-            <p>Manage warehouse inventory, track items, and monitor stock levels efficiently.</p>
+            <h2>نظام إدارة العهد والمخازن</h2>
+            <p>إدارة العهدة اليومية ومتابعة القيود والحركات لكل فرع بشكل منظم وسريع.</p>
         </section>
 
         <div class="nav-grid">
             <div class="nav-card" onclick="openWarehouseSection('alexandria')">
-                <h3><i class="fas fa-warehouse"></i> Alexandria Warehouse</h3>
-                <p>Manage inventory and operations for the Alexandria branch warehouse.</p>
-                <button>Open Alexandria</button>
+                <h3><i class="fas fa-warehouse"></i> مخزن الإسكندرية</h3>
+                <p>إدارة عهدة وحركات فرع الإسكندرية ومتابعة البيانات اليومية.</p>
+                <button>فتح الإسكندرية</button>
             </div>
             
             <div class="nav-card" onclick="openWarehouseSection('dekkela')">
-                <h3><i class="fas fa-warehouse"></i> Dekkela Warehouse</h3>
-                <p>Manage inventory and operations for the Dekkela branch warehouse.</p>
-                <button>Open Dekkela</button>
+                <h3><i class="fas fa-warehouse"></i> مخزن الدخيلة</h3>
+                <p>إدارة عهدة وحركات فرع الدخيلة ومتابعة البيانات اليومية.</p>
+                <button>فتح الدخيلة</button>
             </div>
         </div>
 
@@ -337,6 +337,7 @@
                     <thead>
                         <tr>
                             <th>التاريخ</th>
+                            <th>مسئول العهدة</th>
                             <th>الوصف</th>
                             <th>دائن</th>
                             <th>مدين</th>
@@ -346,8 +347,8 @@
                     </thead>
                     <tbody id="alexandria-table-body">
                         <tr>
-                            <td colspan="6" style="text-align: center; color: var(--muted);">
-                                Loading data...
+                            <td colspan="7" style="text-align: center; color: var(--muted);">
+                                جاري تحميل البيانات...
                             </td>
                         </tr>
                     </tbody>
@@ -371,6 +372,7 @@
                     <thead>
                         <tr>
                             <th>التاريخ</th>
+                            <th>مسئول العهدة</th>
                             <th>الوصف</th>
                             <th>دائن</th>
                             <th>مدين</th>
@@ -380,8 +382,8 @@
                     </thead>
                     <tbody id="dekkela-table-body">
                         <tr>
-                            <td colspan="6" style="text-align: center; color: var(--muted);">
-                                Loading data...
+                            <td colspan="7" style="text-align: center; color: var(--muted);">
+                                جاري تحميل البيانات...
                             </td>
                         </tr>
                     </tbody>
@@ -452,8 +454,8 @@
             const statusDiv = document.getElementById(`${branch}-status`);
             const tbody = document.getElementById(`${branch}-table-body`);
             
-            statusDiv.innerHTML = '<div class="status-message">Loading data...</div>';
-            tbody.innerHTML = '<tr><td colspan="6" style="text-align: center;">Loading...</td></tr>';
+            statusDiv.innerHTML = '<div class="status-message">جاري تحميل البيانات...</div>';
+            tbody.innerHTML = '<tr><td colspan="7" style="text-align: center;">جاري التحميل...</td></tr>';
             
             // Simple query without orderBy to avoid index requirement
             db.collection('warehouse')
@@ -474,12 +476,12 @@
                     
                     warehouseData[branch] = data;
                     renderWarehouseTable(branch);
-                    statusDiv.innerHTML = `<div class="status-message success">Loaded ${data.length} items</div>`;
+                    statusDiv.innerHTML = `<div class="status-message success">تم تحميل ${data.length} سجل</div>`;
                 })
                 .catch(error => {
                     console.error('Error loading data:', error);
-                    statusDiv.innerHTML = '<div class="status-message error">Error loading data</div>';
-                    tbody.innerHTML = '<tr><td colspan="6" style="text-align: center; color: red;">Error loading data</td></tr>';
+                    statusDiv.innerHTML = '<div class="status-message error">حدث خطأ أثناء تحميل البيانات</div>';
+                    tbody.innerHTML = '<tr><td colspan="7" style="text-align: center; color: red;">حدث خطأ أثناء تحميل البيانات</td></tr>';
                 });
         }
 
@@ -489,13 +491,14 @@
             const data = warehouseData[branch] || [];
             
             if (data.length === 0) {
-                tbody.innerHTML = '<tr><td colspan="6" style="text-align: center; color: var(--muted);">No data available</td></tr>';
+                tbody.innerHTML = '<tr><td colspan="7" style="text-align: center; color: var(--muted);">لا توجد بيانات متاحة</td></tr>';
                 return;
             }
             
             tbody.innerHTML = data.map(item => `
                 <tr>
                     <td><input type="date" value="${item.date || ''}" onchange="updateItem('${branch}', '${item.id}', 'date', this.value)"></td>
+                    <td><input type="text" value="${item.custodyOfficer || ''}" placeholder="مسئول العهدة" onchange="updateItem('${branch}', '${item.id}', 'custodyOfficer', this.value)"></td>
                     <td><input type="text" value="${item.description || ''}" placeholder="الوصف" onchange="updateItem('${branch}', '${item.id}', 'description', this.value)"></td>
                     <td><input type="number" value="${item.credit || 0}" step="0.01" onchange="updateItem('${branch}', '${item.id}', 'credit', this.value)"></td>
                     <td><input type="number" value="${item.debit || 0}" step="0.01" onchange="updateItem('${branch}', '${item.id}', 'debit', this.value)"></td>
@@ -510,6 +513,7 @@
             const newItem = {
                 branch: branch,
                 date: new Date().toISOString().split('T')[0],
+                custodyOfficer: '',
                 description: '',
                 credit: 0,
                 debit: 0,
@@ -525,7 +529,7 @@
                 })
                 .catch(error => {
                     console.error('Error adding item:', error);
-                    alert('Error adding item');
+                    alert('حدث خطأ أثناء إضافة السجل');
                 });
         }
 
@@ -542,7 +546,7 @@
                 })
                 .catch(error => {
                     console.error('Error updating item:', error);
-                    alert('Error updating item');
+                    alert('حدث خطأ أثناء تحديث السجل');
                 });
         }
 
@@ -559,12 +563,12 @@
                 })
                 .catch(error => {
                     console.error('Error deleting item:', error);
-                    alert('Error deleting item');
+                    alert('حدث خطأ أثناء حذف السجل');
                 });
         }
 
         // Initialize
-        console.log('Warehouse Management System initialized');
+        console.log('تم تهيئة صفحة إدارة العهد والمخازن');
     </script>
 </body>
 </html>
