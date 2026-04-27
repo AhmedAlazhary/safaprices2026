@@ -581,3 +581,354 @@ exports.garageSystemSettleLiability = functions.https.onCall(async (payload, con
 
   return { success: true };
 });
+
+const accountingCollections = {
+  items: "Items",
+  workOrders: "GarageWorkOrders",
+  movements: "GarageMovements",
+  custody: "GarageCustody",
+  journalEntries: "journal_entries",
+  inventoryAdjustments: "GarageInventoryAdjustments",
+  scrap: "GarageScrap"
+};
+
+const accountingAccounts = {
+  inventoryAsset: "inventory_asset",
+  maintenanceExpense: "maintenance_expense",
+  scrapLossExpense: "scrap_loss_expense",
+  inventoryLossExpense: "inventory_loss_expense",
+  inventoryGainRevenue: "inventory_gain_revenue"
+};
+
+function toNumber(value, fallback = 0) {
+  const parsed = Number(value);
+  return Number.isFinite(parsed) ? parsed : fallback;
+}
+
+function buildTopLevelJournalEntry({
+  type,
+  description,
+  amount,
+  debitAccountId,
+  creditAccountId,
+  sourceCollection,
+  sourceId,
+  metadata = {}
+}) {
+  return {
+    type,
+    description,
+    amount,
+    date: FieldValue.serverTimestamp(),
+    createdAt: FieldValue.serverTimestamp(),
+    debit: {
+      accountId: debitAccountId,
+      amount
+    },
+    credit: {
+      accountId: creditAccountId,
+      amount
+    },
+    linkedDocId: sourceId,
+    sourceCollection,
+    metadata
+  };
+}
+
+function custodyLiabilityAccount(officerName) {
+  const normalized = String(officerName || "unknown")
+    .trim()
+    .toLowerCase()
+    .replace(/\s+/g, "_")
+    .replace(/[^a-z0-9_\u0600-\u06FF]/g, "");
+
+  return `custody_${normalized || "unknown"}`;
+}
+
+exports.onStockMovementCreate = functions.firestore
+  .document("GarageMovements/{movementId}")
+  .onCreate(async (snapshot, context) => {
+    const movementRef = snapshot.ref;
+
+    await db.runTransaction(async (transaction) => {
+      const movementSnap = await transaction.get(movementRef);
+      if (!movementSnap.exists) return;
+
+      const movement = movementSnap.data() || {};
+      if (movement.processedAt || movement.status === "FAILED") {
+        return;
+      }
+
+      const itemId = normalizeText(movement.itemId);
+      const movementType = normalizeText(movement.movementType || movement.type || "OUT").toUpperCase();
+      const quantity = toNumber(movement.quantity, 0);
+      const cost = toNumber(movement.cost, 0);
+
+      if (!itemId || quantity <= 0) {
+        transaction.update(movementRef, {
+          status: "FAILED",
+          errorMessage: "Invalid movement payload",
+          processedAt: FieldValue.serverTimestamp()
+        });
+        return;
+      }
+
+      const itemRef = db.collection(accountingCollections.items).doc(itemId);
+      const itemSnap = await transaction.get(itemRef);
+      if (!itemSnap.exists) {
+        transaction.update(movementRef, {
+          status: "FAILED",
+          errorMessage: "Item not found",
+          processedAt: FieldValue.serverTimestamp()
+        });
+        return;
+      }
+
+      const item = itemSnap.data() || {};
+      const currentQty = toNumber(item.quantity, 0);
+      const unitPrice = toNumber(item.unitPrice, 0);
+      const resolvedCost = cost > 0 ? cost : unitPrice * quantity;
+      let nextQty = currentQty;
+
+      if (movementType === "OUT") {
+        if (quantity > currentQty) {
+          transaction.update(movementRef, {
+            status: "FAILED",
+            errorMessage: `Insufficient stock. Available: ${currentQty}`,
+            processedAt: FieldValue.serverTimestamp()
+          });
+          return;
+        }
+        nextQty = currentQty - quantity;
+      } else if (movementType === "IN" || movementType === "RETURN") {
+        nextQty = currentQty + quantity;
+      }
+
+      transaction.update(itemRef, {
+        quantity: nextQty,
+        updatedAt: FieldValue.serverTimestamp()
+      });
+
+      let journalEntryId = null;
+      if (resolvedCost > 0) {
+        const journalRef = db.collection(accountingCollections.journalEntries).doc();
+        journalEntryId = journalRef.id;
+
+        let debitAccountId = accountingAccounts.inventoryAsset;
+        let creditAccountId = accountingAccounts.maintenanceExpense;
+
+        if (movementType === "OUT") {
+          debitAccountId = accountingAccounts.maintenanceExpense;
+          creditAccountId = movement.custodyOfficer
+            ? custodyLiabilityAccount(movement.custodyOfficer)
+            : accountingAccounts.inventoryAsset;
+        } else if (movementType === "IN") {
+          debitAccountId = accountingAccounts.inventoryAsset;
+          creditAccountId = movement.custodyOfficer
+            ? custodyLiabilityAccount(movement.custodyOfficer)
+            : accountingAccounts.maintenanceExpense;
+        } else if (movementType === "RETURN") {
+          debitAccountId = accountingAccounts.inventoryAsset;
+          creditAccountId = accountingAccounts.maintenanceExpense;
+        }
+
+        transaction.set(journalRef, buildTopLevelJournalEntry({
+          type: movementType,
+          description: movement.notes || `${movementType} - ${item.name || itemId}`,
+          amount: resolvedCost,
+          debitAccountId,
+          creditAccountId,
+          sourceCollection: accountingCollections.movements,
+          sourceId: movementRef.id,
+          metadata: {
+            itemId,
+            itemName: item.name || "",
+            quantity,
+            assetId: movement.assetId || "",
+            workOrderId: movement.workOrderId || "",
+            custodyOfficer: movement.custodyOfficer || ""
+          }
+        }));
+      }
+
+      if (movement.workOrderId) {
+        const workOrderRef = db.collection(accountingCollections.workOrders).doc(movement.workOrderId);
+        const workOrderSnap = await transaction.get(workOrderRef);
+        if (workOrderSnap.exists) {
+          const workOrder = workOrderSnap.data() || {};
+          transaction.update(workOrderRef, {
+            totalCost: toNumber(workOrder.totalCost, 0) + resolvedCost,
+            updatedAt: FieldValue.serverTimestamp()
+          });
+        }
+      }
+
+      if (movement.custodyOfficer && movementType === "OUT" && resolvedCost > 0) {
+        const custodyRef = db.collection(accountingCollections.custody).doc();
+        transaction.set(custodyRef, {
+          date: movement.date || new Date().toISOString().split("T")[0],
+          custodyOfficer: normalizeText(movement.custodyOfficer),
+          description: `صرف قطع غيار - ${item.name || ""}`.trim(),
+          custodyIn: 0,
+          clearanceOut: resolvedCost,
+          notes: movement.notes || "",
+          linkedMovementId: movementRef.id,
+          updatedAt: FieldValue.serverTimestamp(),
+          createdAt: FieldValue.serverTimestamp()
+        });
+      }
+
+      let scrapId = null;
+      if (movement.isReplacement && normalizeText(movement.replacementOldPart)) {
+        const scrapRef = db.collection(accountingCollections.scrap).doc();
+        scrapId = scrapRef.id;
+        transaction.set(scrapRef, {
+          movementId: movementRef.id,
+          itemId,
+          oldPartName: normalizeText(movement.replacementOldPart),
+          scrapValue: toNumber(movement.scrapValue, 0),
+          assetId: movement.assetId || "",
+          workOrderId: movement.workOrderId || "",
+          status: "PENDING",
+          autoCreated: true,
+          date: movement.date || new Date().toISOString().split("T")[0],
+          createdBy: movement.createdBy || "system",
+          createdAt: FieldValue.serverTimestamp(),
+          updatedAt: FieldValue.serverTimestamp()
+        });
+      }
+
+      transaction.update(movementRef, {
+        status: "PROCESSED",
+        processedAt: FieldValue.serverTimestamp(),
+        processedCost: resolvedCost,
+        journalEntryId,
+        scrapId
+      });
+    });
+  });
+
+exports.onScrapCreate = functions.firestore
+  .document("GarageScrap/{scrapId}")
+  .onCreate(async (snapshot, context) => {
+    const scrapRef = snapshot.ref;
+
+    await db.runTransaction(async (transaction) => {
+      const scrapSnap = await transaction.get(scrapRef);
+      if (!scrapSnap.exists) return;
+
+      const scrap = scrapSnap.data() || {};
+      if (scrap.processedAt || scrap.status === "FAILED") {
+        return;
+      }
+
+      const scrapValue = toNumber(scrap.scrapValue, 0);
+      let journalEntryId = null;
+
+      if (scrapValue > 0) {
+        const journalRef = db.collection(accountingCollections.journalEntries).doc();
+        journalEntryId = journalRef.id;
+        transaction.set(journalRef, buildTopLevelJournalEntry({
+          type: "SCRAP",
+          description: `خردة / خسارة - ${scrap.oldPartName || ""}`.trim(),
+          amount: scrapValue,
+          debitAccountId: accountingAccounts.scrapLossExpense,
+          creditAccountId: accountingAccounts.inventoryAsset,
+          sourceCollection: accountingCollections.scrap,
+          sourceId: scrapRef.id,
+          metadata: {
+            movementId: scrap.movementId || "",
+            assetId: scrap.assetId || "",
+            workOrderId: scrap.workOrderId || ""
+          }
+        }));
+      }
+
+      transaction.update(scrapRef, {
+        status: "PROCESSED",
+        processedAt: FieldValue.serverTimestamp(),
+        journalEntryId
+      });
+    });
+  });
+
+exports.onInventoryAdjustment = functions.firestore
+  .document("GarageInventoryAdjustments/{adjustmentId}")
+  .onCreate(async (snapshot, context) => {
+    const adjustmentRef = snapshot.ref;
+
+    await db.runTransaction(async (transaction) => {
+      const adjustmentSnap = await transaction.get(adjustmentRef);
+      if (!adjustmentSnap.exists) return;
+
+      const adjustment = adjustmentSnap.data() || {};
+      if (adjustment.processedAt || adjustment.status === "FAILED") {
+        return;
+      }
+
+      const itemId = normalizeText(adjustment.itemId);
+      const actualQuantity = toNumber(adjustment.actualQuantity, 0);
+      if (!itemId) {
+        transaction.update(adjustmentRef, {
+          status: "FAILED",
+          errorMessage: "Missing itemId",
+          processedAt: FieldValue.serverTimestamp()
+        });
+        return;
+      }
+
+      const itemRef = db.collection(accountingCollections.items).doc(itemId);
+      const itemSnap = await transaction.get(itemRef);
+      if (!itemSnap.exists) {
+        transaction.update(adjustmentRef, {
+          status: "FAILED",
+          errorMessage: "Item not found",
+          processedAt: FieldValue.serverTimestamp()
+        });
+        return;
+      }
+
+      const item = itemSnap.data() || {};
+      const systemQuantity = toNumber(item.quantity, 0);
+      const difference = actualQuantity - systemQuantity;
+      const unitPrice = toNumber(item.unitPrice, toNumber(adjustment.unitPrice, 0));
+      const amount = Math.abs(difference) * unitPrice;
+      let journalEntryId = null;
+
+      transaction.update(itemRef, {
+        quantity: actualQuantity,
+        updatedAt: FieldValue.serverTimestamp()
+      });
+
+      if (difference !== 0 && amount > 0) {
+        const journalRef = db.collection(accountingCollections.journalEntries).doc();
+        journalEntryId = journalRef.id;
+        const isShortage = difference < 0;
+        transaction.set(journalRef, buildTopLevelJournalEntry({
+          type: "ADJUSTMENT",
+          description: adjustment.notes || `تسوية جرد - ${item.name || itemId}`,
+          amount,
+          debitAccountId: isShortage ? accountingAccounts.inventoryLossExpense : accountingAccounts.inventoryAsset,
+          creditAccountId: isShortage ? accountingAccounts.inventoryAsset : accountingAccounts.inventoryGainRevenue,
+          sourceCollection: accountingCollections.inventoryAdjustments,
+          sourceId: adjustmentRef.id,
+          metadata: {
+            itemId,
+            itemName: item.name || "",
+            systemQuantity,
+            actualQuantity,
+            difference
+          }
+        }));
+      }
+
+      transaction.update(adjustmentRef, {
+        status: "PROCESSED",
+        processedAt: FieldValue.serverTimestamp(),
+        journalEntryId,
+        resolvedSystemQuantity: systemQuantity,
+        resolvedDifference: difference,
+        resolvedAmount: amount
+      });
+    });
+  });

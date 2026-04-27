@@ -158,12 +158,13 @@ header {
 
 button {
   border: none;
-  border-radius: 12px;
-  padding: 11px 16px;
+  border-radius: 8px;
+  padding: 8px 12px;
   cursor: pointer;
-  font-size: 0.98rem;
-  font-weight: 700;
+  font-size: 0.9rem;
+  font-weight: 600;
   transition: transform 0.15s ease;
+  white-space: nowrap;
 }
 
 button:hover {
@@ -495,6 +496,63 @@ tr:hover {
 .print-btn:hover {
   background: #218838;
 }
+
+/* Responsive Design */
+@media (max-width: 768px) {
+  .container {
+    width: calc(100% - 16px);
+    margin: 12px auto;
+  }
+  
+  .tabs {
+    flex-wrap: wrap;
+  }
+  
+  .tab {
+    flex: 1;
+    min-width: 100px;
+    font-size: 0.85rem;
+    padding: 10px 8px;
+  }
+  
+  .form-grid {
+    grid-template-columns: 1fr;
+  }
+  
+  .filters {
+    grid-template-columns: 1fr;
+  }
+  
+  .table-container {
+    overflow-x: auto;
+  }
+  
+  .panel {
+    padding: 16px;
+    margin-bottom: 12px;
+  }
+  
+  .modal-content {
+    width: 95%;
+    margin: 10% auto;
+    padding: 16px;
+  }
+  
+  button {
+    font-size: 0.85rem;
+    padding: 6px 10px;
+  }
+  
+  .header-actions {
+    flex-direction: column;
+    width: 100%;
+  }
+  
+  .header-actions button {
+    width: 100%;
+    margin-bottom: 4px;
+  }
+}
 </style>
 </head>
 <body>
@@ -515,6 +573,8 @@ tr:hover {
     <button class="tab active" onclick="switchTab('inventory', event)">المخزن</button>
     <button class="tab" onclick="switchTab('custody', event)">العهدة والتصفيات</button>
     <button class="tab" onclick="switchTab('assets', event)">الجراج/الأصول</button>
+    <button class="tab" onclick="switchTab('suppliers', event)">الموردين</button>
+    <button class="tab" onclick="switchTab('ledger', event)">الدفتر المحاسبي</button>
     <button class="tab" onclick="switchTab('lists', event)">القوائم</button>
     <button class="tab" onclick="switchTab('reports', event)">التقارير</button>
   </div>
@@ -549,18 +609,55 @@ tr:hover {
         <button class="primary-btn" onclick="openItemModal()">إضافة صنف جديد</button>
         <button class="success-btn" onclick="generateInventoryReport()">تقرير جرد</button>
         <button class="warning-btn" onclick="showInventoryTotals()">إجماليات المخزن</button>
+        <button class="danger-btn" onclick="openInventoryCountPanel()">جرد فعلي وتسوية</button>
       </div>
       
       <!-- Inventory Totals Section -->
       <div id="inventoryTotalsSection" class="panel" style="background: linear-gradient(135deg, #f0f8ff 0%, #e6f3ff 100%); border: 2px solid var(--accent); margin-bottom: 20px; display: none;">
         <div style="padding: 20px;">
-          <h3 style="margin: 0 0 20px 0; color: var(--primary); font-size: 1.3rem;">**Total Inventory Summary**</h3>
+          <h3 style="margin: 0 0 20px 0; color: var(--primary); font-size: 1.3rem;">إجمالي ملخص المخزون</h3>
           <div id="inventoryTotalsContent" style="display: grid; grid-template-columns: repeat(auto-fit, minmax(250px, 1fr)); gap: 16px;">
             <!-- Totals will be loaded here -->
           </div>
           <div style="margin-top: 20px; text-align: center;">
-            <button class="ghost-btn" onclick="hideInventoryTotals()">Hide Totals</button>
+            <button class="ghost-btn" onclick="hideInventoryTotals()">إخفاء الإجماليات</button>
           </div>
+        </div>
+      </div>
+
+      <div id="inventoryCountSection" class="panel" style="background: linear-gradient(135deg, #fff7ed 0%, #ffedd5 100%); border: 2px solid var(--warning); margin-bottom: 20px; display: none;">
+        <div style="padding: 20px;">
+          <h3 style="margin: 0 0 16px 0; color: var(--primary); font-size: 1.2rem;">الجرد الفعلي وتسوية المخزون</h3>
+          <form id="inventoryAdjustmentForm">
+            <div class="form-grid">
+              <div class="form-group">
+                <label>الصنف *</label>
+                <select id="inventoryAdjustmentItem" required onchange="updateInventoryAdjustmentPreview()">
+                  <option value="">اختر الصنف</option>
+                </select>
+              </div>
+              <div class="form-group">
+                <label>الكمية بالنظام</label>
+                <input type="number" id="inventorySystemQuantity" readonly>
+              </div>
+              <div class="form-group">
+                <label>الكمية الفعلية *</label>
+                <input type="number" id="inventoryActualQuantity" min="0" required onchange="updateInventoryAdjustmentPreview()" oninput="updateInventoryAdjustmentPreview()">
+              </div>
+              <div class="form-group">
+                <label>الفرق</label>
+                <input type="number" id="inventoryDifference" readonly>
+              </div>
+              <div class="form-group" style="grid-column: 1 / -1;">
+                <label>ملاحظات</label>
+                <input type="text" id="inventoryAdjustmentNotes" placeholder="ملاحظات الجرد أو سبب التسوية">
+              </div>
+            </div>
+            <div style="display: flex; gap: 12px; justify-content: center;">
+              <button type="submit" class="warning-btn">إرسال طلب التسوية</button>
+              <button type="button" class="ghost-btn" onclick="closeInventoryCountPanel()">إغلاق</button>
+            </div>
+          </form>
         </div>
       </div>
 
@@ -818,9 +915,38 @@ tr:hover {
                 <label>قيمة الحركة</label>
                 <input type="number" id="garageIssueCost" min="0" step="0.01" placeholder="اتركها فارغة للاعتماد على سعر الصنف">
               </div>
+              <div class="form-group">
+                <label>مسئول العهدة</label>
+                <input type="text" id="garageIssueCustodyOfficer" placeholder="اسم مسئول العهدة أو المستلم">
+              </div>
+              <div class="form-group">
+                <label>استبدال بقطعة قديمة؟</label>
+                <select id="garageIssueReplacementFlag">
+                  <option value="no">لا</option>
+                  <option value="yes">نعم</option>
+                </select>
+              </div>
+              <div class="form-group">
+                <label>القطعة القديمة</label>
+                <input type="text" id="garageIssueOldPart" placeholder="اسم أو وصف القطعة القديمة">
+              </div>
+              <div class="form-group">
+                <label>قيمة الخردة / الخسارة</label>
+                <input type="number" id="garageIssueScrapValue" min="0" step="0.01" placeholder="0.00">
+              </div>
               <div class="form-group" style="grid-column: 1 / -1;">
                 <label>ملاحظات</label>
                 <input type="text" id="garageIssueNotes">
+              </div>
+              <div class="form-group" style="grid-column: 1 / -1;">
+                <label>صورة القطعة/الحركة</label>
+                <div style="display: flex; gap: 12px; align-items: center;">
+                  <input type="file" id="garageIssueImage" accept="image/*" capture="environment" style="flex: 1;">
+                  <button type="button" class="secondary-btn" onclick="captureImage('garageIssueImage')">التقاط صورة</button>
+                </div>
+                <div id="garageIssueImagePreview" style="margin-top: 8px; max-width: 200px; max-height: 200px; display: none;">
+                  <img id="garageIssueImagePreviewImg" style="width: 100%; height: auto; border-radius: 8px;">
+                </div>
               </div>
             </div>
             <div style="display: flex; gap: 12px; justify-content: center;">
@@ -889,6 +1015,122 @@ tr:hover {
             </tbody>
           </table>
         </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Suppliers Tab -->
+  <div id="suppliers-tab" class="tab-content">
+    <div class="panel">
+      <h2>إدارة الموردين</h2>
+      
+      <!-- Actions -->
+      <div style="display: flex; gap: 12px; margin-bottom: 20px; flex-wrap: wrap;">
+        <button class="primary-btn" onclick="openSupplierModal()">إضافة مورد جديد</button>
+        <button class="success-btn" onclick="generateSuppliersReport()">تقرير الموردين</button>
+      </div>
+      
+      <!-- Suppliers Table -->
+      <div class="table-container">
+        <table>
+          <thead>
+            <tr>
+              <th>اسم المورد</th>
+              <th>رقم التليفون</th>
+              <th>البريد الإلكتروني</th>
+              <th>العنوان</th>
+              <th>التصنيفات</th>
+              <th>الرصيد الحالي</th>
+              <th>الحالة</th>
+              <th>الإجراءات</th>
+            </tr>
+          </thead>
+          <tbody id="suppliersTableBody">
+            <tr>
+              <td colspan="8" style="text-align: center; padding: 40px;">
+                جاري تحميل البيانات...
+              </td>
+            </tr>
+          </tbody>
+        </table>
+      </div>
+    </div>
+  </div>
+
+  <!-- Ledger Tab -->
+  <div id="ledger-tab" class="tab-content">
+    <div class="panel">
+      <h2>الدفتر المحاسبي</h2>
+      
+      <!-- Filters -->
+      <div class="filters">
+        <div class="form-group">
+          <label>من تاريخ</label>
+          <input type="date" id="ledgerDateFrom">
+        </div>
+        <div class="form-group">
+          <label>إلى تاريخ</label>
+          <input type="date" id="ledgerDateTo">
+        </div>
+        <div class="form-group">
+          <label>الحساب</label>
+          <select id="ledgerAccountFilter">
+            <option value="">جميع الحسابات</option>
+            <option value="inventory">المخزون</option>
+            <option value="custody">العهدة</option>
+            <option value="expenses">المصروفات</option>
+            <option value="scrap">الخردة/الخسائر</option>
+            <option value="suppliers">الموردين</option>
+          </select>
+        </div>
+        <div class="form-group">
+          <label>النوع</label>
+          <select id="ledgerTypeFilter">
+            <option value="">جميع الأنواع</option>
+            <option value="IN">وارد</option>
+            <option value="OUT">صرف</option>
+            <option value="SCRAP">خردة</option>
+            <option value="ADJUSTMENT">تسوية</option>
+            <option value="SETTLEMENT">تصفية</option>
+          </select>
+        </div>
+        <div class="form-group">
+          <label>&nbsp;</label>
+          <button class="primary-btn" onclick="filterLedger()">فلترة</button>
+        </div>
+      </div>
+      
+      <!-- Actions -->
+      <div style="display: flex; gap: 12px; margin-bottom: 20px; flex-wrap: wrap;">
+        <button class="success-btn" onclick="generateLedgerReport()">تقرير الدفتر</button>
+        <button class="warning-btn" onclick="exportLedgerToExcel()">تصدير Excel</button>
+        <button class="danger-btn" onclick="printLedger()">طباعة</button>
+      </div>
+      
+      <!-- Ledger Table -->
+      <div class="table-container">
+        <table>
+          <thead>
+            <tr>
+              <th>التاريخ</th>
+              <th>المرجع</th>
+              <th>النوع</th>
+              <th>الوصف</th>
+              <th>مدين</th>
+              <th>دائن</th>
+              <th>الرصيد</th>
+              <th>الحساب</th>
+              <th>الإجراءات</th>
+            </tr>
+          </thead>
+          <tbody id="ledgerTableBody">
+            <tr>
+              <td colspan="9" style="text-align: center; padding: 40px;">
+                جاري تحميل البيانات...
+              </td>
+            </tr>
+          </tbody>
+        </table>
       </div>
     </div>
   </div>
@@ -1177,6 +1419,60 @@ tr:hover {
   </div>
 </div>
 
+<!-- Supplier Modal -->
+<div id="supplierModal" class="modal">
+  <div class="modal-content">
+    <span class="close-btn" onclick="closeSupplierModal()">&times;</span>
+    <h2 id="supplierModalTitle">إضافة مورد جديد</h2>
+    <form id="supplierForm">
+      <div class="form-grid">
+        <div class="form-group">
+          <label>اسم المورد *</label>
+          <input type="text" id="supplierName" required>
+        </div>
+        <div class="form-group">
+          <label>رقم التليفون</label>
+          <input type="tel" id="supplierPhone">
+        </div>
+        <div class="form-group">
+          <label>البريد الإلكتروني</label>
+          <input type="email" id="supplierEmail">
+        </div>
+        <div class="form-group">
+          <label>العنوان</label>
+          <input type="text" id="supplierAddress">
+        </div>
+        <div class="form-group">
+          <label>التصنيفات</label>
+          <select id="supplierCategories" multiple style="min-height: 80px;">
+            <!-- Categories will be loaded here -->
+          </select>
+        </div>
+        <div class="form-group">
+          <label>الرصيد الافتتاحي</label>
+          <input type="number" id="supplierOpeningBalance" step="0.01" value="0">
+        </div>
+        <div class="form-group">
+          <label>الحالة</label>
+          <select id="supplierStatus">
+            <option value="active">نشط</option>
+            <option value="inactive">غير نشط</option>
+            <option value="suspended">موقوف</option>
+          </select>
+        </div>
+        <div class="form-group">
+          <label>ملاحظات</label>
+          <input type="text" id="supplierNotes">
+        </div>
+      </div>
+      <div style="display: flex; gap: 12px; justify-content: center;">
+        <button type="button" class="ghost-btn" onclick="closeSupplierModal()">إلغاء</button>
+        <button type="submit" class="primary-btn">حفظ</button>
+      </div>
+    </form>
+  </div>
+</div>
+
 <div id="alerts"></div>
 
 <!-- Disbursement Modal -->
@@ -1274,6 +1570,7 @@ let currentUser = null;
 let currentEditingItem = null;
 let currentEditingAsset = null;
 let settlementItems = [];
+let inventoryItemsCache = [];
 let garageAssetsCache = [];
 let garageWorkersCache = [];
 let garageWorkOrdersCache = [];
@@ -1346,6 +1643,7 @@ function setupEventListeners() {
   document.getElementById('garageWorkerForm').addEventListener('submit', handleGarageWorkerSubmit);
   document.getElementById('garageWorkOrderForm').addEventListener('submit', handleGarageWorkOrderSubmit);
   document.getElementById('garageIssueForm').addEventListener('submit', handleGarageIssueSubmit);
+  document.getElementById('inventoryAdjustmentForm').addEventListener('submit', handleInventoryAdjustmentSubmit);
   
   // Search and filters
   document.getElementById('inventorySearch').addEventListener('input', filterInventory);
@@ -1368,11 +1666,13 @@ async function loadInventory() {
     querySnapshot.forEach((doc) => {
       items.push({ id: doc.id, ...doc.data() });
     });
+    inventoryItemsCache = items;
     
     console.log('Loaded items:', items);
     displayInventory(items);
     updateLookups(items);
     updateGarageIssueItems();
+    updateInventoryAdjustmentItems();
     
     // If no items exist, show initialization option
     if (items.length === 0) {
@@ -1884,18 +2184,42 @@ function generateAssetsReport() {
 function updateGarageIssueItems() {
   const select = document.getElementById('garageIssueItem');
   if (!select) return;
-  getDocs(collection(db, 'Items')).then((querySnapshot) => {
-    const options = ['<option value="">اختر الصنف</option>'];
-    querySnapshot.forEach((itemDoc) => {
-      const item = itemDoc.data();
-      if (Number(item.quantity || 0) > 0) {
-        options.push(`<option value="${itemDoc.id}">${item.name} (${item.quantity})</option>`);
-      }
-    });
-    select.innerHTML = options.join('');
-  }).catch((error) => {
-    console.error('Error loading issue items:', error);
+  const options = ['<option value="">اختر الصنف</option>'];
+  inventoryItemsCache.forEach((item) => {
+    if (Number(item.quantity || 0) > 0) {
+      options.push(`<option value="${item.id}">${item.name} (${item.quantity})</option>`);
+    }
   });
+  select.innerHTML = options.join('');
+}
+
+function updateInventoryAdjustmentItems() {
+  const select = document.getElementById('inventoryAdjustmentItem');
+  if (!select) return;
+  select.innerHTML = '<option value="">اختر الصنف</option>' + inventoryItemsCache
+    .map(item => `<option value="${item.id}">${item.name} (${item.quantity || 0})</option>`)
+    .join('');
+}
+
+function openInventoryCountPanel() {
+  document.getElementById('inventoryCountSection').style.display = 'block';
+  updateInventoryAdjustmentItems();
+}
+
+function closeInventoryCountPanel() {
+  document.getElementById('inventoryCountSection').style.display = 'none';
+  document.getElementById('inventoryAdjustmentForm').reset();
+  document.getElementById('inventorySystemQuantity').value = '';
+  document.getElementById('inventoryDifference').value = '';
+}
+
+function updateInventoryAdjustmentPreview() {
+  const itemId = document.getElementById('inventoryAdjustmentItem').value;
+  const actualQuantity = Number(document.getElementById('inventoryActualQuantity').value || 0);
+  const item = inventoryItemsCache.find(entry => entry.id === itemId);
+  const systemQuantity = Number(item?.quantity || 0);
+  document.getElementById('inventorySystemQuantity').value = itemId ? systemQuantity : '';
+  document.getElementById('inventoryDifference').value = itemId ? (actualQuantity - systemQuantity) : '';
 }
 
 // Utility functions
@@ -2110,6 +2434,10 @@ async function handleGarageIssueSubmit(e) {
     const workOrderId = document.getElementById('garageIssueWorkOrder').value;
     const quantity = parseInt(document.getElementById('garageIssueQuantity').value);
     const manualCost = parseFloat(document.getElementById('garageIssueCost').value);
+    const custodyOfficer = document.getElementById('garageIssueCustodyOfficer').value.trim();
+    const replacementFlag = document.getElementById('garageIssueReplacementFlag').value;
+    const oldPartName = document.getElementById('garageIssueOldPart').value.trim();
+    const scrapValue = parseFloat(document.getElementById('garageIssueScrapValue').value);
     const notes = document.getElementById('garageIssueNotes').value.trim();
 
     if (!itemId || !workOrderId || !quantity || quantity < 1) {
@@ -2117,66 +2445,85 @@ async function handleGarageIssueSubmit(e) {
       return;
     }
 
-    await runTransaction(db, async (transaction) => {
-      const itemRef = doc(db, 'Items', itemId);
-      const workOrderRef = doc(db, 'GarageWorkOrders', workOrderId);
+    const selectedItem = inventoryItemsCache.find(item => item.id === itemId);
+    const selectedWorkOrder = garageWorkOrdersCache.find(order => order.id === workOrderId);
+    if (!selectedItem) {
+      showAlert('الصنف غير موجود', 'danger');
+      return;
+    }
+    if (!selectedWorkOrder) {
+      showAlert('أمر الصيانة غير موجود', 'danger');
+      return;
+    }
 
-      const [itemSnap, workOrderSnap] = await Promise.all([
-        transaction.get(itemRef),
-        transaction.get(workOrderRef)
-      ]);
+    const unitPrice = Number(selectedItem.unitPrice || 0);
+    const cost = Number.isFinite(manualCost) && manualCost > 0 ? manualCost : (unitPrice * quantity);
 
-      if (!itemSnap.exists()) {
-        throw new Error('الصنف غير موجود');
-      }
-      if (!workOrderSnap.exists()) {
-        throw new Error('أمر الصيانة غير موجود');
-      }
-
-      const item = itemSnap.data();
-      const workOrder = workOrderSnap.data();
-      const currentQuantity = Number(item.quantity || 0);
-      if (quantity > currentQuantity) {
-        throw new Error(`الكمية غير كافية. المتاح: ${currentQuantity}`);
-      }
-
-      const unitPrice = Number(item.unitPrice || 0);
-      const cost = Number.isFinite(manualCost) && manualCost > 0 ? manualCost : (unitPrice * quantity);
-      const assetId = workOrder.assetId || '';
-
-      transaction.update(itemRef, {
-        quantity: currentQuantity - quantity,
-        updatedAt: serverTimestamp()
-      });
-
-      const movementRef = doc(collection(db, 'GarageMovements'));
-      transaction.set(movementRef, {
-        itemId,
-        itemName: item.name || '',
-        assetId,
-        workOrderId,
-        quantity,
-        cost,
-        date: new Date().toISOString().split('T')[0],
-        notes,
-        createdAt: serverTimestamp(),
-        updatedAt: serverTimestamp()
-      });
-
-      transaction.update(workOrderRef, {
-        totalCost: Number(workOrder.totalCost || 0) + cost,
-        updatedAt: serverTimestamp()
-      });
+    await addDoc(collection(db, 'GarageMovements'), {
+      movementType: 'OUT',
+      itemId,
+      itemName: selectedItem.name || '',
+      assetId: selectedWorkOrder.assetId || '',
+      workOrderId,
+      quantity,
+      cost,
+      notes,
+      custodyOfficer,
+      isReplacement: replacementFlag === 'yes',
+      replacementOldPart: oldPartName,
+      scrapValue: Number.isFinite(scrapValue) ? scrapValue : 0,
+      status: 'PENDING',
+      date: new Date().toISOString().split('T')[0],
+      createdBy: currentUser?.email || currentUser?.uid || 'unknown',
+      createdAt: serverTimestamp(),
+      updatedAt: serverTimestamp()
     });
 
     document.getElementById('garageIssueForm').reset();
-    showAlert('تم صرف قطع الغيار وربطها بأمر الصيانة', 'success');
-    loadInventory();
+    showAlert('تم إرسال حركة الصرف للمعالجة المحاسبية', 'success');
     loadGarageMovements();
-    loadGarageWorkOrders();
   } catch (error) {
     console.error('Error issuing garage item:', error);
     showAlert(error.message || 'Error issuing garage item', 'danger');
+  }
+}
+
+async function handleInventoryAdjustmentSubmit(e) {
+  e.preventDefault();
+  try {
+    const itemId = document.getElementById('inventoryAdjustmentItem').value;
+    const actualQuantity = Number(document.getElementById('inventoryActualQuantity').value);
+    const notes = document.getElementById('inventoryAdjustmentNotes').value.trim();
+    const item = inventoryItemsCache.find(entry => entry.id === itemId);
+
+    if (!itemId || !item) {
+      showAlert('اختر الصنف أولاً', 'danger');
+      return;
+    }
+    if (!Number.isFinite(actualQuantity) || actualQuantity < 0) {
+      showAlert('أدخل الكمية الفعلية بشكل صحيح', 'danger');
+      return;
+    }
+
+    await addDoc(collection(db, 'GarageInventoryAdjustments'), {
+      itemId,
+      itemName: item.name || '',
+      systemQuantity: Number(item.quantity || 0),
+      actualQuantity,
+      difference: actualQuantity - Number(item.quantity || 0),
+      unitPrice: Number(item.unitPrice || 0),
+      notes,
+      status: 'PENDING',
+      createdBy: currentUser?.email || currentUser?.uid || 'unknown',
+      createdAt: serverTimestamp(),
+      updatedAt: serverTimestamp()
+    });
+
+    showAlert('تم إرسال طلب الجرد والتسوية للمعالجة', 'success');
+    closeInventoryCountPanel();
+  } catch (error) {
+    console.error('Error creating inventory adjustment:', error);
+    showAlert('Error creating inventory adjustment', 'danger');
   }
 }
 
@@ -3829,6 +4176,539 @@ window.generateCategoryBasedBarcode = generateCategoryBasedBarcode;
 window.toggleBarcodeInput = toggleBarcodeInput;
 window.validateBarcodeFormat = validateBarcodeFormat;
 window.checkExistingItemByBarcode = checkExistingItemByBarcode;
+window.openInventoryCountPanel = openInventoryCountPanel;
+window.closeInventoryCountPanel = closeInventoryCountPanel;
+window.updateInventoryAdjustmentPreview = updateInventoryAdjustmentPreview;
+
+// ========== ACCOUNTING SYSTEM FUNCTIONS ==========
+
+// Supplier Management Functions
+async function openSupplierModal(supplierId = null) {
+  try {
+    // Load categories for supplier selection
+    const lookupsDoc = await getDoc(doc(db, 'Lookups', 'all'));
+    if (lookupsDoc.exists()) {
+      const categories = lookupsDoc.data().categories || [];
+      const categoriesSelect = document.getElementById('supplierCategories');
+      categoriesSelect.innerHTML = '';
+      categories.forEach(cat => {
+        categoriesSelect.innerHTML += `<option value="${cat}">${cat}</option>`;
+      });
+    }
+    
+    if (supplierId) {
+      // Edit mode
+      const supplierDoc = await getDoc(doc(db, 'Suppliers', supplierId));
+      if (supplierDoc.exists()) {
+        const supplier = supplierDoc.data();
+        document.getElementById('supplierModalTitle').textContent = 'تعديل مورد';
+        document.getElementById('supplierName').value = supplier.name || '';
+        document.getElementById('supplierPhone').value = supplier.phone || '';
+        document.getElementById('supplierEmail').value = supplier.email || '';
+        document.getElementById('supplierAddress').value = supplier.address || '';
+        document.getElementById('supplierOpeningBalance').value = supplier.openingBalance || 0;
+        document.getElementById('supplierStatus').value = supplier.status || 'active';
+        document.getElementById('supplierNotes').value = supplier.notes || '';
+        
+        // Set selected categories
+        const categoriesSelect = document.getElementById('supplierCategories');
+        Array.from(categoriesSelect.options).forEach(option => {
+          option.selected = supplier.categories && supplier.categories.includes(option.value);
+        });
+        
+        currentEditingSupplier = supplierId;
+      }
+    } else {
+      // Add mode
+      document.getElementById('supplierModalTitle').textContent = 'إضافة مورد جديد';
+      document.getElementById('supplierForm').reset();
+      currentEditingSupplier = null;
+    }
+    
+    document.getElementById('supplierModal').style.display = 'block';
+  } catch (error) {
+    console.error('Error opening supplier modal:', error);
+    showAlert('Error opening supplier modal', 'danger');
+  }
+}
+
+function closeSupplierModal() {
+  document.getElementById('supplierModal').style.display = 'none';
+  document.getElementById('supplierForm').reset();
+  currentEditingSupplier = null;
+}
+
+// Handle supplier form submission
+document.getElementById('supplierForm').addEventListener('submit', async (e) => {
+  e.preventDefault();
+  
+  try {
+    const supplierData = {
+      name: document.getElementById('supplierName').value,
+      phone: document.getElementById('supplierPhone').value,
+      email: document.getElementById('supplierEmail').value,
+      address: document.getElementById('supplierAddress').value,
+      categories: Array.from(document.getElementById('supplierCategories').selectedOptions).map(opt => opt.value),
+      openingBalance: parseFloat(document.getElementById('supplierOpeningBalance').value) || 0,
+      currentBalance: parseFloat(document.getElementById('supplierOpeningBalance').value) || 0,
+      status: document.getElementById('supplierStatus').value,
+      notes: document.getElementById('supplierNotes').value,
+      updatedAt: serverTimestamp()
+    };
+    
+    if (currentEditingSupplier) {
+      // Update existing supplier
+      await updateDoc(doc(db, 'Suppliers', currentEditingSupplier), supplierData);
+      showAlert('تم تحديث المورد بنجاح', 'success');
+    } else {
+      // Add new supplier
+      supplierData.createdAt = serverTimestamp();
+      await addDoc(collection(db, 'Suppliers'), supplierData);
+      showAlert('تم إضافة المورد بنجاح', 'success');
+    }
+    
+    closeSupplierModal();
+    loadSuppliers();
+  } catch (error) {
+    console.error('Error saving supplier:', error);
+    showAlert('Error saving supplier', 'danger');
+  }
+});
+
+async function loadSuppliers() {
+  try {
+    const querySnapshot = await getDocs(collection(db, 'Suppliers'));
+    const suppliers = [];
+    
+    querySnapshot.forEach((doc) => {
+      suppliers.push({ id: doc.id, ...doc.data() });
+    });
+    
+    displaySuppliers(suppliers);
+  } catch (error) {
+    console.error('Error loading suppliers:', error);
+  }
+}
+
+function displaySuppliers(suppliers) {
+  const tbody = document.getElementById('suppliersTableBody');
+  
+  if (suppliers.length === 0) {
+    tbody.innerHTML = '<tr><td colspan="8" style="text-align: center; padding: 40px;">لا يوجد موردين</td></tr>';
+    return;
+  }
+  
+  tbody.innerHTML = suppliers.map(supplier => `
+    <tr>
+      <td>${supplier.name}</td>
+      <td>${supplier.phone || 'N/A'}</td>
+      <td>${supplier.email || 'N/A'}</td>
+      <td>${supplier.address || 'N/A'}</td>
+      <td>${supplier.categories ? supplier.categories.join(', ') : 'N/A'}</td>
+      <td style="text-align: right; font-weight: 600;">${supplier.currentBalance ? supplier.currentBalance.toFixed(2) : '0.00'} ج.م</td>
+      <td>
+        <span class="status-badge status-${supplier.status || 'active'}">
+          ${supplier.status === 'active' ? 'نشط' : supplier.status === 'inactive' ? 'غير نشط' : 'موقوف'}
+        </span>
+      </td>
+      <td>
+        <button class="primary-btn" onclick="openSupplierModal('${supplier.id}')" style="margin: 2px;">تعديل</button>
+        <button class="danger-btn" onclick="deleteSupplier('${supplier.id}')" style="margin: 2px;">حذف</button>
+      </td>
+    </tr>
+  `).join('');
+}
+
+async function deleteSupplier(supplierId) {
+  if (!confirm('هل أنت متأكد من حذف هذا المورد؟')) return;
+  
+  try {
+    await deleteDoc(doc(db, 'Suppliers', supplierId));
+    showAlert('تم حذف المورد بنجاح', 'success');
+    loadSuppliers();
+  } catch (error) {
+    console.error('Error deleting supplier:', error);
+    showAlert('Error deleting supplier', 'danger');
+  }
+}
+
+// Ledger Functions
+async function loadLedger() {
+  try {
+    const querySnapshot = await getDocs(collection(db, 'JournalEntries'));
+    const entries = [];
+    
+    querySnapshot.forEach((doc) => {
+      entries.push({ id: doc.id, ...doc.data() });
+    });
+    
+    // Sort by date descending
+    entries.sort((a, b) => new Date(b.date) - new Date(a.date));
+    
+    displayLedger(entries);
+  } catch (error) {
+    console.error('Error loading ledger:', error);
+  }
+}
+
+function displayLedger(entries) {
+  const tbody = document.getElementById('ledgerTableBody');
+  
+  if (entries.length === 0) {
+    tbody.innerHTML = '<tr><td colspan="9" style="text-align: center; padding: 40px;">لا توجد قيود محاسبية</td></tr>';
+    return;
+  }
+  
+  let runningBalance = 0;
+  
+  tbody.innerHTML = entries.map(entry => {
+    const date = entry.date ? entry.date.toDate ? entry.date.toDate() : new Date(entry.date) : new Date();
+    const debit = entry.debit || 0;
+    const credit = entry.credit || 0;
+    runningBalance += debit - credit;
+    
+    return `
+      <tr>
+        <td>${date.toLocaleDateString('ar-EG')}</td>
+        <td>${entry.reference || 'N/A'}</td>
+        <td><span class="status-badge status-${entry.type.toLowerCase()}">${entry.type}</span></td>
+        <td>${entry.description}</td>
+        <td style="text-align: right; color: var(--success);">${debit > 0 ? debit.toFixed(2) : ''}</td>
+        <td style="text-align: right; color: var(--danger);">${credit > 0 ? credit.toFixed(2) : ''}</td>
+        <td style="text-align: right; font-weight: 600; ${runningBalance < 0 ? 'color: var(--danger);' : 'color: var(--success);'}">
+          ${runningBalance.toFixed(2)}
+        </td>
+        <td>${getAccountNameArabic(entry.account)}</td>
+        <td>
+          <button class="warning-btn" onclick="viewJournalEntry('${entry.id}')" style="margin: 2px;">عرض</button>
+        </td>
+      </tr>
+    `;
+  }).join('');
+}
+
+function getAccountNameArabic(account) {
+  const accountNames = {
+    'inventory': 'المخزون',
+    'custody': 'العهدة',
+    'expenses': 'المصروفات',
+    'scrap': 'الخردة/الخسائر',
+    'suppliers': 'الموردين',
+    'assets': 'الأصول'
+  };
+  return accountNames[account] || account;
+}
+
+async function filterLedger() {
+  try {
+    const dateFrom = document.getElementById('ledgerDateFrom').value;
+    const dateTo = document.getElementById('ledgerDateTo').value;
+    const account = document.getElementById('ledgerAccountFilter').value;
+    const type = document.getElementById('ledgerTypeFilter').value;
+    
+    let q = collection(db, 'JournalEntries');
+    
+    if (dateFrom) {
+      q = query(q, where('date', '>=', new Date(dateFrom)));
+    }
+    if (dateTo) {
+      q = query(q, where('date', '<=', new Date(dateTo + 'T23:59:59')));
+    }
+    if (account) {
+      q = query(q, where('account', '==', account));
+    }
+    if (type) {
+      q = query(q, where('type', '==', type));
+    }
+    
+    const querySnapshot = await getDocs(q);
+    const entries = [];
+    
+    querySnapshot.forEach((doc) => {
+      entries.push({ id: doc.id, ...doc.data() });
+    });
+    
+    entries.sort((a, b) => new Date(b.date) - new Date(a.date));
+    displayLedger(entries);
+  } catch (error) {
+    console.error('Error filtering ledger:', error);
+  }
+}
+
+// Accounting Entry Creation Functions
+async function createJournalEntry(entryData) {
+  try {
+    const entry = {
+      ...entryData,
+      createdAt: serverTimestamp(),
+      createdBy: currentUser?.uid || 'system'
+    };
+    
+    await addDoc(collection(db, 'JournalEntries'), entry);
+    console.log('Journal entry created:', entry);
+  } catch (error) {
+    console.error('Error creating journal entry:', error);
+  }
+}
+
+// Stock Movement Accounting
+async function createStockMovementJournal(movementType, itemId, quantity, unitPrice, description, reference) {
+  const totalValue = quantity * unitPrice;
+  
+  if (movementType === 'IN') {
+    // Debit Inventory, Credit Suppliers/Expenses
+    await createJournalEntry({
+      date: new Date(),
+      type: 'IN',
+      reference: reference,
+      description: description,
+      debit: totalValue,
+      credit: 0,
+      account: 'inventory',
+      itemId: itemId,
+      quantity: quantity,
+      unitPrice: unitPrice
+    });
+    
+    await createJournalEntry({
+      date: new Date(),
+      type: 'IN',
+      reference: reference,
+      description: `مقابل ${description}`,
+      debit: 0,
+      credit: totalValue,
+      account: 'suppliers',
+      itemId: itemId,
+      quantity: quantity,
+      unitPrice: unitPrice
+    });
+  } else if (movementType === 'OUT') {
+    // Credit Inventory, Debit Expenses/Custody
+    await createJournalEntry({
+      date: new Date(),
+      type: 'OUT',
+      reference: reference,
+      description: description,
+      debit: 0,
+      credit: totalValue,
+      account: 'inventory',
+      itemId: itemId,
+      quantity: quantity,
+      unitPrice: unitPrice
+    });
+    
+    await createJournalEntry({
+      date: new Date(),
+      type: 'OUT',
+      reference: reference,
+      description: `مقابل ${description}`,
+      debit: totalValue,
+      credit: 0,
+      account: 'expenses',
+      itemId: itemId,
+      quantity: quantity,
+      unitPrice: unitPrice
+    });
+  }
+}
+
+// Scrap Accounting
+async function createScrapJournal(itemId, scrapValue, description, reference) {
+  await createJournalEntry({
+    date: new Date(),
+    type: 'SCRAP',
+    reference: reference,
+    description: description,
+    debit: 0,
+    credit: scrapValue,
+    account: 'inventory',
+    itemId: itemId,
+    scrapValue: scrapValue
+  });
+  
+  await createJournalEntry({
+    date: new Date(),
+    type: 'SCRAP',
+    reference: reference,
+    description: `خسارة خردة: ${description}`,
+    debit: scrapValue,
+    credit: 0,
+    account: 'scrap',
+    itemId: itemId,
+    scrapValue: scrapValue
+  });
+}
+
+// Inventory Adjustment Accounting
+async function createAdjustmentJournal(itemId, systemQuantity, actualQuantity, unitPrice, description, reference) {
+  const difference = actualQuantity - systemQuantity;
+  const adjustmentValue = Math.abs(difference * unitPrice);
+  
+  if (difference > 0) {
+    // Surplus - Credit Expenses, Debit Inventory
+    await createJournalEntry({
+      date: new Date(),
+      type: 'ADJUSTMENT',
+      reference: reference,
+      description: `تسوية جرد - فائض: ${description}`,
+      debit: adjustmentValue,
+      credit: 0,
+      account: 'inventory',
+      itemId: itemId,
+      adjustmentQuantity: difference,
+      unitPrice: unitPrice
+    });
+    
+    await createJournalEntry({
+      date: new Date(),
+      type: 'ADJUSTMENT',
+      reference: reference,
+      description: `أرباح تسوية جرد: ${description}`,
+      debit: 0,
+      credit: adjustmentValue,
+      account: 'expenses',
+      itemId: itemId,
+      adjustmentQuantity: difference,
+      unitPrice: unitPrice
+    });
+  } else if (difference < 0) {
+    // Shortage - Debit Expenses, Credit Inventory
+    await createJournalEntry({
+      date: new Date(),
+      type: 'ADJUSTMENT',
+      reference: reference,
+      description: `تسوية جرد - عجز: ${description}`,
+      debit: 0,
+      credit: adjustmentValue,
+      account: 'inventory',
+      itemId: itemId,
+      adjustmentQuantity: difference,
+      unitPrice: unitPrice
+    });
+    
+    await createJournalEntry({
+      date: new Date(),
+      type: 'ADJUSTMENT',
+      reference: reference,
+      description: `خسارة تسوية جرد: ${description}`,
+      debit: adjustmentValue,
+      credit: 0,
+      account: 'scrap',
+      itemId: itemId,
+      adjustmentQuantity: difference,
+      unitPrice: unitPrice
+    });
+  }
+}
+
+// Image Capture Function
+function captureImage(inputId) {
+  const input = document.getElementById(inputId);
+  if (input) {
+    input.click();
+  }
+}
+
+// Handle image preview
+function setupImagePreview(inputId, previewId, previewImgId) {
+  const input = document.getElementById(inputId);
+  const preview = document.getElementById(previewId);
+  const previewImg = document.getElementById(previewImgId);
+  
+  if (input && preview && previewImg) {
+    input.addEventListener('change', function(e) {
+      const file = e.target.files[0];
+      if (file && file.type.startsWith('image/')) {
+        const reader = new FileReader();
+        reader.onload = function(e) {
+          previewImg.src = e.target.result;
+          preview.style.display = 'block';
+        };
+        reader.readAsDataURL(file);
+      } else {
+        preview.style.display = 'none';
+      }
+    });
+  }
+}
+
+// Report Functions
+async function generateSuppliersReport() {
+  showAlert('جاري إنشاء تقرير الموردين...', 'info');
+  // Implementation for suppliers report
+}
+
+async function generateLedgerReport() {
+  showAlert('جاري إنشاء تقرير الدفتر المحاسبي...', 'info');
+  // Implementation for ledger report
+}
+
+async function exportLedgerToExcel() {
+  showAlert('جاري تصدير الدفتر إلى Excel...', 'info');
+  // Implementation for Excel export
+}
+
+function printLedger() {
+  window.print();
+}
+
+function viewJournalEntry(entryId) {
+  // Implementation to view detailed journal entry
+  console.log('View journal entry:', entryId);
+}
+
+// Initialize image previews
+function initializeImagePreviews() {
+  setupImagePreview('garageIssueImage', 'garageIssueImagePreview', 'garageIssueImagePreviewImg');
+}
+
+// Enhanced switchTab function to include new tabs
+function switchTab(tabName, event) {
+  // Hide all tabs
+  document.querySelectorAll('.tab-content').forEach(tab => {
+    tab.classList.remove('active');
+  });
+  
+  // Remove active class from all tab buttons
+  document.querySelectorAll('.tab').forEach(btn => {
+    btn.classList.remove('active');
+  });
+  
+  // Show selected tab
+  document.getElementById(tabName + '-tab').classList.add('active');
+  
+  // Add active class to clicked button
+  if (event) {
+    event.target.classList.add('active');
+  }
+  
+  // Load data for specific tabs
+  if (tabName === 'suppliers') {
+    loadSuppliers();
+  } else if (tabName === 'ledger') {
+    loadLedger();
+  }
+}
+
+// Global variables for new features
+let currentEditingSupplier = null;
+
+// Make new functions globally accessible
+window.openSupplierModal = openSupplierModal;
+window.closeSupplierModal = closeSupplierModal;
+window.deleteSupplier = deleteSupplier;
+window.loadSuppliers = loadSuppliers;
+window.filterLedger = filterLedger;
+window.generateSuppliersReport = generateSuppliersReport;
+window.generateLedgerReport = generateLedgerReport;
+window.exportLedgerToExcel = exportLedgerToExcel;
+window.printLedger = printLedger;
+window.viewJournalEntry = viewJournalEntry;
+window.captureImage = captureImage;
+window.createJournalEntry = createJournalEntry;
+window.createStockMovementJournal = createStockMovementJournal;
+window.createScrapJournal = createScrapJournal;
+window.createAdjustmentJournal = createAdjustmentJournal;
 </script>
 </body>
 </html>

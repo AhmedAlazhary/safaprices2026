@@ -179,6 +179,81 @@ service cloud.firestore {
       allow create, update, delete: if isAdmin();
     }
 
+    // Current inventory / garage module collections
+    match /Items/{docId} {
+      allow read, create, update, delete: if isAuthenticated();
+    }
+
+    match /Assets/{docId} {
+      allow read, create, update, delete: if isAuthenticated();
+    }
+
+    match /GarageCustody/{docId} {
+      allow read, create, update, delete: if isAuthenticated();
+    }
+
+    match /GarageWorkers/{docId} {
+      allow read, create, update, delete: if isAuthenticated();
+    }
+
+    match /GarageWorkOrders/{docId} {
+      allow read, create, update, delete: if isAuthenticated();
+    }
+
+    match /GarageMovements/{docId} {
+      allow read, create: if isAuthenticated();
+      allow update, delete: if false;
+    }
+
+    match /GarageInventoryAdjustments/{docId} {
+      allow read, create: if isAuthenticated();
+      allow update, delete: if false;
+    }
+
+    match /GarageScrap/{docId} {
+      allow read: if isAuthenticated();
+      allow create, update, delete: if false;
+    }
+
+    match /journal_entries/{docId} {
+      allow read: if isAuthenticated();
+      allow create, update, delete: if false;
+    }
+
+    // Accounting System Collections
+    match /JournalEntries/{docId} {
+      allow read: if isAuthenticated();
+      allow create, update, delete: if false; // Only Cloud Functions can create
+    }
+
+    match /Suppliers/{docId} {
+      allow read, create, update: if isAuthenticated();
+      allow delete: if isAdmin();
+    }
+
+    match /SupplierTransactions/{docId} {
+      allow read: if isAuthenticated();
+      allow create, update, delete: if false; // Only Cloud Functions can create
+    }
+
+    match /InventoryAdjustments/{docId} {
+      allow read: if isAuthenticated();
+      allow create: if isAuthenticated();
+      allow update, delete: if false;
+    }
+
+    match /Scraps/{docId} {
+      allow read: if isAuthenticated();
+      allow create: if isAuthenticated();
+      allow update, delete: if false;
+    }
+
+    match /CustodySettlements/{docId} {
+      allow read: if isAuthenticated();
+      allow create: if isAuthenticated();
+      allow update, delete: if false;
+    }
+
     // garageSystem.* isolated module:
     // client side can read, while writes are forced through Cloud Functions.
     match /garageSystem_accounts/{docId} {

@@ -1148,4 +1148,557 @@ exports.checkResourceAccess = functions.https.onCall(async (data, context) => {
     };
 });
 
+// ============================================
+// ACCOUNTING SYSTEM CLOUD FUNCTIONS
+// ============================================
+
+/**
+ * Create Journal Entry for Stock Movement
+ * Triggered when item quantity changes
+ */
+exports.onStockMovementCreate = functions.firestore
+    .document('Items/{itemId}')
+    .onWrite(async (change, context) => {
+        const beforeData = change.before.data();
+        const afterData = change.after.data();
+        
+        if (!beforeData && !afterData) return;
+        
+        // Skip if quantity didn't change
+        if (beforeData && afterData && beforeData.quantity === afterData.quantity) return;
+        
+        const itemId = context.params.itemId;
+        const newQuantity = afterData ? afterData.quantity || 0 : 0;
+        const oldQuantity = beforeData ? beforeData.quantity || 0 : 0;
+        const unitPrice = afterData ? afterData.unitPrice || 0 : (beforeData ? beforeData.unitPrice || 0 : 0);
+        
+        const quantityDiff = newQuantity - oldQuantity;
+        const valueDiff = Math.abs(quantityDiff * unitPrice);
+        
+        if (quantityDiff === 0) return;
+        
+        try {
+            if (quantityDiff > 0) {
+                // Stock IN - Debit Inventory, Credit Suppliers/Expenses
+                await createDoubleEntry({
+                    date: new Date(),
+                    type: 'IN',
+                    reference: `STOCK_IN_${itemId}`,
+                    description: `إضافة مخزون: ${afterData.name || 'صنف'}`,
+                    debit: valueDiff,
+                    credit: 0,
+                    account: 'inventory',
+                    itemId: itemId,
+                    quantity: quantityDiff,
+                    unitPrice: unitPrice
+                });
+                
+                await createDoubleEntry({
+                    date: new Date(),
+                    type: 'IN',
+                    reference: `STOCK_IN_${itemId}`,
+                    description: `مقابل إضافة مخزون: ${afterData.name || 'صنف'}`,
+                    debit: 0,
+                    credit: valueDiff,
+                    account: 'suppliers',
+                    itemId: itemId,
+                    quantity: quantityDiff,
+                    unitPrice: unitPrice
+                });
+            } else {
+                // Stock OUT - Credit Inventory, Debit Expenses/Custody
+                await createDoubleEntry({
+                    date: new Date(),
+                    type: 'OUT',
+                    reference: `STOCK_OUT_${itemId}`,
+                    description: `صرف مخزون: ${afterData.name || 'صنف'}`,
+                    debit: 0,
+                    credit: valueDiff,
+                    account: 'inventory',
+                    itemId: itemId,
+                    quantity: Math.abs(quantityDiff),
+                    unitPrice: unitPrice
+                });
+                
+                await createDoubleEntry({
+                    date: new Date(),
+                    type: 'OUT',
+                    reference: `STOCK_OUT_${itemId}`,
+                    description: `مقابل صرف مخزون: ${afterData.name || 'صنف'}`,
+                    debit: valueDiff,
+                    credit: 0,
+                    account: 'expenses',
+                    itemId: itemId,
+                    quantity: Math.abs(quantityDiff),
+                    unitPrice: unitPrice
+                });
+            }
+            
+            console.log(`Stock movement journal entry created for item: ${itemId}`);
+        } catch (error) {
+            console.error('Error creating stock movement journal entry:', error);
+        }
+    });
+
+/**
+ * Create Journal Entry for Scrap/Disposal
+ * Triggered when scrap record is created
+ */
+exports.onScrapCreate = functions.firestore
+    .document('Scraps/{scrapId}')
+    .onCreate(async (snapshot, context) => {
+        const scrapData = snapshot.data();
+        const scrapId = context.params.scrapId;
+        
+        try {
+            // Credit Inventory (remove value)
+            await createDoubleEntry({
+                date: new Date(),
+                type: 'SCRAP',
+                reference: scrapId,
+                description: `خردة: ${scrapData.description || 'قطعة'}`,
+                debit: 0,
+                credit: scrapData.value || 0,
+                account: 'inventory',
+                itemId: scrapData.itemId,
+                scrapValue: scrapData.value
+            });
+            
+            // Debit Scrap/Loss Account
+            await createDoubleEntry({
+                date: new Date(),
+                type: 'SCRAP',
+                reference: scrapId,
+                description: `خسارة خردة: ${scrapData.description || 'قطعة'}`,
+                debit: scrapData.value || 0,
+                credit: 0,
+                account: 'scrap',
+                itemId: scrapData.itemId,
+                scrapValue: scrapData.value
+            });
+            
+            console.log(`Scrap journal entry created: ${scrapId}`);
+        } catch (error) {
+            console.error('Error creating scrap journal entry:', error);
+        }
+    });
+
+/**
+ * Create Journal Entry for Inventory Adjustment
+ * Triggered when adjustment record is created
+ */
+exports.onInventoryAdjustment = functions.firestore
+    .document('InventoryAdjustments/{adjustmentId}')
+    .onCreate(async (snapshot, context) => {
+        const adjustmentData = snapshot.data();
+        const adjustmentId = context.params.adjustmentId;
+        
+        try {
+            const { itemId, systemQuantity, actualQuantity, unitPrice, description } = adjustmentData;
+            const difference = actualQuantity - systemQuantity;
+            const adjustmentValue = Math.abs(difference * unitPrice);
+            
+            if (difference > 0) {
+                // Surplus - Debit Inventory, Credit Expenses (as income)
+                await createDoubleEntry({
+                    date: new Date(),
+                    type: 'ADJUSTMENT',
+                    reference: adjustmentId,
+                    description: `تسوية جرد - فائض: ${description}`,
+                    debit: adjustmentValue,
+                    credit: 0,
+                    account: 'inventory',
+                    itemId: itemId,
+                    adjustmentQuantity: difference,
+                    unitPrice: unitPrice
+                });
+                
+                await createDoubleEntry({
+                    date: new Date(),
+                    type: 'ADJUSTMENT',
+                    reference: adjustmentId,
+                    description: `أرباح تسوية جرد: ${description}`,
+                    debit: 0,
+                    credit: adjustmentValue,
+                    account: 'expenses',
+                    itemId: itemId,
+                    adjustmentQuantity: difference,
+                    unitPrice: unitPrice
+                });
+            } else if (difference < 0) {
+                // Shortage - Credit Inventory, Debit Scrap/Loss
+                await createDoubleEntry({
+                    date: new Date(),
+                    type: 'ADJUSTMENT',
+                    reference: adjustmentId,
+                    description: `تسوية جرد - عجز: ${description}`,
+                    debit: 0,
+                    credit: adjustmentValue,
+                    account: 'inventory',
+                    itemId: itemId,
+                    adjustmentQuantity: difference,
+                    unitPrice: unitPrice
+                });
+                
+                await createDoubleEntry({
+                    date: new Date(),
+                    type: 'ADJUSTMENT',
+                    reference: adjustmentId,
+                    description: `خسارة تسوية جرد: ${description}`,
+                    debit: adjustmentValue,
+                    credit: 0,
+                    account: 'scrap',
+                    itemId: itemId,
+                    adjustmentQuantity: difference,
+                    unitPrice: unitPrice
+                });
+            }
+            
+            console.log(`Inventory adjustment journal entry created: ${adjustmentId}`);
+        } catch (error) {
+            console.error('Error creating inventory adjustment journal entry:', error);
+        }
+    });
+
+/**
+ * Create Journal Entry for Custody Settlement
+ * Triggered when custody is settled
+ */
+exports.onCustodySettlement = functions.firestore
+    .document('CustodySettlements/{settlementId}')
+    .onCreate(async (snapshot, context) => {
+        const settlementData = snapshot.data();
+        const settlementId = context.params.settlementId;
+        
+        try {
+            const { amount, custodyOfficer, description } = settlementData;
+            
+            // Credit Custody Account
+            await createDoubleEntry({
+                date: new Date(),
+                type: 'SETTLEMENT',
+                reference: settlementId,
+                description: `تصفية عهدة: ${description}`,
+                debit: 0,
+                credit: amount,
+                account: 'custody',
+                custodyOfficer: custodyOfficer,
+                settlementAmount: amount
+            });
+            
+            // Debit Expenses
+            await createDoubleEntry({
+                date: new Date(),
+                type: 'SETTLEMENT',
+                reference: settlementId,
+                description: `مصروفات تصفية عهدة: ${description}`,
+                debit: amount,
+                credit: 0,
+                account: 'expenses',
+                custodyOfficer: custodyOfficer,
+                settlementAmount: amount
+            });
+            
+            console.log(`Custody settlement journal entry created: ${settlementId}`);
+        } catch (error) {
+            console.error('Error creating custody settlement journal entry:', error);
+        }
+    });
+
+/**
+ * Create Journal Entry for Supplier Transaction
+ * Triggered when supplier transaction is created
+ */
+exports.onSupplierTransaction = functions.firestore
+    .document('SupplierTransactions/{transactionId}')
+    .onCreate(async (snapshot, context) => {
+        const transactionData = snapshot.data();
+        const transactionId = context.params.transactionId;
+        
+        try {
+            const { supplierId, amount, type, description, itemId } = transactionData;
+            
+            if (type === 'purchase') {
+                // Debit Inventory, Credit Supplier
+                await createDoubleEntry({
+                    date: new Date(),
+                    type: 'PURCHASE',
+                    reference: transactionId,
+                    description: `شراء من مورد: ${description}`,
+                    debit: amount,
+                    credit: 0,
+                    account: 'inventory',
+                    supplierId: supplierId,
+                    itemId: itemId,
+                    purchaseAmount: amount
+                });
+                
+                await createDoubleEntry({
+                    date: new Date(),
+                    type: 'PURCHASE',
+                    reference: transactionId,
+                    description: `ذمة مورد: ${description}`,
+                    debit: 0,
+                    credit: amount,
+                    account: 'suppliers',
+                    supplierId: supplierId,
+                    itemId: itemId,
+                    purchaseAmount: amount
+                });
+                
+                // Update supplier balance
+                await updateSupplierBalance(supplierId, -amount);
+            } else if (type === 'payment') {
+                // Debit Supplier, Credit Cash/Bank
+                await createDoubleEntry({
+                    date: new Date(),
+                    type: 'PAYMENT',
+                    reference: transactionId,
+                    description: `سداد لمورد: ${description}`,
+                    debit: amount,
+                    credit: 0,
+                    account: 'suppliers',
+                    supplierId: supplierId,
+                    paymentAmount: amount
+                });
+                
+                await createDoubleEntry({
+                    date: new Date(),
+                    type: 'PAYMENT',
+                    reference: transactionId,
+                    description: `نقدية/بنك سداد مورد: ${description}`,
+                    debit: 0,
+                    credit: amount,
+                    account: 'cash',
+                    supplierId: supplierId,
+                    paymentAmount: amount
+                });
+                
+                // Update supplier balance
+                await updateSupplierBalance(supplierId, amount);
+            }
+            
+            console.log(`Supplier transaction journal entry created: ${transactionId}`);
+        } catch (error) {
+            console.error('Error creating supplier transaction journal entry:', error);
+        }
+    });
+
+/**
+ * Helper function to create double-entry journal entries
+ */
+async function createDoubleEntry(entryData) {
+    const entry = {
+        ...entryData,
+        createdAt: admin.firestore.FieldValue.serverTimestamp(),
+        createdBy: 'system'
+    };
+    
+    await db.collection('JournalEntries').add(entry);
+}
+
+/**
+ * Helper function to update supplier balance
+ */
+async function updateSupplierBalance(supplierId, amount) {
+    const supplierRef = db.collection('Suppliers').doc(supplierId);
+    
+    await db.runTransaction(async (transaction) => {
+        const supplierDoc = await transaction.get(supplierRef);
+        
+        if (!supplierDoc.exists) {
+            throw new Error('Supplier does not exist');
+        }
+        
+        const currentBalance = supplierDoc.data().currentBalance || 0;
+        const newBalance = currentBalance + amount;
+        
+        transaction.update(supplierRef, {
+            currentBalance: newBalance,
+            updatedAt: admin.firestore.FieldValue.serverTimestamp()
+        });
+    });
+}
+
+/**
+ * Generate Accounting Reports
+ * Callable function for generating various accounting reports
+ */
+exports.generateAccountingReport = functions.https.onCall(async (data, context) => {
+    if (!context.auth) {
+        throw new functions.https.HttpsError('unauthenticated', 'غير مصدق');
+    }
+    
+    const { reportType, startDate, endDate } = data;
+    
+    try {
+        let reportData = {};
+        
+        switch (reportType) {
+            case 'trial_balance':
+                reportData = await generateTrialBalance(startDate, endDate);
+                break;
+            case 'income_statement':
+                reportData = await generateIncomeStatement(startDate, endDate);
+                break;
+            case 'balance_sheet':
+                reportData = await generateBalanceSheet(startDate, endDate);
+                break;
+            case 'ledger':
+                reportData = await generateLedgerReport(startDate, endDate);
+                break;
+            default:
+                throw new functions.https.HttpsError('invalid-argument', 'نوع تقرير غير صالح');
+        }
+        
+        return { success: true, data: reportData };
+    } catch (error) {
+        console.error('Error generating accounting report:', error);
+        throw new functions.https.HttpsError('internal', 'فشل إنشاء التقرير');
+    }
+});
+
+/**
+ * Generate Trial Balance
+ */
+async function generateTrialBalance(startDate, endDate) {
+    const entriesSnapshot = await db.collection('JournalEntries')
+        .where('date', '>=', new Date(startDate))
+        .where('date', '<=', new Date(endDate))
+        .get();
+    
+    const accounts = {};
+    
+    entriesSnapshot.docs.forEach(doc => {
+        const entry = doc.data();
+        const account = entry.account;
+        
+        if (!accounts[account]) {
+            accounts[account] = { debit: 0, credit: 0 };
+        }
+        
+        accounts[account].debit += entry.debit || 0;
+        accounts[account].credit += entry.credit || 0;
+    });
+    
+    return {
+        title: 'ميزان المراجعة',
+        period: `${startDate} - ${endDate}`,
+        accounts: accounts,
+        totalDebit: Object.values(accounts).reduce((sum, acc) => sum + acc.debit, 0),
+        totalCredit: Object.values(accounts).reduce((sum, acc) => sum + acc.credit, 0)
+    };
+}
+
+/**
+ * Generate Income Statement
+ */
+async function generateIncomeStatement(startDate, endDate) {
+    const entriesSnapshot = await db.collection('JournalEntries')
+        .where('date', '>=', new Date(startDate))
+        .where('date', '<=', new Date(endDate))
+        .get();
+    
+    let revenue = 0;
+    let expenses = 0;
+    let scrapLoss = 0;
+    
+    entriesSnapshot.docs.forEach(doc => {
+        const entry = doc.data();
+        
+        if (entry.account === 'expenses') {
+            expenses += entry.debit || 0;
+            expenses -= entry.credit || 0;
+        } else if (entry.account === 'scrap') {
+            scrapLoss += entry.debit || 0;
+            scrapLoss -= entry.credit || 0;
+        }
+    });
+    
+    const totalExpenses = expenses + scrapLoss;
+    const netIncome = revenue - totalExpenses;
+    
+    return {
+        title: 'قائمة الدخل',
+        period: `${startDate} - ${endDate}`,
+        revenue: revenue,
+        expenses: expenses,
+        scrapLoss: scrapLoss,
+        totalExpenses: totalExpenses,
+        netIncome: netIncome
+    };
+}
+
+/**
+ * Generate Balance Sheet
+ */
+async function generateBalanceSheet(startDate, endDate) {
+    const entriesSnapshot = await db.collection('JournalEntries')
+        .where('date', '<=', new Date(endDate))
+        .get();
+    
+    const accounts = {
+        inventory: 0,
+        custody: 0,
+        suppliers: 0,
+        cash: 0,
+        expenses: 0,
+        scrap: 0
+    };
+    
+    entriesSnapshot.docs.forEach(doc => {
+        const entry = doc.data();
+        const account = entry.account;
+        
+        if (accounts.hasOwnProperty(account)) {
+            accounts[account] += (entry.debit || 0) - (entry.credit || 0);
+        }
+    });
+    
+    const assets = accounts.inventory + accounts.custody + accounts.cash;
+    const liabilities = Math.abs(accounts.suppliers);
+    const equity = assets - liabilities;
+    
+    return {
+        title: 'الميزانية العمومية',
+        asOf: endDate,
+        assets: {
+            inventory: accounts.inventory,
+            custody: accounts.custody,
+            cash: accounts.cash,
+            total: assets
+        },
+        liabilities: {
+            suppliers: liabilities,
+            total: liabilities
+        },
+        equity: equity,
+        totalLiabilitiesAndEquity: liabilities + equity
+    };
+}
+
+/**
+ * Generate Detailed Ledger Report
+ */
+async function generateLedgerReport(startDate, endDate) {
+    const entriesSnapshot = await db.collection('JournalEntries')
+        .where('date', '>=', new Date(startDate))
+        .where('date', '<=', new Date(endDate))
+        .orderBy('date', 'desc')
+        .get();
+    
+    const entries = entriesSnapshot.docs.map(doc => ({
+        id: doc.id,
+        ...doc.data(),
+        date: doc.data().date.toDate()
+    }));
+    
+    return {
+        title: 'دفتر الأستاذ',
+        period: `${startDate} - ${endDate}`,
+        entries: entries,
+        totalCount: entries.length
+    };
+}
+
 Object.assign(exports, require("../cloud_functions.js"));
