@@ -1591,6 +1591,79 @@ function handleCellBlur(event) {
   }, 50);
 }
 
+function handlePaste(event) {
+  const target = event.target;
+  if (!target.matches('input[data-date][data-field]') && !target.matches('select[data-date][data-field]')) return;
+  
+  const clipboardData = event.clipboardData || window.clipboardData;
+  if (!clipboardData) return;
+  
+  const pastedText = clipboardData.getData('text');
+  if (!pastedText) return;
+  
+  // Check if it looks like Excel data (contains tabs or newlines)
+  if (!pastedText.includes('\t') && !pastedText.includes('\n')) return;
+  
+  event.preventDefault();
+  
+  const date = target.dataset.date;
+  const rowId = target.dataset.rowId;
+  const startField = target.dataset.field;
+  
+  // Split by rows and columns
+  const rows = pastedText.split('\n').filter(row => row.trim());
+  if (rows.length === 0) return;
+  
+  // Define field order for mapping
+  const fieldOrder = [
+    'containerCount', 'size', 'place', 'move', 'agency', 
+    'type', 'client', 'notes', 'carType', 'carNumber', 'driverName'
+  ];
+  
+  // Get starting index
+  const startIndex = fieldOrder.indexOf(startField);
+  if (startIndex === -1) return;
+  
+  // Process first row (the one we're pasting into)
+  const firstRowData = rows[0].split('\t');
+  for (let i = 0; i < firstRowData.length && (startIndex + i) < fieldOrder.length; i++) {
+    const field = fieldOrder[startIndex + i];
+    const value = firstRowData[i] ? firstRowData[i].trim() : '';
+    
+    const input = document.querySelector(`input[data-date="${date}"][data-row-id="${rowId}"][data-field="${field}"], select[data-date="${date}"][data-row-id="${rowId}"][data-field="${field}"]`);
+    if (input && !input.disabled) {
+      input.value = value;
+      input.dispatchEvent(new Event('input', { bubbles: true }));
+      input.dispatchEvent(new Event('change', { bubbles: true }));
+    }
+  }
+  
+  // If there are multiple rows, create new rows for additional data
+  for (let rowIndex = 1; rowIndex < rows.length; rowIndex++) {
+    const rowData = rows[rowIndex].split('\t');
+    if (rowData.length === 0 || !rowData[0].trim()) continue;
+    
+    // Create new row
+    updateDateRowsFromDom(date);
+    const newRow = createRow({ order: Date.now() + Math.random() });
+    dailyData[date].push(newRow);
+    
+    // Fill the new row with data
+    for (let colIndex = 0; colIndex < rowData.length && colIndex < fieldOrder.length; colIndex++) {
+      const field = fieldOrder[colIndex];
+      const value = rowData[colIndex] ? rowData[colIndex].trim() : '';
+      newRow[field] = value;
+    }
+    
+    markDateDirty(date);
+    saveDraft(date);
+  }
+  
+  // Re-render to show new rows
+  renderAll();
+  setCurrentStatus(`تم لصق ${rows.length} صف(وف) بنجاح.`);
+}
+
 function normalizeSnapshotData(snapshotValue) {
   const normalized = {};
   if (!snapshotValue || typeof snapshotValue !== "object") return normalized;
@@ -1897,6 +1970,7 @@ async function openSharedLists() {
 document.addEventListener("input", handleInput);
 document.addEventListener("change", handleCellCommit);
 document.addEventListener("focusout", handleCellBlur);
+document.addEventListener("paste", handlePaste);
 summaryMonthPicker.addEventListener("change", event => {
   currentSummaryMonth = event.target.value || getMonthKey(currentDate);
   updateMonthSummary();

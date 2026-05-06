@@ -1518,39 +1518,15 @@ tr:hover {
 </div>
 
 <!-- Firebase SDK -->
-    <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-app-compat.js"></script>
-    <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-auth-compat.js"></script>
-    <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-firestore-compat.js"></script>
-    <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-functions-compat.js"></script>
-    
-    <!-- Auth Guard -->
-    <script src="js/auth-guard.js"></script>
+<script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-app-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-auth-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-firestore-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-functions-compat.js"></script>
 
-<script type="module">
-import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-app.js";
-import {
-  getAuth,
-  onAuthStateChanged,
-  signOut
-} from "https://www.gstatic.com/firebasejs/10.12.2/firebase-auth.js";
-import {
-  getFirestore,
-  collection,
-  doc,
-  getDoc,
-  getDocs,
-  addDoc,
-  updateDoc,
-  deleteDoc,
-  setDoc,
-  query,
-  where,
-  orderBy,
-  limit,
-  runTransaction,
-  serverTimestamp
-} from "https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore.js";
+<!-- Auth Guard -->
+<script src="js/auth-guard.js"></script>
 
+<script>
 // Firebase configuration
 const firebaseConfig = {
   apiKey: "AIzaSyARqSgfh78TqFQ2hhZaAtUaVQFqlPuRM3w",
@@ -1561,14 +1537,31 @@ const firebaseConfig = {
   appId: "1:177091434445:web:568b6ae3ba270a21d4d684"
 };
 
-const app = initializeApp(firebaseConfig);
-const auth = getAuth(app);
-const db = getFirestore(app);
+// Initialize Firebase
+firebase.initializeApp(firebaseConfig);
+
+// Initialize Firebase services
+const auth = firebase.auth();
+const db = firebase.firestore();
+const functions = firebase.functions();
+
+// Helper functions for Firebase compat
+const collection = (ref) => db.collection(ref);
+const doc = (ref, id) => db.collection(ref).doc(id);
+const getDoc = (ref) => ref.get();
+const getDocs = (ref) => ref.get();
+const addDoc = (ref, data) => ref.add(data);
+const updateDoc = (ref, data) => ref.update(data);
+const deleteDoc = (ref) => ref.delete();
+const setDoc = (ref, data, options) => ref.set(data, options);
+const serverTimestamp = () => firebase.firestore.FieldValue.serverTimestamp();
+const runTransaction = (fn) => db.runTransaction(fn);
 
 // Global variables
 let currentUser = null;
 let currentEditingItem = null;
 let currentEditingAsset = null;
+let currentEditingSupplier = null;
 let settlementItems = [];
 let inventoryItemsCache = [];
 let garageAssetsCache = [];
@@ -1577,7 +1570,7 @@ let garageWorkOrdersCache = [];
 let garageMovementsCache = [];
 
 // Check authentication
-onAuthStateChanged(auth, user => {
+auth.onAuthStateChanged(user => {
   if (!user) {
     window.location.href = "index.html";
     return;
@@ -1604,27 +1597,9 @@ function initializeInventorySystem() {
   if (workOrderDateInput) {
     workOrderDateInput.value = new Date().toISOString().split('T')[0];
   }
-}
-
-// Tab switching
-function switchTab(tabName, event) {
-  // Hide all tabs
-  document.querySelectorAll('.tab-content').forEach(tab => {
-    tab.style.display = 'none';
-  });
   
-  // Remove active class from all tabs
-  document.querySelectorAll('.tab').forEach(tab => {
-    tab.classList.remove('active');
-  });
-  
-  // Show selected tab
-  document.getElementById(`${tabName}-tab`).style.display = 'block';
-  
-  // Add active class to clicked tab
-  if (event && event.target) {
-    event.target.classList.add('active');
-  }
+  // Initialize image previews
+  initializeImagePreviews();
 }
 
 // Setup event listeners

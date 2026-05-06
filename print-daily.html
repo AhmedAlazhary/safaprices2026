@@ -188,6 +188,36 @@ function sortRows(rows) {
   return [...rows].sort((a, b) => Number(a.order) - Number(b.order));
 }
 
+function groupDuplicateRows(rows) {
+  const groupedMap = new Map();
+  
+  rows.forEach(row => {
+    // Create a key using all fields except containerCount
+    const key = JSON.stringify({
+      size: row.size || "",
+      place: row.place || "",
+      move: row.move || "",
+      agency: row.agency || "",
+      type: row.type || "",
+      client: row.client || "",
+      notes: row.notes || ""
+    });
+    
+    if (groupedMap.has(key)) {
+      // If group exists, sum the container counts
+      const existing = groupedMap.get(key);
+      const existingCount = parseInt(existing.containerCount) || 0;
+      const currentCount = parseInt(row.containerCount) || 0;
+      existing.containerCount = String(existingCount + currentCount);
+    } else {
+      // Create new group
+      groupedMap.set(key, { ...row });
+    }
+  });
+  
+  return Array.from(groupedMap.values());
+}
+
 function renderRows(date, rows) {
   return sortRows(rows).map(row => `
     <tr>
@@ -266,7 +296,8 @@ firebase.auth().onAuthStateChanged(user => {
     .then(snap => {
       const raw = snap.val() || {};
       const rows = Object.keys(raw).map((rowId, index) => normalizeRow({ ...raw[rowId], id: rowId }, index));
-      renderPrintPage(printDateValue, rows);
+      const groupedRows = groupDuplicateRows(rows);
+      renderPrintPage(printDateValue, groupedRows);
     })
     .catch(() => {
       printShell.innerHTML = '<div class="status">تعذر تحميل بيانات الطباعة الآن.</div>';
