@@ -750,7 +750,7 @@ tr:last-child td {
 
     <div class="table-actions">
       <button class="add-btn" onclick="addRow(currentDate)">إضافة سطر للتاريخ الحالي</button>
-      <button class="save-btn" onclick="saveDate(currentDate, true)">حفظ التاريخ الحالي</button>
+      <button class="save-btn" onclick="saveDate(currentDate, true, true)">حفظ التاريخ الحالي</button>
       <button class="print-btn" onclick="printDate(currentDate)">طباعة الجدول الحالي</button>
       <button class="delete-day-btn" onclick="deleteDay(currentDate)">حذف اليوم الحالي</button>
     </div>
@@ -1222,6 +1222,43 @@ function expandRowsForSave(rows) {
   return expandedRows.length ? expandedRows : [createRow()];
 }
 
+function collapseRowsToOriginal(rows) {
+  const groupedMap = new Map();
+  
+  sortRows(rows).forEach(row => {
+    // Skip empty rows
+    if (!isMeaningfulRow(row)) return;
+    
+    // Create a key using all fields except containerCount and id
+    const key = JSON.stringify({
+      size: row.size || "",
+      place: row.place || "",
+      move: row.move || "",
+      agency: row.agency || "",
+      type: row.type || "",
+      client: row.client || "",
+      notes: row.notes || "",
+      carType: row.carType || "",
+      carNumber: row.carNumber || "",
+      driverName: row.driverName || "",
+      order: Math.floor(row.order || 0) // Use base order for grouping
+    });
+    
+    if (groupedMap.has(key)) {
+      // If group exists, increment container count
+      const existing = groupedMap.get(key);
+      const existingCount = parseInt(existing.containerCount) || 0;
+      existing.containerCount = String(existingCount + 1);
+    } else {
+      // Create new group with original container count logic
+      groupedMap.set(key, { ...row });
+    }
+  });
+  
+  const collapsed = Array.from(groupedMap.values());
+  return collapsed.length ? collapsed : [createRow()];
+}
+
 function calculateMonthTotals(monthKey) {
   let total = 0, officeTotal = 0, marketTotal = 0;
   Object.keys(dailyData).forEach(date => {
@@ -1447,19 +1484,24 @@ function saveRows(date, rows, showAlert = false, forceSave = false, removedRowId
     });
 }
 
-function saveDate(date, showAlert = false) {
+function saveDate(date, showAlert = false, expandDisplay = false) {
   updateDateRowsFromDom(date);
   const originalRows = ensureDateRows(date);
-  const expandedRows = expandRowsForSave(originalRows);
-  const nextRowIds = new Set(expandedRows.map(row => row.id));
-  const removedRowIds = originalRows
-    .map(row => row.id)
-    .filter(rowId => rowId && !nextRowIds.has(rowId));
-
-  dailyData[date] = expandedRows;
+  
+  // Always save original rows to database
+  dailyData[date] = originalRows;
   saveDraft(date);
-  renderAll();
-  return saveRows(date, expandedRows, showAlert, showAlert, removedRowIds);
+  
+  if (expandDisplay) {
+    // For manual save - make expansion permanent in UI
+    const expandedRows = expandRowsForSave(originalRows);
+    dailyData[date] = expandedRows;
+    saveDraft(date); // Save expanded state to draft for UI persistence
+    renderAll();
+  }
+  
+  // Always save original rows to database
+  return saveRows(date, originalRows, showAlert, false, []);
 }
 
 function scheduleAutoSave(date) {
@@ -1763,9 +1805,28 @@ function loadChangeLog() {
 function loadAllData() {
   db.ref("daily").on("value", snap => {
     const serverData = normalizeSnapshotData(snap.val());
+    
+    // Start with original data from server
+    const collapsedServerData = {};
+    Object.keys(serverData).forEach(date => {
+      collapsedServerData[date] = collapseRowsToOriginal(serverData[date]);
+    });
+    
+    // Check if there's saved expanded state in draft
+    Object.keys(collapsedServerData).forEach(date => {
+      const draft = readDraft(date);
+      if (draft && draft.length > 0) {
+        // If draft has expanded rows (more rows than collapsed), use draft
+        const draftHasExpanded = draft.some(row => row.containerCount === "1");
+        if (draftHasExpanded && draft.length > collapsedServerData[date].length) {
+          collapsedServerData[date] = draft;
+        }
+      }
+    });
+    
     const editingInfo = getActiveEditingInfo();
     if (editingInfo) {
-      dailyData = mergeServerDataPreservingEditing(serverData, editingInfo);
+      dailyData = mergeServerDataPreservingEditing(collapsedServerData, editingInfo);
       refreshBaseUpdatedAtFromServer(serverData);
       Object.keys(serverData).forEach(date => { if (!dirtyDates[date]) clearDraft(date); });
       ensureDateRows(currentDate);
@@ -1773,7 +1834,7 @@ function loadAllData() {
       updateMonthSummary();
       setCurrentStatus("تم استقبال تحديثات جديدة بدون المساس بالخلية الجاري تعديلها.");
     } else {
-      dailyData = serverData;
+      dailyData = collapsedServerData;
       refreshBaseUpdatedAtFromServer(serverData);
       Object.keys(serverData).forEach(date => { if (!dirtyDates[date]) clearDraft(date); });
       ensureDateRows(currentDate);
@@ -1856,7 +1917,9 @@ function deleteDay(date) {
 
 async function printDate(date) {
   updateDateRowsFromDom(date);
+  // Save original data to database
   await saveDate(date, false);
+  
   window.location.href = "print-daily.html?date=" + encodeURIComponent(date);
 }
 
