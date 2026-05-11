@@ -1206,6 +1206,17 @@ function expandRowsForSave(rows) {
 
   const expandedRows = [];
   meaningfulRows.forEach((row, index) => {
+    // Skip expansion for size 20 and 2*20
+    if (row.size === "20" || row.size === "2*20") {
+      // Keep original row as-is
+      expandedRows.push(cloneRowForSave(row, {
+        id: row.id,
+        order: Number(row.order || index),
+        lock: null
+      }));
+      return;
+    }
+
     const copiesCount = Math.max(0, calculateContainerTotal(row.containerCount, row.size));
     if (copiesCount <= 0) return;
 

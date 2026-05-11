@@ -202,6 +202,30 @@
             border-color: var(--secondary-color);
         }
 
+        /* Mobile Menu Button Styling */
+        .navbar-toggler {
+            border: 2px solid var(--secondary-color);
+            background: var(--secondary-color);
+            padding: 8px 12px;
+            border-radius: 8px;
+            transition: all 0.3s ease;
+        }
+
+        .navbar-toggler:hover {
+            background: var(--text-dark);
+            border-color: var(--text-dark);
+            transform: scale(1.05);
+        }
+
+        .navbar-toggler:focus {
+            box-shadow: 0 0 0 0.2rem rgba(245, 158, 11, 0.25);
+            border-color: var(--text-dark);
+        }
+
+        .navbar-toggler-icon {
+            background-image: url("data:image/svg+xml,%3csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 30 30'%3e%3cpath stroke='white' stroke-linecap='round' stroke-miterlimit='10' stroke-width='2' d='M4 7h22M4 15h22M4 23h22'/%3e%3c/svg%3e");
+        }
+
         /* Hero Section */
         .hero-section {
             position: relative;
