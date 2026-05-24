@@ -1697,18 +1697,19 @@ function handlePaste(event) {
   const startIndex = fieldOrder.indexOf(startField);
   if (startIndex === -1) return;
   
+  // First, update existing data from DOM to ensure we have latest state
+  updateDateRowsFromDom(date);
+  
+  // Find the row we're pasting into
+  const existingRow = findRow(date, rowId);
+  if (!existingRow) return;
+  
   // Process first row (the one we're pasting into)
   const firstRowData = rows[0].split('\t');
   for (let i = 0; i < firstRowData.length && (startIndex + i) < fieldOrder.length; i++) {
     const field = fieldOrder[startIndex + i];
     const value = firstRowData[i] ? firstRowData[i].trim() : '';
-    
-    const input = document.querySelector(`input[data-date="${date}"][data-row-id="${rowId}"][data-field="${field}"], select[data-date="${date}"][data-row-id="${rowId}"][data-field="${field}"]`);
-    if (input && !input.disabled) {
-      input.value = value;
-      input.dispatchEvent(new Event('input', { bubbles: true }));
-      input.dispatchEvent(new Event('change', { bubbles: true }));
-    }
+    existingRow[field] = value;
   }
   
   // If there are multiple rows, create new rows for additional data
@@ -1717,9 +1718,7 @@ function handlePaste(event) {
     if (rowData.length === 0 || !rowData[0].trim()) continue;
     
     // Create new row
-    updateDateRowsFromDom(date);
     const newRow = createRow({ order: Date.now() + Math.random() });
-    dailyData[date].push(newRow);
     
     // Fill the new row with data starting from the same field
     for (let colIndex = 0; colIndex < rowData.length && (startIndex + colIndex) < fieldOrder.length; colIndex++) {
@@ -1728,11 +1727,14 @@ function handlePaste(event) {
       newRow[field] = value;
     }
     
-    markDateDirty(date);
-    saveDraft(date);
+    dailyData[date].push(newRow);
   }
   
-  // Re-render to show new rows
+  // Mark as dirty and save draft
+  markDateDirty(date);
+  saveDraft(date);
+  
+  // Re-render to show updated data
   renderAll();
   setCurrentStatus(`تم لصق ${rows.length} صف(وف) بنجاح.`);
 }
