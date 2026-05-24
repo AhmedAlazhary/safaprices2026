@@ -899,6 +899,7 @@ function createRow(overrides = {}) {
   return {
     id: overrides.id || generateRowId(),
     order: typeof overrides.order === "number" ? overrides.order : Date.now(),
+    date: overrides.date || "",
     containerCount: overrides.containerCount || "",
     size: overrides.size || "",
     place: overrides.place || "",
@@ -1127,9 +1128,10 @@ function renderRows(rows, date, scope) {
   return sortRows(rows).map(row => {
     const locked = isRowLockedByOther(row);
     const disabledAttr = locked ? "disabled" : "";
+    const rowDate = row.date || date;
     return `
       <tr>
-        <td class="date-cell">${date}</td>
+        <td class="date-cell"><input ${disabledAttr} type="date" data-date="${date}" data-row-id="${row.id}" data-field="date" data-scope="${scope}" value="${escapeHtml(rowDate)}"></td>
         <td><input ${disabledAttr} type="number" min="0" inputmode="numeric" data-date="${date}" data-row-id="${row.id}" data-field="containerCount" data-scope="${scope}" value="${escapeHtml(row.containerCount)}"></td>
         <td><input ${disabledAttr} list="sizes" data-date="${date}" data-row-id="${row.id}" data-field="size" data-scope="${scope}" value="${escapeHtml(row.size)}"></td>
         <td><input ${disabledAttr} list="places" data-date="${date}" data-row-id="${row.id}" data-field="place" data-scope="${scope}" value="${escapeHtml(row.place)}"></td>
@@ -1519,20 +1521,60 @@ function saveDate(date, showAlert = false, expandDisplay = false) {
   updateDateRowsFromDom(date);
   const originalRows = ensureDateRows(date);
   
-  // Always save original rows to database
-  dailyData[date] = originalRows;
+  // Check for rows with different dates and migrate them
+  const rowsToKeep = [];
+  const rowsToMigrate = new Map(); // Map of targetDate -> array of rows
+  
+  originalRows.forEach(row => {
+    const rowDate = row.date || date;
+    if (rowDate !== date && rowDate) {
+      // Row has a different date, need to migrate
+      if (!rowsToMigrate.has(rowDate)) {
+        rowsToMigrate.set(rowDate, []);
+      }
+      rowsToMigrate.get(rowDate).push(row);
+    } else {
+      // Row belongs to current date
+      rowsToKeep.push(row);
+    }
+  });
+  
+  // Migrate rows to their correct dates
+  let migratedCount = 0;
+  rowsToMigrate.forEach((rows, targetDate) => {
+    ensureDateRows(targetDate);
+    rows.forEach(row => {
+      const newRow = createRow({ ...row, id: generateRowId(), date: targetDate });
+      dailyData[targetDate].push(newRow);
+      markDateDirty(targetDate);
+      saveDraft(targetDate);
+      migratedCount++;
+    });
+    // Save the migrated date
+    saveRows(targetDate, dailyData[targetDate], false, false, []).catch(() => {
+      console.error("Failed to save migrated date:", targetDate);
+    });
+  });
+  
+  // Update current date with only rows that belong to it
+  dailyData[date] = rowsToKeep.length ? sortRows(rowsToKeep) : [createRow()];
   saveDraft(date);
   
   if (expandDisplay) {
     // For manual save - make expansion permanent in UI
-    const expandedRows = expandRowsForSave(originalRows);
+    const expandedRows = expandRowsForSave(dailyData[date]);
     dailyData[date] = expandedRows;
     saveDraft(date); // Save expanded state to draft for UI persistence
     renderAll();
   }
   
+  // Show message if rows were migrated
+  if (migratedCount > 0) {
+    setCurrentStatus(`تم ترحيل ${migratedCount} صف(وف) إلى التواريخ الصحيحة.`);
+  }
+  
   // Always save original rows to database
-  return saveRows(date, originalRows, showAlert, false, []);
+  return saveRows(date, dailyData[date], showAlert, false, []);
 }
 
 function scheduleAutoSave(date) {
@@ -1687,9 +1729,9 @@ function handlePaste(event) {
   const rows = pastedText.split('\n').filter(row => row.trim());
   if (rows.length === 0) return;
   
-  // Define field order for mapping (matching the table structure)
+  // Define field order for mapping (matching the table structure, now includes date)
   const fieldOrder = [
-    'containerCount', 'size', 'place', 'move', 'agency', 
+    'date', 'containerCount', 'size', 'place', 'move', 'agency', 
     'type', 'client', 'notes', 'carType', 'carNumber', 'driverName'
   ];
   
@@ -1709,7 +1751,13 @@ function handlePaste(event) {
   for (let i = 0; i < firstRowData.length && (startIndex + i) < fieldOrder.length; i++) {
     const field = fieldOrder[startIndex + i];
     const value = firstRowData[i] ? firstRowData[i].trim() : '';
-    existingRow[field] = value;
+    
+    // Special handling for date field - format it properly
+    if (field === 'date' && value) {
+      existingRow[field] = formatDateValue(value);
+    } else {
+      existingRow[field] = value;
+    }
   }
   
   // If there are multiple rows, create new rows for additional data
@@ -1724,7 +1772,13 @@ function handlePaste(event) {
     for (let colIndex = 0; colIndex < rowData.length && (startIndex + colIndex) < fieldOrder.length; colIndex++) {
       const field = fieldOrder[startIndex + colIndex];
       const value = rowData[colIndex] ? rowData[colIndex].trim() : '';
-      newRow[field] = value;
+      
+      // Special handling for date field
+      if (field === 'date' && value) {
+        newRow[field] = formatDateValue(value);
+      } else {
+        newRow[field] = value;
+      }
     }
     
     dailyData[date].push(newRow);
@@ -1737,6 +1791,38 @@ function handlePaste(event) {
   // Re-render to show updated data
   renderAll();
   setCurrentStatus(`تم لصق ${rows.length} صف(وف) بنجاح.`);
+}
+
+function formatDateValue(value) {
+  if (!value) return "";
+  
+  // If already in YYYY-MM-DD format, return as is
+  if (value.match(/^\d{4}-\d{2}-\d{2}$/)) return value;
+  
+  // Handle Excel date numbers
+  if (typeof value === 'number') {
+    const excelDate = new Date(Math.round((value - 25569) * 86400 * 1000));
+    return excelDate.toISOString().split('T')[0];
+  }
+  
+  // Handle string dates with slashes (DD/MM/YYYY or MM/DD/YYYY)
+  if (value.includes('/')) {
+    const parts = value.split('/');
+    if (parts.length === 3) {
+      const day = parts[0].padStart(2, '0');
+      const month = parts[1].padStart(2, '0');
+      const year = parts[2].length === 2 ? '20' + parts[2] : parts[2];
+      return `${year}-${month}-${day}`;
+    }
+  }
+  
+  // Try to parse as date
+  const parsedDate = new Date(value);
+  if (!isNaN(parsedDate.getTime())) {
+    return parsedDate.toISOString().split('T')[0];
+  }
+  
+  return value;
 }
 
 function handleExcelUpload(event) {
