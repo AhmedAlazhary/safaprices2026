@@ -753,6 +753,8 @@ tr:last-child td {
       <button class="save-btn" onclick="saveDate(currentDate, true, true)">حفظ التاريخ الحالي</button>
       <button class="print-btn" onclick="printDate(currentDate)">طباعة الجدول الحالي</button>
       <button class="delete-day-btn" onclick="deleteDay(currentDate)">حذف اليوم الحالي</button>
+      <button class="save-btn" onclick="document.getElementById('excelFileInput').click()">رفع ملف Excel</button>
+      <input type="file" id="excelFileInput" accept=".xlsx,.xls" style="display: none;" onchange="handleExcelUpload(event)">
     </div>
   </section>
 
@@ -1685,7 +1687,7 @@ function handlePaste(event) {
   const rows = pastedText.split('\n').filter(row => row.trim());
   if (rows.length === 0) return;
   
-  // Define field order for mapping
+  // Define field order for mapping (matching the table structure)
   const fieldOrder = [
     'containerCount', 'size', 'place', 'move', 'agency', 
     'type', 'client', 'notes', 'carType', 'carNumber', 'driverName'
@@ -1719,9 +1721,9 @@ function handlePaste(event) {
     const newRow = createRow({ order: Date.now() + Math.random() });
     dailyData[date].push(newRow);
     
-    // Fill the new row with data
-    for (let colIndex = 0; colIndex < rowData.length && colIndex < fieldOrder.length; colIndex++) {
-      const field = fieldOrder[colIndex];
+    // Fill the new row with data starting from the same field
+    for (let colIndex = 0; colIndex < rowData.length && (startIndex + colIndex) < fieldOrder.length; colIndex++) {
+      const field = fieldOrder[startIndex + colIndex];
       const value = rowData[colIndex] ? rowData[colIndex].trim() : '';
       newRow[field] = value;
     }
@@ -1733,6 +1735,140 @@ function handlePaste(event) {
   // Re-render to show new rows
   renderAll();
   setCurrentStatus(`تم لصق ${rows.length} صف(وف) بنجاح.`);
+}
+
+function handleExcelUpload(event) {
+  const file = event.target.files[0];
+  if (!file) return;
+  
+  if (typeof XLSX === "undefined") {
+    setCurrentStatus("تعذر تحميل مكتبة Excel الآن.", true);
+    return;
+  }
+  
+  setCurrentStatus("جارٍ قراءة ملف Excel...");
+  
+  const reader = new FileReader();
+  reader.onload = function(e) {
+    try {
+      const data = new Uint8Array(e.target.result);
+      const workbook = XLSX.read(data, { type: 'array' });
+      
+      // Get first sheet
+      const firstSheetName = workbook.SheetNames[0];
+      const worksheet = workbook.Sheets[firstSheetName];
+      
+      // Convert to JSON
+      const jsonData = XLSX.utils.sheet_to_json(worksheet, { header: 1 });
+      
+      if (!jsonData || jsonData.length < 2) {
+        setCurrentStatus("الملف فارغ أو لا يحتوي على بيانات.", true);
+        return;
+      }
+      
+      // Skip header row, process data rows
+      const dataRows = jsonData.slice(1);
+      const datesMap = new Map();
+      
+      // Group rows by date (first column)
+      dataRows.forEach(row => {
+        if (!row || row.length === 0) return;
+        
+        // Get date from first column and format it
+        let dateValue = row[0];
+        if (!dateValue) return;
+        
+        // Handle Excel date format
+        if (typeof dateValue === 'number') {
+          const excelDate = new Date(Math.round((dateValue - 25569) * 86400 * 1000));
+          dateValue = excelDate.toISOString().split('T')[0];
+        } else if (dateValue instanceof Date) {
+          dateValue = dateValue.toISOString().split('T')[0];
+        } else {
+          // Try to parse string date
+          dateValue = String(dateValue).trim();
+          // Handle various date formats
+          if (dateValue.includes('/')) {
+            const parts = dateValue.split('/');
+            if (parts.length === 3) {
+              // Assume DD/MM/YYYY or MM/DD/YYYY
+              const day = parts[0].padStart(2, '0');
+              const month = parts[1].padStart(2, '0');
+              const year = parts[2].length === 2 ? '20' + parts[2] : parts[2];
+              dateValue = `${year}-${month}-${day}`;
+            }
+          }
+        }
+        
+        // Validate date format (YYYY-MM-DD)
+        if (!dateValue.match(/^\d{4}-\d{2}-\d{2}$/)) return;
+        
+        // Map Excel columns to our fields (skip date column)
+        const fieldOrder = [
+          'containerCount', 'size', 'place', 'move', 'agency', 
+          'type', 'client', 'notes', 'carType', 'carNumber', 'driverName'
+        ];
+        
+        const newRow = createRow({ order: Date.now() + Math.random() });
+        
+        // Fill row data (starting from index 1, skipping date column)
+        for (let i = 1; i < row.length && (i - 1) < fieldOrder.length; i++) {
+          const field = fieldOrder[i - 1];
+          const value = row[i] ? String(row[i]).trim() : '';
+          newRow[field] = value;
+        }
+        
+        // Add to date map
+        if (!datesMap.has(dateValue)) {
+          datesMap.set(dateValue, []);
+        }
+        datesMap.get(dateValue).push(newRow);
+      });
+      
+      // Save data for each date
+      let totalProcessed = 0;
+      let totalDates = 0;
+      
+      datesMap.forEach((rows, date) => {
+        ensureDateRows(date);
+        dailyData[date] = sortRows([...dailyData[date], ...rows]);
+        markDateDirty(date);
+        saveDraft(date);
+        totalProcessed += rows.length;
+        totalDates++;
+        
+        // Save to Firebase
+        saveDate(date, false, false).catch(() => {
+          console.error("Failed to save date:", date);
+        });
+      });
+      
+      // Clear file input
+      event.target.value = '';
+      
+      // Refresh UI
+      renderAll();
+      
+      setCurrentStatus(`تم رفع ${totalProcessed} صف(وف) في ${totalDates} يوم(أيام) بنجاح. تم ترحيل البيانات حسب التاريخ.`);
+      
+      // Log the import
+      logChange("excel_import", {
+        totalRows: totalProcessed,
+        totalDates: totalDates,
+        message: `تم استيراد ${totalProcessed} صف(وف) من ملف Excel في ${totalDates} يوم(أيام)`
+      });
+      
+    } catch (error) {
+      console.error("Error processing Excel file:", error);
+      setCurrentStatus("حدث خطأ أثناء معالجة ملف Excel: " + error.message, true);
+    }
+  };
+  
+  reader.onerror = function() {
+    setCurrentStatus("حدث خطأ أثناء قراءة الملف.", true);
+  };
+  
+  reader.readAsArrayBuffer(file);
 }
 
 function normalizeSnapshotData(snapshotValue) {

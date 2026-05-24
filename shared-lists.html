@@ -343,7 +343,9 @@ function addListValue(listId) {
 }
 
 function removeListValue(listId, value) {
+  console.log("removeListValue called with:", { listId, value, type: typeof value });
   const normalized = normalizeOptionValue(value);
+  console.log("After normalizeOptionValue:", { normalized, type: typeof normalized });
   if (!normalized) return;
 
   // Check if this is a default value
@@ -355,7 +357,7 @@ function removeListValue(listId, value) {
     return;
   }
 
-  const confirmed = window.confirm("¿Aqui quieres eliminar el valor \"" + normalized + "\" de la lista " + LIST_LABELS[listId] + "¿");
+  const confirmed = window.confirm("هل تريد حذف القيمة \"" + normalized + "\" من قائمة " + LIST_LABELS[listId] + "؟");
   if (!confirmed) return;
 
   const optionKey = makeOptionKey(normalized);
