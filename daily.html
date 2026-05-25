@@ -1768,9 +1768,10 @@ function handlePaste(event) {
     // Create new row
     const newRow = createRow({ order: Date.now() + Math.random() });
     
-    // Fill the new row with data starting from the same field
-    for (let colIndex = 0; colIndex < rowData.length && (startIndex + colIndex) < fieldOrder.length; colIndex++) {
-      const field = fieldOrder[startIndex + colIndex];
+    // Fill the new row with data starting from the beginning (index 0)
+    // For new rows, we fill from the first column regardless of where we started pasting
+    for (let colIndex = 0; colIndex < rowData.length && colIndex < fieldOrder.length; colIndex++) {
+      const field = fieldOrder[colIndex];
       const value = rowData[colIndex] ? rowData[colIndex].trim() : '';
       
       // Special handling for date field
