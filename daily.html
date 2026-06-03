@@ -922,6 +922,7 @@ function normalizeRow(row, index = 0) {
   return createRow({
     id: row && row.id ? row.id : "legacy-" + index,
     order: row && typeof row.order === "number" ? row.order : index,
+    date: (row && row.date && row.date.match(/^\d{4}-\d{2}-\d{2}$/)) ? row.date : "",
     containerCount: row && row.containerCount ? row.containerCount : "",
     size: row && row.size ? row.size : "",
     place: row && row.place ? row.place : "",
@@ -1128,7 +1129,12 @@ function renderRows(rows, date, scope) {
   return sortRows(rows).map(row => {
     const locked = isRowLockedByOther(row);
     const disabledAttr = locked ? "disabled" : "";
-    const rowDate = row.date || date;
+    // Validate date - if it's not a valid date format, use the current date
+    let rowDate = row.date || date;
+    // Check if rowDate is a valid date format (YYYY-MM-DD)
+    if (!rowDate || !rowDate.match(/^\d{4}-\d{2}-\d{2}$/)) {
+      rowDate = date;
+    }
     return `
       <tr>
         <td class="date-cell"><input ${disabledAttr} type="date" data-date="${date}" data-row-id="${row.id}" data-field="date" data-scope="${scope}" value="${escapeHtml(rowDate)}"></td>
