@@ -760,6 +760,123 @@ function loadData() {
   });
 }
 
+// Handle paste from Excel
+function handlePaste(event) {
+  const target = event.target;
+  // Check if target is a contenteditable cell in the table
+  if (!target.matches('td[contenteditable="true"]')) return;
+  
+  const clipboardData = event.clipboardData || window.clipboardData;
+  if (!clipboardData) return;
+  
+  const pastedText = clipboardData.getData('text');
+  if (!pastedText) return;
+  
+  // Check if it looks like Excel data (contains tabs or newlines)
+  if (!pastedText.includes('\t') && !pastedText.includes('\n')) return;
+  
+  event.preventDefault();
+  
+  const tableBody = document.getElementById("tableBody");
+  const rows = tableBody.querySelectorAll("tr");
+  const targetRow = target.closest("tr");
+  const rowIndex = Array.from(rows).indexOf(targetRow);
+  
+  if (rowIndex === -1) return;
+  
+  // Get the cell index within the row
+  const cells = targetRow.querySelectorAll("td");
+  const cellIndex = Array.from(cells).indexOf(target);
+  
+  // Define field order for mapping (matching the table structure)
+  const fieldOrder = [
+    'clientName', 'place', 
+    'market_c20', 'market_c40', 'market_c2x20', 
+    'commission',
+    'client_c20', 'client_c40', 'client_c2x20',
+    'notes'
+  ];
+  
+  // Get starting index
+  const startIndex = fieldOrder[cellIndex] ? cellIndex : 0;
+  
+  // Split by rows and columns
+  const pastedRows = pastedText.split('\n').filter(row => row.trim());
+  if (pastedRows.length === 0) return;
+  
+  // Check if this is the last row
+  const isLastRow = rowIndex === rows.length - 1;
+  
+  // Sync current table data before pasting
+  syncTableToData();
+  
+  // Process first row (the one we're pasting into)
+  const firstRowData = pastedRows[0].split('\t');
+  for (let i = 0; i < firstRowData.length && (startIndex + i) < fieldOrder.length; i++) {
+    const field = fieldOrder[startIndex + i];
+    const value = firstRowData[i] ? firstRowData[i].trim() : '';
+    
+    // Update the data object
+    const rowData = data[rowIndex];
+    if (field.startsWith('market_')) {
+      const marketField = field.replace('market_', '');
+      if (!rowData.market) rowData.market = { c20: 0, c40: 0, c2x20: 0 };
+      rowData.market[marketField] = isNaN(value) ? 0 : Number(value);
+    } else if (field.startsWith('client_')) {
+      const clientField = field.replace('client_', '');
+      if (!rowData.client) rowData.client = { c20: 0, c40: 0, c2x20: 0 };
+      rowData.client[clientField] = isNaN(value) ? 0 : Number(value);
+    } else if (field === 'commission') {
+      rowData.commission = isNaN(value) ? 0 : Number(value);
+    } else {
+      rowData[field] = value;
+    }
+  }
+  
+  // If there are multiple rows and we're in the last row, add new rows
+  if (pastedRows.length > 1 && isLastRow) {
+    for (let pasteRowIndex = 1; pasteRowIndex < pastedRows.length; pasteRowIndex++) {
+      const rowData = pastedRows[pasteRowIndex].split('\t');
+      if (rowData.length === 0 || !rowData[0].trim()) continue;
+      
+      // Create new row
+      const newRow = {
+        clientName: "",
+        place: "",
+        market: { c20: 0, c40: 0, c2x20: 0 },
+        commission: 0,
+        client: { c20: 0, c40: 0, c2x20: 0 },
+        notes: ""
+      };
+      
+      // Fill the new row with data starting from the beginning
+      for (let colIndex = 0; colIndex < rowData.length && colIndex < fieldOrder.length; colIndex++) {
+        const field = fieldOrder[colIndex];
+        const value = rowData[colIndex] ? rowData[colIndex].trim() : '';
+        
+        if (field.startsWith('market_')) {
+          const marketField = field.replace('market_', '');
+          if (!newRow.market) newRow.market = { c20: 0, c40: 0, c2x20: 0 };
+          newRow.market[marketField] = isNaN(value) ? 0 : Number(value);
+        } else if (field.startsWith('client_')) {
+          const clientField = field.replace('client_', '');
+          if (!newRow.client) newRow.client = { c20: 0, c40: 0, c2x20: 0 };
+          newRow.client[clientField] = isNaN(value) ? 0 : Number(value);
+        } else if (field === 'commission') {
+          newRow.commission = isNaN(value) ? 0 : Number(value);
+        } else {
+          newRow[field] = value;
+        }
+      }
+      
+      data.push(newRow);
+    }
+  }
+  
+  // Re-render the table
+  renderTable(data);
+}
+
 function renderTable(list) {
   const tbody = document.getElementById("tableBody");
   tbody.innerHTML = "";
@@ -861,6 +978,9 @@ function logout() {
 
 loadData();
 addDirectLoadButton();
+
+// Add paste event listener to the table body
+document.getElementById("tableBody").addEventListener("paste", handlePaste);
 </script>
 
 </body>
