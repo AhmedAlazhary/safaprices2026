@@ -344,6 +344,13 @@ function addListValue(listId) {
 
 function removeListValue(listId, value) {
   console.log("removeListValue called with:", { listId, value, type: typeof value });
+  
+  // Check if user is authenticated
+  if (!currentUser) {
+    setStatus("يجب تسجيل الدخول لحذف القيم من القوائم المشتركة.", true);
+    return;
+  }
+  
   const normalized = normalizeOptionValue(value);
   console.log("After normalizeOptionValue:", { normalized, type: typeof normalized });
   if (!normalized) return;
