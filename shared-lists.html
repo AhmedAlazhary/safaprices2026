@@ -234,11 +234,13 @@ function normalizeOptionValue(value) {
 function makeOptionKey(value) {
   const normalized = normalizeOptionValue(value);
   console.log("makeOptionKey input:", { value, normalized });
+  // Normalize Arabic characters before creating key
+  const arabicNormalized = normalized.toLocaleLowerCase("ar");
   // Use a simple hash-like approach for Arabic characters
   let key = "";
-  for (let i = 0; i < normalized.length; i++) {
-    const char = normalized[i];
-    const charCode = normalized.charCodeAt(i);
+  for (let i = 0; i < arabicNormalized.length; i++) {
+    const char = arabicNormalized[i];
+    const charCode = arabicNormalized.charCodeAt(i);
     
     if (charCode >= 48 && charCode <= 57) { // 0-9
       key += char;
