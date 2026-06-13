@@ -25,13 +25,21 @@
       ".write": "auth != null",
       "$listId": {
         ".read": "auth != null",
-        ".write": "auth != null"
+        ".write": "auth != null",
+        "$optionKey": {
+          ".read": "auth != null",
+          ".write": "auth != null",
+          ".validate": "newData.isString() && newData.val().length > 0"
+        }
       }
     },
     
     "changeLog": {
       ".read": "auth != null",
-      ".write": "auth != null"
+      ".write": "auth != null",
+      "$logId": {
+        ".validate": "newData.hasChildren(['action', 'user', 'createdAt'])"
+      }
     }
   }
 }

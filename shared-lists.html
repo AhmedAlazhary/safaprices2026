@@ -375,6 +375,11 @@ function removeListValue(listId, value) {
   db.ref("sharedLists/" + listId + "/" + optionKey).remove()
     .then(() => {
       console.log("Successfully deleted:", optionKey);
+      // Update local data immediately
+      if (sharedLists[listId]) {
+        sharedLists[listId] = sharedLists[listId].filter(v => normalizeOptionValue(v) !== normalized);
+      }
+      renderLists();
       setStatus("تم حذف القيمة من قائمة " + LIST_LABELS[listId] + ".");
       return logChange("shared_list_remove", {
         listId,
