@@ -375,7 +375,19 @@ function removeListValue(listId, value) {
   db.ref("sharedLists/" + listId + "/" + optionKey).remove()
     .then(() => {
       console.log("Successfully deleted from Firebase:", optionKey);
-      // Don't update local data immediately - let Firebase listener handle it
+      // Update local data immediately since Firebase listener may not trigger
+      if (sharedLists[listId]) {
+        const beforeFilter = sharedLists[listId].length;
+        sharedLists[listId] = sharedLists[listId].filter(v => {
+          const normalizedV = normalizeOptionValue(v);
+          const shouldRemove = normalizedV === normalized;
+          console.log("Filter check:", { v, normalizedV, normalized, shouldRemove });
+          return !shouldRemove;
+        });
+        const afterFilter = sharedLists[listId].length;
+        console.log("Filter result:", { beforeFilter, afterFilter, removed: beforeFilter - afterFilter });
+      }
+      renderLists();
       setStatus("تم حذف القيمة من قائمة " + LIST_LABELS[listId] + ".");
       return logChange("shared_list_remove", {
         listId,
