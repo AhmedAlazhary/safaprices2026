@@ -374,12 +374,8 @@ function removeListValue(listId, value) {
   
   db.ref("sharedLists/" + listId + "/" + optionKey).remove()
     .then(() => {
-      console.log("Successfully deleted:", optionKey);
-      // Update local data immediately
-      if (sharedLists[listId]) {
-        sharedLists[listId] = sharedLists[listId].filter(v => normalizeOptionValue(v) !== normalized);
-      }
-      renderLists();
+      console.log("Successfully deleted from Firebase:", optionKey);
+      // Don't update local data immediately - let Firebase listener handle it
       setStatus("تم حذف القيمة من قائمة " + LIST_LABELS[listId] + ".");
       return logChange("shared_list_remove", {
         listId,
@@ -398,8 +394,10 @@ function removeListValue(listId, value) {
 }
 
 function loadSharedLists() {
+  console.log("Setting up Firebase listener for sharedLists...");
   db.ref("sharedLists").on("value", snap => {
     const raw = snap.val() || {};
+    console.log("Firebase sharedLists updated:", raw);
     const next = {};
 
     Object.keys(LIST_LABELS).forEach(listId => {
@@ -408,10 +406,12 @@ function loadSharedLists() {
         : [];
     });
 
+    console.log("Processed sharedLists:", next);
     sharedLists = next;
     renderLists();
     setStatus("تم تحميل القوائم المشتركة.");
-  }, () => {
+  }, error => {
+    console.error("Error loading sharedLists:", error);
     sharedLists = {};
     renderLists();
     setStatus("تعذر تحميل القوائم الآن.", true);
