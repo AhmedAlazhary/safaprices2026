@@ -372,37 +372,43 @@ function removeListValue(listId, value) {
   const optionKey = makeOptionKey(normalized);
   console.log("Attempting to delete:", { listId, normalized, optionKey, isDefaultValue });
   
-  db.ref("sharedLists/" + listId + "/" + optionKey).remove()
-    .then(() => {
-      console.log("Successfully deleted from Firebase:", optionKey);
-      // Update local data immediately since Firebase listener may not trigger
-      if (sharedLists[listId]) {
-        const beforeFilter = sharedLists[listId].length;
-        sharedLists[listId] = sharedLists[listId].filter(v => {
-          const normalizedV = normalizeOptionValue(v);
-          const shouldRemove = normalizedV === normalized;
-          console.log("Filter check:", { v, normalizedV, normalized, shouldRemove });
-          return !shouldRemove;
-        });
-        const afterFilter = sharedLists[listId].length;
-        console.log("Filter result:", { beforeFilter, afterFilter, removed: beforeFilter - afterFilter });
-      }
-      renderLists();
-      setStatus("تم حذف القيمة من قائمة " + LIST_LABELS[listId] + ".");
-      return logChange("shared_list_remove", {
-        listId,
-        value: normalized,
-        message: `تم حذف القيمة "${normalized}" من قائمة ${LIST_LABELS[listId]}`
+  // Use transaction to ensure deletion is atomic and persistent
+  db.ref("sharedLists/" + listId + "/" + optionKey).transaction(currentData => {
+    console.log("Transaction - currentData:", currentData);
+    return null; // Delete by setting to null
+  }, (error, committed, snapshot) => {
+    if (error) {
+      console.error("Transaction error:", error);
+      setStatus("تعذر حذف القيمة الآن.", true);
+      return;
+    }
+    if (!committed) {
+      console.log("Transaction not committed");
+      setStatus("تعذر حذف القيمة الآن.", true);
+      return;
+    }
+    console.log("Transaction committed successfully");
+    console.log("Snapshot after deletion:", snapshot.val());
+    // Update local data immediately
+    if (sharedLists[listId]) {
+      const beforeFilter = sharedLists[listId].length;
+      sharedLists[listId] = sharedLists[listId].filter(v => {
+        const normalizedV = normalizeOptionValue(v);
+        const shouldRemove = normalizedV === normalized;
+        console.log("Filter check:", { v, normalizedV, normalized, shouldRemove });
+        return !shouldRemove;
       });
-    })
-    .catch(error => {
-      console.error("Error deleting:", error);
-      if (error.code === 'PERMISSION_DENIED') {
-        setStatus("ليس لديك صلاحية الحذف من القوائم المشتركة. يرجى التواصل مع المسؤول.", true);
-      } else {
-        setStatus("تعذر حذف القيمة الآن.", true);
-      }
+      const afterFilter = sharedLists[listId].length;
+      console.log("Filter result:", { beforeFilter, afterFilter, removed: beforeFilter - afterFilter });
+    }
+    renderLists();
+    setStatus("تم حذف القيمة من قائمة " + LIST_LABELS[listId] + ".");
+    return logChange("shared_list_remove", {
+      listId,
+      value: normalized,
+      message: `تم حذف القيمة "${normalized}" من قائمة ${LIST_LABELS[listId]}`
     });
+  });
 }
 
 function loadSharedLists() {
