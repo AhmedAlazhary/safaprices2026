@@ -59,6 +59,7 @@ button {
 .ghost-btn { background: rgba(255,255,255,0.16); color: #fff; }
 .save-btn { background: var(--accent); color: #fff; }
 .add-btn { background: var(--success); color: #fff; }
+.edit-btn { background: var(--accent); color: #fff; padding: 8px 12px; }
 .delete-btn { background: var(--danger); color: #fff; padding: 8px 12px; }
 .container {
   width: min(1280px, calc(100% - 24px));
@@ -130,6 +131,11 @@ button {
   border-radius: 12px;
   background: #fff;
   border: 1px solid var(--border);
+}
+.item-actions {
+  display: flex;
+  gap: 8px;
+  flex-wrap: wrap;
 }
 .empty {
   padding: 18px;
@@ -231,60 +237,80 @@ function normalizeOptionValue(value) {
   return String(value || "").trim();
 }
 
+function normalizeOptionKey(value) {
+  return normalizeOptionValue(value).toLocaleLowerCase("ar");
+}
+
 function makeOptionKey(value) {
   const normalized = normalizeOptionValue(value);
-  console.log("makeOptionKey input:", { value, normalized });
-  // Normalize Arabic characters before creating key
-  const arabicNormalized = normalized.toLocaleLowerCase("ar");
-  // Use a simple hash-like approach for Arabic characters
-  let key = "";
-  for (let i = 0; i < arabicNormalized.length; i++) {
-    const char = arabicNormalized[i];
-    const charCode = arabicNormalized.charCodeAt(i);
-    
-    if (charCode >= 48 && charCode <= 57) { // 0-9
-      key += char;
-    } else if (charCode >= 65 && charCode <= 90) { // A-Z
-      key += char.toLowerCase();
-    } else if (charCode >= 97 && charCode <= 122) { // a-z
-      key += char;
-    } else if (charCode >= 1569 && charCode <= 1610) { // Arabic characters
-      key += "a" + (charCode - 1568);
-    } else {
-      key += "_";
-    }
-  }
-  console.log("makeOptionKey output:", key);
-  return key;
+  const encoded = encodeURIComponent(normalized.toLocaleLowerCase("ar"));
+  return "v_" + encoded.replace(/[.#$\[\]]/g, char => "_" + char.charCodeAt(0) + "_");
+}
+
+function escapeHtml(value) {
+  return String(value || "")
+    .replace(/&/g, "&amp;")
+    .replace(/</g, "&lt;")
+    .replace(/>/g, "&gt;")
+    .replace(/"/g, "&quot;")
+    .replace(/'/g, "&#39;");
+}
+
+function getSharedEntries(listId) {
+  return Array.isArray(sharedLists[listId]) ? sharedLists[listId] : [];
+}
+
+function getListEntries(listId) {
+  const defaults = DEFAULT_LIST_OPTIONS[listId] || [];
+  const entries = [];
+  const seen = new Set();
+
+  defaults.forEach(value => {
+    const normalized = normalizeOptionValue(value);
+    const compareKey = normalizeOptionKey(normalized);
+    if (!normalized || seen.has(compareKey)) return;
+    seen.add(compareKey);
+    entries.push({ key: null, value: normalized, isDefault: true });
+  });
+
+  getSharedEntries(listId).forEach(entry => {
+    const normalized = normalizeOptionValue(entry.value);
+    const compareKey = normalizeOptionKey(normalized);
+    if (!normalized || seen.has(compareKey)) return;
+    seen.add(compareKey);
+    entries.push({ key: entry.key, value: normalized, isDefault: false });
+  });
+
+  return entries.sort((a, b) => a.value.localeCompare(b.value, "ar"));
 }
 
 function getListValues(listId) {
-  const defaults = DEFAULT_LIST_OPTIONS[listId] || [];
-  const shared = sharedLists[listId] || [];
-  return Array.from(new Set([...defaults, ...shared].map(normalizeOptionValue).filter(Boolean)))
-    .sort((a, b) => a.localeCompare(b, "ar"));
+  return getListEntries(listId).map(entry => entry.value);
 }
 
 function renderLists() {
   listsContainer.innerHTML = Object.keys(LIST_LABELS).map(listId => {
-    const values = getListValues(listId);
-    const defaultValues = DEFAULT_LIST_OPTIONS[listId] || [];
+    const entries = getListEntries(listId);
     
     return `
       <article class="list-card">
-        <h3>${LIST_LABELS[listId]}</h3>
-        <div class="list-meta">Count of elements: ${values.length}</div>
+        <h3>${escapeHtml(LIST_LABELS[listId])}</h3>
+        <div class="list-meta">Count of elements: ${entries.length}</div>
         <div class="add-row">
-          <input id="input-${listId}" type="text" placeholder="Add new value">
-          <button class="add-btn" onclick="addListValue('${listId}')">Add</button>
+          <input id="input-${escapeHtml(listId)}" type="text" placeholder="Add new value">
+          <button class="add-btn" data-action="add" data-list-id="${escapeHtml(listId)}">Add</button>
         </div>
         <div class="items">
-          ${values.length ? values.map(value => {
-            const isDefaultValue = defaultValues.includes(value);
+          ${entries.length ? entries.map(entry => {
             return `
               <div class="item">
-                <span>${value}${isDefaultValue ? ' (default)' : ''}</span>
-                ${!isDefaultValue ? `<button class="delete-btn" onclick="removeListValue('${listId}', '${escapeForJs(value)}')">Delete</button>` : ''}
+                <span>${escapeHtml(entry.value)}${entry.isDefault ? ' (default)' : ''}</span>
+                ${!entry.isDefault ? `
+                  <div class="item-actions">
+                    <button class="edit-btn" data-action="edit" data-list-id="${escapeHtml(listId)}" data-value="${escapeHtml(entry.value)}">Edit</button>
+                    <button class="delete-btn" data-action="delete" data-list-id="${escapeHtml(listId)}" data-value="${escapeHtml(entry.value)}">Delete</button>
+                  </div>
+                ` : ''}
               </div>
             `;
           }).join("") : '<div class="empty">No values in this list.</div>'}
@@ -292,10 +318,6 @@ function renderLists() {
       </article>
     `;
   }).join("");
-}
-
-function escapeForJs(value) {
-  return String(value).replace(/\\/g, "\\\\").replace(/'/g, "\\'");
 }
 
 function getUserLabel() {
@@ -319,15 +341,14 @@ function addListValue(listId) {
   const value = normalizeOptionValue(input.value);
   if (!value) return;
 
-  const existing = getListValues(listId).map(item => item.toLocaleLowerCase("ar"));
-  if (existing.includes(value.toLocaleLowerCase("ar"))) {
+  const existing = getListValues(listId).map(normalizeOptionKey);
+  if (existing.includes(normalizeOptionKey(value))) {
     setStatus("القيمة موجودة بالفعل في قائمة " + LIST_LABELS[listId] + ".");
     input.value = "";
     return;
   }
 
   const optionKey = makeOptionKey(value);
-  console.log("Adding value:", { listId, value, optionKey });
   
   db.ref("sharedLists/" + listId + "/" + optionKey).set(value)
     .then(() => {
@@ -345,21 +366,16 @@ function addListValue(listId) {
 }
 
 function removeListValue(listId, value) {
-  console.log("removeListValue called with:", { listId, value, type: typeof value });
-  
-  // Check if user is authenticated
   if (!currentUser) {
     setStatus("يجب تسجيل الدخول لحذف القيم من القوائم المشتركة.", true);
     return;
   }
   
   const normalized = normalizeOptionValue(value);
-  console.log("After normalizeOptionValue:", { normalized, type: typeof normalized });
   if (!normalized) return;
 
-  // Check if this is a default value
   const defaultValues = DEFAULT_LIST_OPTIONS[listId] || [];
-  const isDefaultValue = defaultValues.includes(normalized);
+  const isDefaultValue = defaultValues.map(normalizeOptionKey).includes(normalizeOptionKey(normalized));
   
   if (isDefaultValue) {
     setStatus("Cannot delete default value \"" + normalized + "\" from " + LIST_LABELS[listId] + ".", true);
@@ -369,62 +385,108 @@ function removeListValue(listId, value) {
   const confirmed = window.confirm("هل تريد حذف القيمة \"" + normalized + "\" من قائمة " + LIST_LABELS[listId] + "؟");
   if (!confirmed) return;
 
-  const optionKey = makeOptionKey(normalized);
-  console.log("Attempting to delete:", { listId, normalized, optionKey, isDefaultValue });
-  
-  // Use transaction to ensure deletion is atomic and persistent
-  db.ref("sharedLists/" + listId + "/" + optionKey).transaction(currentData => {
-    console.log("Transaction - currentData:", currentData);
-    return null; // Delete by setting to null
-  }, (error, committed, snapshot) => {
-    if (error) {
-      console.error("Transaction error:", error);
-      setStatus("تعذر حذف القيمة الآن.", true);
-      return;
-    }
-    if (!committed) {
-      console.log("Transaction not committed");
-      setStatus("تعذر حذف القيمة الآن.", true);
-      return;
-    }
-    console.log("Transaction committed successfully");
-    console.log("Snapshot after deletion:", snapshot.val());
-    // Update local data immediately
-    if (sharedLists[listId]) {
-      const beforeFilter = sharedLists[listId].length;
-      sharedLists[listId] = sharedLists[listId].filter(v => {
-        const normalizedV = normalizeOptionValue(v);
-        const shouldRemove = normalizedV === normalized;
-        console.log("Filter check:", { v, normalizedV, normalized, shouldRemove });
-        return !shouldRemove;
+  const compareKey = normalizeOptionKey(normalized);
+  const matchingKeys = getSharedEntries(listId)
+    .filter(entry => normalizeOptionKey(entry.value) === compareKey)
+    .map(entry => entry.key)
+    .filter(Boolean);
+
+  if (!matchingKeys.length) {
+    setStatus("لم يتم العثور على القيمة داخل القوائم المحفوظة.", true);
+    return;
+  }
+
+  const updates = {};
+  matchingKeys.forEach(key => { updates[key] = null; });
+
+  db.ref("sharedLists/" + listId).update(updates)
+    .then(() => {
+      if (sharedLists[listId]) {
+        sharedLists[listId] = sharedLists[listId].filter(entry => normalizeOptionKey(entry.value) !== compareKey);
+      }
+      renderLists();
+      setStatus("تم حذف القيمة من قائمة " + LIST_LABELS[listId] + ".");
+      return logChange("shared_list_remove", {
+        listId,
+        value: normalized,
+        message: `تم حذف القيمة "${normalized}" من قائمة ${LIST_LABELS[listId]}`
       });
-      const afterFilter = sharedLists[listId].length;
-      console.log("Filter result:", { beforeFilter, afterFilter, removed: beforeFilter - afterFilter });
-    }
-    renderLists();
-    setStatus("تم حذف القيمة من قائمة " + LIST_LABELS[listId] + ".");
-    return logChange("shared_list_remove", {
-      listId,
-      value: normalized,
-      message: `تم حذف القيمة "${normalized}" من قائمة ${LIST_LABELS[listId]}`
+    })
+    .catch(() => {
+      setStatus("تعذر حذف القيمة الآن.", true);
     });
-  });
+}
+
+function editListValue(listId, oldValue) {
+  if (!currentUser) {
+    setStatus("يجب تسجيل الدخول لتعديل القيم من القوائم المشتركة.", true);
+    return;
+  }
+
+  const normalizedOldValue = normalizeOptionValue(oldValue);
+  if (!normalizedOldValue) return;
+
+  const defaultValues = DEFAULT_LIST_OPTIONS[listId] || [];
+  if (defaultValues.map(normalizeOptionKey).includes(normalizeOptionKey(normalizedOldValue))) {
+    setStatus("Cannot edit default value \"" + normalizedOldValue + "\" from " + LIST_LABELS[listId] + ".", true);
+    return;
+  }
+
+  const nextValue = normalizeOptionValue(window.prompt("اكتب القيمة الجديدة:", normalizedOldValue));
+  if (!nextValue || normalizeOptionKey(nextValue) === normalizeOptionKey(normalizedOldValue)) return;
+
+  const existing = getListValues(listId)
+    .filter(item => normalizeOptionKey(item) !== normalizeOptionKey(normalizedOldValue))
+    .map(normalizeOptionKey);
+
+  if (existing.includes(normalizeOptionKey(nextValue))) {
+    setStatus("القيمة الجديدة موجودة بالفعل في قائمة " + LIST_LABELS[listId] + ".", true);
+    return;
+  }
+
+  const oldCompareKey = normalizeOptionKey(normalizedOldValue);
+  const matchingKeys = getSharedEntries(listId)
+    .filter(entry => normalizeOptionKey(entry.value) === oldCompareKey)
+    .map(entry => entry.key)
+    .filter(Boolean);
+
+  if (!matchingKeys.length) {
+    setStatus("لم يتم العثور على القيمة داخل القوائم المحفوظة.", true);
+    return;
+  }
+
+  const updates = {};
+  matchingKeys.forEach(key => { updates[key] = null; });
+  updates[makeOptionKey(nextValue)] = nextValue;
+
+  db.ref("sharedLists/" + listId).update(updates)
+    .then(() => {
+      setStatus("تم تعديل القيمة في قائمة " + LIST_LABELS[listId] + ".");
+      return logChange("shared_list_edit", {
+        listId,
+        oldValue: normalizedOldValue,
+        value: nextValue,
+        message: `تم تعديل القيمة "${normalizedOldValue}" إلى "${nextValue}" في قائمة ${LIST_LABELS[listId]}`
+      });
+    })
+    .catch(() => {
+      setStatus("تعذر تعديل القيمة الآن.", true);
+    });
 }
 
 function loadSharedLists() {
-  console.log("Setting up Firebase listener for sharedLists...");
   db.ref("sharedLists").on("value", snap => {
     const raw = snap.val() || {};
-    console.log("Firebase sharedLists updated:", raw);
     const next = {};
 
     Object.keys(LIST_LABELS).forEach(listId => {
       next[listId] = raw[listId] && typeof raw[listId] === "object"
-        ? Object.values(raw[listId]).map(normalizeOptionValue).filter(Boolean)
+        ? Object.keys(raw[listId])
+            .map(key => ({ key, value: normalizeOptionValue(raw[listId][key]) }))
+            .filter(entry => entry.value)
         : [];
     });
 
-    console.log("Processed sharedLists:", next);
     sharedLists = next;
     renderLists();
     setStatus("تم تحميل القوائم المشتركة.");
@@ -435,6 +497,22 @@ function loadSharedLists() {
     setStatus("تعذر تحميل القوائم الآن.", true);
   });
 }
+
+listsContainer.addEventListener("click", event => {
+  const button = event.target.closest("button[data-action]");
+  if (!button) return;
+
+  const listId = button.dataset.listId;
+  const value = button.dataset.value || "";
+
+  if (button.dataset.action === "add") {
+    addListValue(listId);
+  } else if (button.dataset.action === "delete") {
+    removeListValue(listId, value);
+  } else if (button.dataset.action === "edit") {
+    editListValue(listId, value);
+  }
+});
 
 function goToDaily() {
   window.location = "daily.html";

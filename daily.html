@@ -990,27 +990,8 @@ function normalizeOptionValue(value) {
 
 function makeOptionKey(value) {
   const normalized = normalizeOptionValue(value);
-  // Normalize Arabic characters before creating key
-  const arabicNormalized = normalized.toLocaleLowerCase("ar");
-  // Use a simple hash-like approach for Arabic characters
-  let key = "";
-  for (let i = 0; i < arabicNormalized.length; i++) {
-    const char = arabicNormalized[i];
-    const charCode = arabicNormalized.charCodeAt(i);
-    
-    if (charCode >= 48 && charCode <= 57) { // 0-9
-      key += char;
-    } else if (charCode >= 65 && charCode <= 90) { // A-Z
-      key += char.toLowerCase();
-    } else if (charCode >= 97 && charCode <= 122) { // a-z
-      key += char;
-    } else if (charCode >= 1569 && charCode <= 1610) { // Arabic characters
-      key += "a" + (charCode - 1568);
-    } else {
-      key += "_";
-    }
-  }
-  return key;
+  const encoded = encodeURIComponent(normalized.toLocaleLowerCase("ar"));
+  return "v_" + encoded.replace(/[.#$\[\]]/g, char => "_" + char.charCodeAt(0) + "_");
 }
 
 function getMergedListOptions(listId) {
