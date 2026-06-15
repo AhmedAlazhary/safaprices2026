@@ -1621,6 +1621,11 @@ const collection = (ref) => db.collection(ref);
 const doc = (ref, id) => db.collection(ref).doc(id);
 const getDoc = (ref) => ref.get();
 const getDocs = (ref) => ref.get();
+const docExists = (snap) => {
+  if (!snap) return false;
+  return typeof snap.exists === 'function' ? snap.exists() : Boolean(snap.exists);
+};
+const getDocData = (snap) => docExists(snap) ? snap.data() : {};
 const addDoc = (ref, data) => ref.add(data);
 const updateDoc = (ref, data) => ref.update(data);
 const deleteDoc = (ref) => ref.delete();
@@ -2051,8 +2056,8 @@ function displayGarageMovements(movements) {
 async function loadLookups() {
   try {
     const docSnap = await getDoc(doc('Lookups', 'all'));
-    if (docSnap.exists()) {
-      const lookups = docSnap.data();
+    const lookups = getDocData(docSnap);
+    if (Object.keys(lookups).length) {
       populateCategorySelect(lookups.categories || []);
       populateCategoryFilter(lookups.categories || []);
       populateStatusFilter(lookups.statuses || []);
@@ -2593,7 +2598,7 @@ async function handleSettlementSubmit(e) {
 
     const custodyRef = doc('Custody', custodyDocId);
     const custodySnap = await getDoc(custodyRef);
-    if (!custodySnap.exists()) {
+    if (!docExists(custodySnap)) {
       showAlert('العهدة غير موجودة', 'danger');
       return;
     }
@@ -2605,7 +2610,7 @@ async function handleSettlementSubmit(e) {
       for (const line of settlementItems) {
         const itemRef = doc('Items', line.itemId);
         const itemSnap = await transaction.get(itemRef);
-        if (!itemSnap.exists()) {
+        if (!docExists(itemSnap)) {
           throw new Error(`الصنف ${line.itemName} غير موجود`);
         }
         const available = Number(itemSnap.data().quantity || 0);
@@ -2805,7 +2810,7 @@ async function handleGarageIssueSubmit(e) {
 
     await runTransaction(async (transaction) => {
       const itemSnap = await transaction.get(itemRef);
-      if (!itemSnap.exists()) {
+      if (!docExists(itemSnap)) {
         throw new Error('الصنف غير موجود في المخزون');
       }
       const currentQuantity = Number(itemSnap.data().quantity || 0);
@@ -2889,7 +2894,7 @@ async function handleInventoryAdjustmentSubmit(e) {
 
     await runTransaction(async (transaction) => {
       const itemSnap = await transaction.get(itemRef);
-      if (!itemSnap.exists()) {
+      if (!docExists(itemSnap)) {
         throw new Error('الصنف غير موجود');
       }
 
@@ -2940,7 +2945,7 @@ async function editItem(itemId) {
     const itemDoc = doc('Items', itemId);
     const itemSnap = await getDoc(itemDoc);
     
-    if (itemSnap.exists()) {
+    if (docExists(itemSnap)) {
       const itemData = itemSnap.data();
       await openItemModal(itemData, itemId);
     }
@@ -2953,7 +2958,7 @@ async function editItem(itemId) {
 async function editAsset(assetId) {
   try {
     const assetSnap = await getDoc(doc('Assets', assetId));
-    if (!assetSnap.exists()) {
+    if (!docExists(assetSnap)) {
       showAlert('الأصل غير موجود', 'danger');
       return;
     }
@@ -3534,8 +3539,8 @@ function generateVehicleProfitabilityReport() {
 async function loadLists() {
   try {
     const lookupsDoc = await getDoc(doc('Lookups', 'all'));
-    if (lookupsDoc.exists()) {
-      const lookups = lookupsDoc.data();
+    const lookups = getDocData(lookupsDoc);
+    if (Object.keys(lookups).length) {
       displayCategories(lookups.categories || []);
       displayUnits(lookups.units || []);
       displayLocations(lookups.locations || []);
@@ -3624,24 +3629,24 @@ async function addCategory() {
   
   try {
     const lookupsDoc = await getDoc(doc('Lookups', 'all'));
-    let lookups = {};
-    if (lookupsDoc.exists()) {
-      lookups = lookupsDoc.data();
-    }
+    const lookups = getDocData(lookupsDoc);
+    const categories = [...(lookups.categories || [])];
     
-    let categories = lookups.categories || [];
     if (!categories.includes(value)) {
       categories.push(value);
-      lookups.categories = categories;
-      lookups.updatedAt = serverTimestamp();
-      
-      await setDoc(doc('Lookups', 'all'), lookups);
+      await setDoc(doc('Lookups', 'all'), {
+        ...lookups,
+        categories,
+        updatedAt: serverTimestamp()
+      });
       input.value = '';
       displayCategories(categories);
       updateItemFormOptions();
+      populateCategoryFilter(categories);
     }
   } catch (error) {
     console.error('Error adding category:', error);
+    showAlert('حدث خطأ أثناء إضافة الفئة', 'danger');
   }
 }
 
@@ -3650,20 +3655,20 @@ async function removeCategory(category) {
   
   try {
     const lookupsDoc = await getDoc(doc('Lookups', 'all'));
-    if (lookupsDoc.exists()) {
-      let lookups = lookupsDoc.data();
-      const categories = lookups.categories || [];
-      const updatedCategories = categories.filter(cat => cat !== category);
+    const lookups = getDocData(lookupsDoc);
+    const updatedCategories = (lookups.categories || []).filter(cat => cat !== category);
       
-      lookups.categories = updatedCategories;
-      lookups.updatedAt = serverTimestamp();
-      
-      await setDoc(doc('Lookups', 'all'), lookups);
-      displayCategories(updatedCategories);
-      updateItemFormOptions();
-    }
+    await setDoc(doc('Lookups', 'all'), {
+      ...lookups,
+      categories: updatedCategories,
+      updatedAt: serverTimestamp()
+    });
+    displayCategories(updatedCategories);
+    updateItemFormOptions();
+    populateCategoryFilter(updatedCategories);
   } catch (error) {
     console.error('Error removing category:', error);
+    showAlert('حدث خطأ أثناء حذف الفئة', 'danger');
   }
 }
 
@@ -3675,15 +3680,13 @@ async function addUnit() {
   
   try {
     const lookupsDoc = await getDoc(doc('Lookups', 'all'));
-    let units = [];
-    if (lookupsDoc.exists()) {
-      units = lookupsDoc.data().units || [];
-    }
+    const lookups = getDocData(lookupsDoc);
+    const units = [...(lookups.units || [])];
     
     if (!units.includes(value)) {
       units.push(value);
       await setDoc(doc('Lookups', 'all'), {
-        ...lookupsDoc.data(),
+        ...lookups,
         units,
         updatedAt: serverTimestamp()
       });
@@ -3693,6 +3696,7 @@ async function addUnit() {
     }
   } catch (error) {
     console.error('Error adding unit:', error);
+    showAlert('حدث خطأ أثناء إضافة الوحدة', 'danger');
   }
 }
 
@@ -3701,20 +3705,19 @@ async function removeUnit(unit) {
   
   try {
     const lookupsDoc = await getDoc(doc('Lookups', 'all'));
-    if (lookupsDoc.exists()) {
-      const units = lookupsDoc.data().units || [];
-      const updatedUnits = units.filter(u => u !== unit);
+    const lookups = getDocData(lookupsDoc);
+    const updatedUnits = (lookups.units || []).filter(u => u !== unit);
       
-      await setDoc(doc('Lookups', 'all'), {
-        ...lookupsDoc.data(),
-        units: updatedUnits,
-        updatedAt: serverTimestamp()
-      });
-      displayUnits(updatedUnits);
-      updateItemFormOptions();
-    }
+    await setDoc(doc('Lookups', 'all'), {
+      ...lookups,
+      units: updatedUnits,
+      updatedAt: serverTimestamp()
+    });
+    displayUnits(updatedUnits);
+    updateItemFormOptions();
   } catch (error) {
     console.error('Error removing unit:', error);
+    showAlert('حدث خطأ أثناء حذف الوحدة', 'danger');
   }
 }
 
@@ -3725,15 +3728,13 @@ async function addLocation() {
   
   try {
     const lookupsDoc = await getDoc(doc('Lookups', 'all'));
-    let locations = [];
-    if (lookupsDoc.exists()) {
-      locations = lookupsDoc.data().locations || [];
-    }
+    const lookups = getDocData(lookupsDoc);
+    const locations = [...(lookups.locations || [])];
     
     if (!locations.includes(value)) {
       locations.push(value);
       await setDoc(doc('Lookups', 'all'), {
-        ...lookupsDoc.data(),
+        ...lookups,
         locations,
         updatedAt: serverTimestamp()
       });
@@ -3743,6 +3744,7 @@ async function addLocation() {
     }
   } catch (error) {
     console.error('Error adding location:', error);
+    showAlert('حدث خطأ أثناء إضافة الموقع', 'danger');
   }
 }
 
@@ -3751,20 +3753,19 @@ async function removeLocation(location) {
   
   try {
     const lookupsDoc = await getDoc(doc('Lookups', 'all'));
-    if (lookupsDoc.exists()) {
-      const locations = lookupsDoc.data().locations || [];
-      const updatedLocations = locations.filter(loc => loc !== location);
+    const lookups = getDocData(lookupsDoc);
+    const updatedLocations = (lookups.locations || []).filter(loc => loc !== location);
       
-      await setDoc(doc('Lookups', 'all'), {
-        ...lookupsDoc.data(),
-        locations: updatedLocations,
-        updatedAt: serverTimestamp()
-      });
-      displayLocations(updatedLocations);
-      updateItemFormOptions();
-    }
+    await setDoc(doc('Lookups', 'all'), {
+      ...lookups,
+      locations: updatedLocations,
+      updatedAt: serverTimestamp()
+    });
+    displayLocations(updatedLocations);
+    updateItemFormOptions();
   } catch (error) {
     console.error('Error removing location:', error);
+    showAlert('حدث خطأ أثناء حذف الموقع', 'danger');
   }
 }
 
@@ -3775,15 +3776,13 @@ async function addStatus() {
   
   try {
     const lookupsDoc = await getDoc(doc('Lookups', 'all'));
-    let statuses = [];
-    if (lookupsDoc.exists()) {
-      statuses = lookupsDoc.data().statuses || [];
-    }
+    const lookups = getDocData(lookupsDoc);
+    const statuses = [...(lookups.statuses || [])];
     
     if (!statuses.includes(value)) {
       statuses.push(value);
       await setDoc(doc('Lookups', 'all'), {
-        ...lookupsDoc.data(),
+        ...lookups,
         statuses,
         updatedAt: serverTimestamp()
       });
@@ -3793,6 +3792,7 @@ async function addStatus() {
     }
   } catch (error) {
     console.error('Error adding status:', error);
+    showAlert('حدث خطأ أثناء إضافة الحالة', 'danger');
   }
 }
 
@@ -3801,20 +3801,20 @@ async function removeStatus(status) {
   
   try {
     const lookupsDoc = await getDoc(doc('Lookups', 'all'));
-    if (lookupsDoc.exists()) {
-      const statuses = lookupsDoc.data().statuses || [];
-      const updatedStatuses = statuses.filter(s => s !== status);
+    const lookups = getDocData(lookupsDoc);
+    const updatedStatuses = (lookups.statuses || []).filter(s => s !== status);
       
-      await setDoc(doc('Lookups', 'all'), {
-        ...lookupsDoc.data(),
-        statuses: updatedStatuses,
-        updatedAt: serverTimestamp()
-      });
-      displayStatuses(updatedStatuses);
-      updateItemFormOptions();
-    }
+    await setDoc(doc('Lookups', 'all'), {
+      ...lookups,
+      statuses: updatedStatuses,
+      updatedAt: serverTimestamp()
+    });
+    displayStatuses(updatedStatuses);
+    updateItemFormOptions();
+    populateStatusFilter(updatedStatuses);
   } catch (error) {
     console.error('Error removing status:', error);
+    showAlert('حدث خطأ أثناء حذف الحالة', 'danger');
   }
 }
 
@@ -3825,23 +3825,23 @@ async function addAccountingItem() {
   
   try {
     const lookupsDoc = await getDoc(doc('Lookups', 'all'));
-    let accountingItems = [];
-    if (lookupsDoc.exists()) {
-      accountingItems = lookupsDoc.data().accountingItems || [];
-    }
+    const lookups = getDocData(lookupsDoc);
+    const accountingItems = [...(lookups.accountingItems || [])];
     
     if (!accountingItems.includes(value)) {
       accountingItems.push(value);
       await setDoc(doc('Lookups', 'all'), {
-        ...lookupsDoc.data(),
+        ...lookups,
         accountingItems,
         updatedAt: serverTimestamp()
       });
       input.value = '';
       displayAccountingItems(accountingItems);
+      populateAccountingSelects(accountingItems);
     }
   } catch (error) {
     console.error('Error adding accounting item:', error);
+    showAlert('حدث خطأ أثناء إضافة البند المحاسبي', 'danger');
   }
 }
 
@@ -3850,19 +3850,19 @@ async function removeAccountingItem(item) {
   
   try {
     const lookupsDoc = await getDoc(doc('Lookups', 'all'));
-    if (lookupsDoc.exists()) {
-      const accountingItems = lookupsDoc.data().accountingItems || [];
-      const updatedItems = accountingItems.filter(i => i !== item);
+    const lookups = getDocData(lookupsDoc);
+    const updatedItems = (lookups.accountingItems || []).filter(i => i !== item);
       
-      await setDoc(doc('Lookups', 'all'), {
-        ...lookupsDoc.data(),
-        accountingItems: updatedItems,
-        updatedAt: serverTimestamp()
-      });
-      displayAccountingItems(updatedItems);
-    }
+    await setDoc(doc('Lookups', 'all'), {
+      ...lookups,
+      accountingItems: updatedItems,
+      updatedAt: serverTimestamp()
+    });
+    displayAccountingItems(updatedItems);
+    populateAccountingSelects(updatedItems);
   } catch (error) {
     console.error('Error removing accounting item:', error);
+    showAlert('حدث خطأ أثناء حذف البند المحاسبي', 'danger');
   }
 }
 
@@ -3873,15 +3873,13 @@ async function addAssetType() {
   
   try {
     const lookupsDoc = await getDoc(doc('Lookups', 'all'));
-    let assetTypes = [];
-    if (lookupsDoc.exists()) {
-      assetTypes = lookupsDoc.data().assetTypes || [];
-    }
+    const lookups = getDocData(lookupsDoc);
+    const assetTypes = [...(lookups.assetTypes || [])];
     
     if (!assetTypes.includes(value)) {
       assetTypes.push(value);
       await setDoc(doc('Lookups', 'all'), {
-        ...lookupsDoc.data(),
+        ...lookups,
         assetTypes,
         updatedAt: serverTimestamp()
       });
@@ -3891,6 +3889,7 @@ async function addAssetType() {
     }
   } catch (error) {
     console.error('Error adding asset type:', error);
+    showAlert('حدث خطأ أثناء إضافة نوع الأصل', 'danger');
   }
 }
 
@@ -3899,20 +3898,19 @@ async function removeAssetType(type) {
   
   try {
     const lookupsDoc = await getDoc(doc('Lookups', 'all'));
-    if (lookupsDoc.exists()) {
-      const assetTypes = lookupsDoc.data().assetTypes || [];
-      const updatedTypes = assetTypes.filter(t => t !== type);
+    const lookups = getDocData(lookupsDoc);
+    const updatedTypes = (lookups.assetTypes || []).filter(t => t !== type);
       
-      await setDoc(doc('Lookups', 'all'), {
-        ...lookupsDoc.data(),
-        assetTypes: updatedTypes,
-        updatedAt: serverTimestamp()
-      });
-      displayAssetTypes(updatedTypes);
-      updateAssetFormOptions();
-    }
+    await setDoc(doc('Lookups', 'all'), {
+      ...lookups,
+      assetTypes: updatedTypes,
+      updatedAt: serverTimestamp()
+    });
+    displayAssetTypes(updatedTypes);
+    updateAssetFormOptions();
   } catch (error) {
     console.error('Error removing asset type:', error);
+    showAlert('حدث خطأ أثناء حذف نوع الأصل', 'danger');
   }
 }
 
@@ -3920,86 +3918,79 @@ async function removeAssetType(type) {
 async function updateItemFormOptions() {
   try {
     const lookupsDoc = await getDoc(doc('Lookups', 'all'));
-    if (lookupsDoc.exists()) {
-      const lookups = lookupsDoc.data();
+    const lookups = getDocData(lookupsDoc);
       
-      // Update category select
-      const categorySelect = document.getElementById('itemCategory');
-      categorySelect.innerHTML = '<option value="">Select Category</option>';
-      (lookups.categories || []).forEach(cat => {
-        categorySelect.innerHTML += `<option value="${cat}">${cat}</option>`;
-      });
-      categorySelect.innerHTML += '<option value="ADD_NEW_CATEGORY">+ إضافة تصنيف جديد</option>';
+    const categorySelect = document.getElementById('itemCategory');
+    categorySelect.innerHTML = '<option value="">اختر الفئة</option>';
+    (lookups.categories || []).forEach(cat => {
+      categorySelect.innerHTML += `<option value="${escapeHtml(cat)}">${escapeHtml(cat)}</option>`;
+    });
+    categorySelect.innerHTML += '<option value="ADD_NEW_CATEGORY">+ إضافة تصنيف جديد</option>';
       
-      // Update unit select
-      const unitSelect = document.getElementById('itemUnit');
-      unitSelect.innerHTML = '<option value="">Select Unit</option>';
-      (lookups.units || []).forEach(unit => {
-        unitSelect.innerHTML += `<option value="${unit}">${unit}</option>`;
-      });
-      unitSelect.innerHTML += '<option value="ADD_NEW_UNIT">+ إضافة وحدة جديدة</option>';
+    const unitSelect = document.getElementById('itemUnit');
+    unitSelect.innerHTML = '<option value="">اختر الوحدة</option>';
+    (lookups.units || []).forEach(unit => {
+      unitSelect.innerHTML += `<option value="${escapeHtml(unit)}">${escapeHtml(unit)}</option>`;
+    });
+    unitSelect.innerHTML += '<option value="ADD_NEW_UNIT">+ إضافة وحدة جديدة</option>';
       
-      // Update location select
-      const locationSelect = document.getElementById('itemLocation');
-      locationSelect.innerHTML = '<option value="">Select Location</option>';
-      (lookups.locations || []).forEach(loc => {
-        locationSelect.innerHTML += `<option value="${loc}">${loc}</option>`;
-      });
-      locationSelect.innerHTML += '<option value="ADD_NEW_LOCATION">+ إضافة موقع جديد</option>';
+    const locationSelect = document.getElementById('itemLocation');
+    locationSelect.innerHTML = '<option value="">اختر الموقع</option>';
+    (lookups.locations || []).forEach(loc => {
+      locationSelect.innerHTML += `<option value="${escapeHtml(loc)}">${escapeHtml(loc)}</option>`;
+    });
+    locationSelect.innerHTML += '<option value="ADD_NEW_LOCATION">+ إضافة موقع جديد</option>';
       
-      // Update status select
-      const statusSelect = document.getElementById('itemStatus');
-      statusSelect.innerHTML = '<option value="">Select Status</option>';
-      (lookups.statuses || []).forEach(status => {
-        statusSelect.innerHTML += `<option value="${status}">${status}</option>`;
-      });
-      statusSelect.innerHTML += '<option value="ADD_NEW_STATUS">+ إضافة حالة جديدة</option>';
+    const statusSelect = document.getElementById('itemStatus');
+    statusSelect.innerHTML = '<option value="">اختر الحالة</option>';
+    (lookups.statuses || []).forEach(status => {
+      statusSelect.innerHTML += `<option value="${escapeHtml(status)}">${escapeHtml(status)}</option>`;
+    });
+    statusSelect.innerHTML += '<option value="ADD_NEW_STATUS">+ إضافة حالة جديدة</option>';
       
-      // Add change event listeners for "Add New" options
-      categorySelect.onchange = function() {
-        if (this.value === 'ADD_NEW_CATEGORY') {
-          const newCategory = prompt('أدخل اسم التصنيف الجديد:');
-          if (newCategory && newCategory.trim()) {
-            addNewCategoryFromForm(newCategory.trim());
-          } else {
-            this.value = '';
-          }
+    categorySelect.onchange = function() {
+      if (this.value === 'ADD_NEW_CATEGORY') {
+        const newCategory = prompt('أدخل اسم التصنيف الجديد:');
+        if (newCategory && newCategory.trim()) {
+          addNewCategoryFromForm(newCategory.trim());
+        } else {
+          this.value = '';
         }
-      };
+      }
+    };
       
-      unitSelect.onchange = function() {
-        if (this.value === 'ADD_NEW_UNIT') {
-          const newUnit = prompt('أدخل اسم الوحدة الجديدة:');
-          if (newUnit && newUnit.trim()) {
-            addNewUnitFromForm(newUnit.trim());
-          } else {
-            this.value = '';
-          }
+    unitSelect.onchange = function() {
+      if (this.value === 'ADD_NEW_UNIT') {
+        const newUnit = prompt('أدخل اسم الوحدة الجديدة:');
+        if (newUnit && newUnit.trim()) {
+          addNewUnitFromForm(newUnit.trim());
+        } else {
+          this.value = '';
         }
-      };
+      }
+    };
       
-      locationSelect.onchange = function() {
-        if (this.value === 'ADD_NEW_LOCATION') {
-          const newLocation = prompt('أدخل اسم الموقع الجديد:');
-          if (newLocation && newLocation.trim()) {
-            addNewLocationFromForm(newLocation.trim());
-          } else {
-            this.value = '';
-          }
+    locationSelect.onchange = function() {
+      if (this.value === 'ADD_NEW_LOCATION') {
+        const newLocation = prompt('أدخل اسم الموقع الجديد:');
+        if (newLocation && newLocation.trim()) {
+          addNewLocationFromForm(newLocation.trim());
+        } else {
+          this.value = '';
         }
-      };
+      }
+    };
       
-      statusSelect.onchange = function() {
-        if (this.value === 'ADD_NEW_STATUS') {
-          const newStatus = prompt('أدخل اسم الحالة الجديدة:');
-          if (newStatus && newStatus.trim()) {
-            addNewStatusFromForm(newStatus.trim());
-          } else {
-            this.value = '';
-          }
+    statusSelect.onchange = function() {
+      if (this.value === 'ADD_NEW_STATUS') {
+        const newStatus = prompt('أدخل اسم الحالة الجديدة:');
+        if (newStatus && newStatus.trim()) {
+          addNewStatusFromForm(newStatus.trim());
+        } else {
+          this.value = '';
         }
-      };
-    }
+      }
+    };
   } catch (error) {
     console.error('Error updating form options:', error);
   }
@@ -4009,12 +4000,8 @@ async function updateItemFormOptions() {
 async function addNewCategoryFromForm(categoryName) {
   try {
     const lookupsDoc = await getDoc(doc('Lookups', 'all'));
-    let lookups = {};
-    if (lookupsDoc.exists()) {
-      lookups = lookupsDoc.data();
-    }
-    
-    let categories = lookups.categories || [];
+    const lookups = getDocData(lookupsDoc);
+    const categories = [...(lookups.categories || [])];
     if (!categories.includes(categoryName)) {
       categories.push(categoryName);
       lookups.categories = categories;
@@ -4040,12 +4027,8 @@ async function addNewCategoryFromForm(categoryName) {
 async function addNewUnitFromForm(unitName) {
   try {
     const lookupsDoc = await getDoc(doc('Lookups', 'all'));
-    let lookups = {};
-    if (lookupsDoc.exists()) {
-      lookups = lookupsDoc.data();
-    }
-    
-    let units = lookups.units || [];
+    const lookups = getDocData(lookupsDoc);
+    const units = [...(lookups.units || [])];
     if (!units.includes(unitName)) {
       units.push(unitName);
       lookups.units = units;
@@ -4071,12 +4054,8 @@ async function addNewUnitFromForm(unitName) {
 async function addNewLocationFromForm(locationName) {
   try {
     const lookupsDoc = await getDoc(doc('Lookups', 'all'));
-    let lookups = {};
-    if (lookupsDoc.exists()) {
-      lookups = lookupsDoc.data();
-    }
-    
-    let locations = lookups.locations || [];
+    const lookups = getDocData(lookupsDoc);
+    const locations = [...(lookups.locations || [])];
     if (!locations.includes(locationName)) {
       locations.push(locationName);
       lookups.locations = locations;
@@ -4102,12 +4081,8 @@ async function addNewLocationFromForm(locationName) {
 async function addNewStatusFromForm(statusName) {
   try {
     const lookupsDoc = await getDoc(doc('Lookups', 'all'));
-    let lookups = {};
-    if (lookupsDoc.exists()) {
-      lookups = lookupsDoc.data();
-    }
-    
-    let statuses = lookups.statuses || [];
+    const lookups = getDocData(lookupsDoc);
+    const statuses = [...(lookups.statuses || [])];
     if (!statuses.includes(statusName)) {
       statuses.push(statusName);
       lookups.statuses = statuses;
@@ -4570,7 +4545,7 @@ document.getElementById('disbursementForm').addEventListener('submit', async (e)
 
     await runTransaction(async (transaction) => {
       const itemSnap = await transaction.get(itemRef);
-      if (!itemSnap.exists()) {
+      if (!docExists(itemSnap)) {
         throw new Error('الصنف غير موجود');
       }
 
@@ -4628,23 +4603,19 @@ document.getElementById('disbursementForm').addEventListener('submit', async (e)
 async function updateAssetFormOptions() {
   try {
     const lookupsDoc = await getDoc(doc('Lookups', 'all'));
-    if (lookupsDoc.exists()) {
-      const lookups = lookupsDoc.data();
+    const lookups = getDocData(lookupsDoc);
       
-      // Update asset type select
-      const assetTypeSelect = document.getElementById('assetType');
-      assetTypeSelect.innerHTML = '<option value="">Select Type</option>';
-      (lookups.assetTypes || []).forEach(type => {
-        assetTypeSelect.innerHTML += `<option value="${type}">${type}</option>`;
-      });
+    const assetTypeSelect = document.getElementById('assetType');
+    assetTypeSelect.innerHTML = '<option value="">اختر النوع</option>';
+    (lookups.assetTypes || []).forEach(type => {
+      assetTypeSelect.innerHTML += `<option value="${escapeHtml(type)}">${escapeHtml(type)}</option>`;
+    });
       
-      // Update asset status select
-      const assetStatusSelect = document.getElementById('assetStatus');
-      assetStatusSelect.innerHTML = '<option value="">Select Status</option>';
-      (lookups.assetStatuses || []).forEach(status => {
-        assetStatusSelect.innerHTML += `<option value="${status}">${status}</option>`;
-      });
-    }
+    const assetStatusSelect = document.getElementById('assetStatus');
+    assetStatusSelect.innerHTML = '<option value="">اختر الحالة</option>';
+    (lookups.assetStatuses || ['نشط', 'صيانة', 'متوقف']).forEach(status => {
+      assetStatusSelect.innerHTML += `<option value="${escapeHtml(status)}">${escapeHtml(status)}</option>`;
+    });
   } catch (error) {
     console.error('Error updating asset form options:', error);
   }
@@ -4716,19 +4687,17 @@ async function openSupplierModal(supplierId = null) {
   try {
     // Load categories for supplier selection
     const lookupsDoc = await getDoc(doc('Lookups', 'all'));
-    if (lookupsDoc.exists()) {
-      const categories = lookupsDoc.data().categories || [];
-      const categoriesSelect = document.getElementById('supplierCategories');
-      categoriesSelect.innerHTML = '';
-      categories.forEach(cat => {
-        categoriesSelect.innerHTML += `<option value="${cat}">${cat}</option>`;
-      });
-    }
+    const lookups = getDocData(lookupsDoc);
+    const categories = lookups.categories || [];
+    const categoriesSelect = document.getElementById('supplierCategories');
+    categoriesSelect.innerHTML = '';
+    categories.forEach(cat => {
+      categoriesSelect.innerHTML += `<option value="${escapeHtml(cat)}">${escapeHtml(cat)}</option>`;
+    });
     
     if (supplierId) {
-      // Edit mode
       const supplierDoc = await getDoc(doc('Suppliers', supplierId));
-      if (supplierDoc.exists()) {
+      if (docExists(supplierDoc)) {
         const supplier = supplierDoc.data();
         document.getElementById('supplierModalTitle').textContent = 'تعديل مورد';
         document.getElementById('supplierName').value = supplier.name || '';
@@ -5310,7 +5279,7 @@ async function viewJournalEntry(entryId) {
     let entry = journalEntriesCache.find(item => item.id === entryId);
     if (!entry) {
       const entrySnap = await getDoc(doc('JournalEntries', entryId));
-      if (!entrySnap.exists()) {
+      if (!docExists(entrySnap)) {
         showAlert('القيد غير موجود', 'danger');
         return;
       }
