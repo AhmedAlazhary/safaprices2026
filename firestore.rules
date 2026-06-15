@@ -210,6 +210,21 @@ service cloud.firestore {
       allow update, delete: if false;
     }
 
+    match /Custody/{docId} {
+      allow read, create, update: if isAuthenticated();
+      allow delete: if isAdmin();
+    }
+
+    match /Disbursements/{docId} {
+      allow read, create: if isAuthenticated();
+      allow update, delete: if false;
+    }
+
+    match /Lookups/{docId} {
+      allow read, create, update: if isAuthenticated();
+      allow delete: if isAdmin();
+    }
+
     match /GarageScrap/{docId} {
       allow read: if isAuthenticated();
       allow create, update, delete: if false;
@@ -222,8 +237,8 @@ service cloud.firestore {
 
     // Accounting System Collections
     match /JournalEntries/{docId} {
-      allow read: if isAuthenticated();
-      allow create, update, delete: if false; // Only Cloud Functions can create
+      allow read, create: if isAuthenticated();
+      allow update, delete: if false;
     }
 
     match /Suppliers/{docId} {

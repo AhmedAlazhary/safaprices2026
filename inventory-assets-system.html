@@ -196,6 +196,12 @@ button:hover {
   color: #fff;
 }
 
+.secondary-btn {
+  background: #e8eef4;
+  color: var(--primary);
+  border: 1px solid var(--border);
+}
+
 .table-container {
   overflow-x: auto;
   border-radius: 12px;
@@ -610,6 +616,7 @@ tr:hover {
         <button class="success-btn" onclick="generateInventoryReport()">تقرير جرد</button>
         <button class="warning-btn" onclick="showInventoryTotals()">إجماليات المخزن</button>
         <button class="danger-btn" onclick="openInventoryCountPanel()">جرد فعلي وتسوية</button>
+        <button class="warning-btn" onclick="openDisbursementModal()">صرف من المخزن</button>
       </div>
       
       <!-- Inventory Totals Section -->
@@ -719,9 +726,10 @@ tr:hover {
       </div>
 
       <!-- Actions -->
-      <div style="display: flex; gap: 12px; margin-bottom: 20px;">
+      <div style="display: flex; gap: 12px; margin-bottom: 20px; flex-wrap: wrap;">
         <button class="success-btn" onclick="toggleCustodyReports()">عرض التقارير</button>
         <button class="primary-btn" onclick="saveCustodyData()">حفظ البيانات</button>
+        <button class="warning-btn" onclick="openCustodyModal()">إنشاء عهدة موظف</button>
       </div>
       
       <!-- Excel-like Custody Table -->
@@ -746,7 +754,7 @@ tr:hover {
             </thead>
             <tbody id="garageCustodyTableBody">
               <tr class="loading">
-                <td colspan="7">جاري تحميل البيانات...</td>
+                <td colspan="8">جاري تحميل البيانات...</td>
               </tr>
             </tbody>
           </table>
@@ -792,6 +800,28 @@ tr:hover {
               </tr>
             </table>
           </div>
+        </div>
+      </div>
+
+      <!-- Employee Custody (financial) -->
+      <div class="panel" style="margin-top: 20px;">
+        <h3>عهدة الموظفين (مالية)</h3>
+        <div class="table-container">
+          <table>
+            <thead>
+              <tr>
+                <th>رقم العهدة</th>
+                <th>الموظف</th>
+                <th>التاريخ</th>
+                <th>المبلغ</th>
+                <th>الحالة</th>
+                <th>الإجراءات</th>
+              </tr>
+            </thead>
+            <tbody id="custodyTableBody">
+              <tr><td colspan="6" class="empty-state">جاري التحميل...</td></tr>
+            </tbody>
+          </table>
         </div>
       </div>
     </div>
@@ -1188,6 +1218,30 @@ tr:hover {
             <!-- Statuses will be loaded here -->
           </div>
         </div>
+
+        <!-- Accounting Items List -->
+        <div class="panel">
+          <h3>بنود المحاسبة</h3>
+          <div style="display: flex; gap: 12px; margin-bottom: 16px;">
+            <input type="text" id="newAccountingItem" placeholder="إضافة بند محاسبي جديد" style="flex: 1; padding: 8px; border: 1px solid var(--border); border-radius: 6px;">
+            <button class="primary-btn" onclick="addAccountingItem()">إضافة</button>
+          </div>
+          <div id="accountingItemsList" style="max-height: 200px; overflow-y: auto;">
+            <!-- Accounting items will be loaded here -->
+          </div>
+        </div>
+
+        <!-- Asset Types List -->
+        <div class="panel">
+          <h3>أنواع الأصول</h3>
+          <div style="display: flex; gap: 12px; margin-bottom: 16px;">
+            <input type="text" id="newAssetType" placeholder="إضافة نوع أصل جديد" style="flex: 1; padding: 8px; border: 1px solid var(--border); border-radius: 6px;">
+            <button class="primary-btn" onclick="addAssetType()">إضافة</button>
+          </div>
+          <div id="assetTypesList" style="max-height: 200px; overflow-y: auto;">
+            <!-- Asset types will be loaded here -->
+          </div>
+        </div>
       </div>
     </div>
   </div>
@@ -1277,9 +1331,13 @@ tr:hover {
           <div style="display: flex; gap: 8px; align-items: center;">
             <input type="text" id="itemBarcode" style="flex: 1; font-family: monospace;" placeholder="10 digits (e.g., 0126040001)" maxlength="10">
             <button type="button" class="primary-btn" onclick="generateNewBarcode()">Generate</button>
-            <button type="button" class="secondary-btn" onclick="toggleBarcodeInput()">Manual</button>
+            <button type="button" class="secondary-btn" onclick="toggleBarcodeInput(this)">Manual</button>
           </div>
           <small style="color: #666; margin-top: 4px; display: block;">Format: 10 digits - Category(2) + Year(2) + Month(2) + Product(4) (e.g., 0126040001)</small>
+        </div>
+        <div class="form-group">
+          <label>ملاحظات</label>
+          <textarea id="itemNotes" rows="3"></textarea>
         </div>
       </div>
       <div style="display: flex; gap: 12px; justify-content: center;">
@@ -1321,6 +1379,18 @@ tr:hover {
         <button type="submit" class="primary-btn">إنشاء عهدة</button>
       </div>
     </form>
+  </div>
+</div>
+
+<!-- Journal Entry Detail Modal -->
+<div id="journalEntryModal" class="modal">
+  <div class="modal-content">
+    <span class="close-btn" onclick="closeJournalEntryModal()">&times;</span>
+    <h2>تفاصيل القيد المحاسبي</h2>
+    <div id="journalEntryDetail" style="line-height: 1.8;"></div>
+    <div style="text-align: center; margin-top: 16px;">
+      <button type="button" class="ghost-btn" onclick="closeJournalEntryModal()">إغلاق</button>
+    </div>
   </div>
 </div>
 
@@ -1366,6 +1436,7 @@ tr:hover {
         </div>
         <button type="button" class="success-btn" onclick="addSettlementItem()">إضافة بند</button>
       </div>
+      <div id="settlementItemsList" style="margin: 16px 0;"></div>
       
       <div style="display: flex; gap: 12px; justify-content: center;">
         <button type="button" class="ghost-btn" onclick="closeSettlementModal()">إلغاء</button>
@@ -1556,6 +1627,29 @@ const deleteDoc = (ref) => ref.delete();
 const setDoc = (ref, data, options) => ref.set(data, options);
 const serverTimestamp = () => firebase.firestore.FieldValue.serverTimestamp();
 const runTransaction = (fn) => db.runTransaction(fn);
+const signOut = () => auth.signOut();
+const orderBy = (field, direction = 'asc') => ({ type: 'orderBy', field, direction });
+const where = (field, operator, value) => ({ type: 'where', field, operator, value });
+const query = (ref, ...constraints) => {
+  return constraints.reduce((nextRef, constraint) => {
+    if (!constraint) return nextRef;
+    if (constraint.type === 'orderBy') {
+      return nextRef.orderBy(constraint.field, constraint.direction);
+    }
+    if (constraint.type === 'where') {
+      return nextRef.where(constraint.field, constraint.operator, constraint.value);
+    }
+    return nextRef;
+  }, ref);
+};
+const addRequiredListener = (elementId, eventName, handler) => {
+  const element = document.getElementById(elementId);
+  if (!element) {
+    console.warn(`Missing required element: #${elementId}`);
+    return;
+  }
+  element.addEventListener(eventName, handler);
+};
 
 // Global variables
 let currentUser = null;
@@ -1568,6 +1662,17 @@ let garageAssetsCache = [];
 let garageWorkersCache = [];
 let garageWorkOrdersCache = [];
 let garageMovementsCache = [];
+let journalEntriesCache = [];
+
+function escapeHtml(value) {
+  if (value === null || value === undefined) return '';
+  return String(value)
+    .replace(/&/g, '&amp;')
+    .replace(/</g, '&lt;')
+    .replace(/>/g, '&gt;')
+    .replace(/"/g, '&quot;')
+    .replace(/'/g, '&#39;');
+}
 
 // Check authentication
 auth.onAuthStateChanged(user => {
@@ -1585,6 +1690,7 @@ function initializeInventorySystem() {
   setupEventListeners();
   loadInventory();
   loadCustodyTables();
+  loadCustody();
   loadAssets();
   loadGarageWorkers();
   loadGarageWorkOrders();
@@ -1604,30 +1710,19 @@ function initializeInventorySystem() {
 
 // Setup event listeners
 function setupEventListeners() {
-  // Item form
-  document.getElementById('itemForm').addEventListener('submit', handleItemSubmit);
-  
-  // Custody form
-  document.getElementById('custodyForm').addEventListener('submit', handleCustodySubmit);
-  
-  // Settlement form
-  document.getElementById('settlementForm').addEventListener('submit', handleSettlementSubmit);
-  
-  // Asset form
-  document.getElementById('assetForm').addEventListener('submit', handleAssetSubmit);
-  document.getElementById('garageWorkerForm').addEventListener('submit', handleGarageWorkerSubmit);
-  document.getElementById('garageWorkOrderForm').addEventListener('submit', handleGarageWorkOrderSubmit);
-  document.getElementById('garageIssueForm').addEventListener('submit', handleGarageIssueSubmit);
-  document.getElementById('inventoryAdjustmentForm').addEventListener('submit', handleInventoryAdjustmentSubmit);
-  
-  // Search and filters
-  document.getElementById('inventorySearch').addEventListener('input', filterInventory);
-  document.getElementById('categoryFilter').addEventListener('change', filterInventory);
-  document.getElementById('statusFilter').addEventListener('change', filterInventory);
-  
-  // Logout
-  document.getElementById('logoutBtn').addEventListener('click', async () => {
-    await signOut(auth);
+  addRequiredListener('itemForm', 'submit', handleItemSubmit);
+  addRequiredListener('custodyForm', 'submit', handleCustodySubmit);
+  addRequiredListener('settlementForm', 'submit', handleSettlementSubmit);
+  addRequiredListener('assetForm', 'submit', handleAssetSubmit);
+  addRequiredListener('garageWorkerForm', 'submit', handleGarageWorkerSubmit);
+  addRequiredListener('garageWorkOrderForm', 'submit', handleGarageWorkOrderSubmit);
+  addRequiredListener('garageIssueForm', 'submit', handleGarageIssueSubmit);
+  addRequiredListener('inventoryAdjustmentForm', 'submit', handleInventoryAdjustmentSubmit);
+  addRequiredListener('inventorySearch', 'input', filterInventory);
+  addRequiredListener('categoryFilter', 'change', filterInventory);
+  addRequiredListener('statusFilter', 'change', filterInventory);
+  addRequiredListener('logoutBtn', 'click', async () => {
+    await signOut();
     window.location.href = "index.html";
   });
 }
@@ -1636,7 +1731,7 @@ function setupEventListeners() {
 async function loadInventory() {
   try {
     console.log('Loading inventory from Firestore...');
-    const querySnapshot = await getDocs(collection(db, 'Items'));
+    const querySnapshot = await getDocs(collection('Items'));
     const items = [];
     querySnapshot.forEach((doc) => {
       items.push({ id: doc.id, ...doc.data() });
@@ -1655,7 +1750,7 @@ async function loadInventory() {
     }
   } catch (error) {
     console.error('Error loading inventory:', error);
-    showAlert('Error loading inventory: ' + error.message, 'danger');
+    showAlert('خطأ في تحميل المخزون: ' + error.message, 'danger');
     // Show initialization option on error
     showInitializationOption();
   }
@@ -1705,7 +1800,7 @@ async function initializeSampleData() {
     ];
     
     for (const item of sampleItems) {
-      await addDoc(collection(db, 'Items'), item);
+      await addDoc(collection('Items'), item);
     }
     
     showAlert('Sample data initialized successfully!', 'success');
@@ -1727,14 +1822,14 @@ function displayInventory(items) {
   
   tbody.innerHTML = items.map(item => `
     <tr>
-      <td>${item.name}</td>
-      <td>${item.categoryId}</td>
-      <td>${item.unit}</td>
+      <td>${escapeHtml(item.name)}</td>
+      <td>${escapeHtml(item.categoryId)}</td>
+      <td>${escapeHtml(item.unit)}</td>
       <td>${item.quantity}</td>
       <td>${item.unitPrice?.toFixed(2) || '0.00'}</td>
-      <td>${item.location || '-'}</td>
-      <td><span class="status-badge status-${item.status}">${item.status}</span></td>
-      <td style="font-family: monospace; font-size: 12px;">${item.barcode ? item.barcode.replace(/-/g, '') : '-'}</td>
+      <td>${escapeHtml(item.location || '-')}</td>
+      <td><span class="status-badge status-${escapeHtml(item.status)}">${escapeHtml(item.status)}</span></td>
+      <td style="font-family: monospace; font-size: 12px;">${item.barcode ? escapeHtml(item.barcode.replace(/-/g, '')) : '-'}</td>
       <td>
         <button class="primary-btn" onclick="editItem('${item.id}')">تعديل</button>
         <button class="danger-btn" onclick="deleteItem('${item.id}')">حذف</button>
@@ -1746,7 +1841,7 @@ function displayInventory(items) {
 // Load custody
 async function loadCustody() {
   try {
-    const querySnapshot = await getDocs(collection(db, 'Custody'));
+    const querySnapshot = await getDocs(collection('Custody'));
     const custody = [];
     querySnapshot.forEach((doc) => {
       custody.push({ id: doc.id, ...doc.data() });
@@ -1761,6 +1856,7 @@ async function loadCustody() {
 // Display custody
 function displayCustody(custody) {
   const tbody = document.getElementById('custodyTableBody');
+  if (!tbody) return;
   
   if (custody.length === 0) {
     tbody.innerHTML = '<tr><td colspan="6" class="empty-state">لا توجد عهد</td></tr>';
@@ -1769,13 +1865,13 @@ function displayCustody(custody) {
   
   tbody.innerHTML = custody.map(item => `
     <tr>
-      <td>${item.custodyId}</td>
-      <td>${item.employeeName}</td>
-      <td>${item.date}</td>
+      <td>${escapeHtml(item.custodyId || item.id)}</td>
+      <td>${escapeHtml(item.employeeName)}</td>
+      <td>${escapeHtml(item.date)}</td>
       <td>${item.totalAmount?.toFixed(2) || '0.00'}</td>
-      <td>${item.status}</td>
+      <td>${escapeHtml(item.status)}</td>
       <td>
-        <button class="warning-btn" onclick="settleCustody('${item.id}')">تصفية</button>
+        ${item.status === 'Open' ? `<button class="warning-btn" onclick="settleCustody('${item.id}')">تصفية</button>` : '-'}
       </td>
     </tr>
   `).join('');
@@ -1784,7 +1880,7 @@ function displayCustody(custody) {
 // Load assets
 async function loadAssets() {
   try {
-    const querySnapshot = await getDocs(collection(db, 'Assets'));
+    const querySnapshot = await getDocs(collection('Assets'));
     const assets = [];
     querySnapshot.forEach((doc) => {
       assets.push({ id: doc.id, ...doc.data() });
@@ -1825,7 +1921,7 @@ function displayAssets(assets) {
 
 async function loadGarageWorkers() {
   try {
-    const querySnapshot = await getDocs(collection(db, 'GarageWorkers'));
+    const querySnapshot = await getDocs(collection('GarageWorkers'));
     garageWorkersCache = querySnapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
     displayGarageWorkers(garageWorkersCache);
     updateGarageWorkerSelect();
@@ -1873,7 +1969,7 @@ function updateGarageAssetSelects() {
 
 async function loadGarageWorkOrders() {
   try {
-    const querySnapshot = await getDocs(collection(db, 'GarageWorkOrders'));
+    const querySnapshot = await getDocs(collection('GarageWorkOrders'));
     garageWorkOrdersCache = querySnapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }))
       .sort((a, b) => String(b.date || '').localeCompare(String(a.date || '')));
     displayGarageWorkOrders(garageWorkOrdersCache);
@@ -1918,7 +2014,7 @@ function updateGarageWorkOrderSelect() {
 
 async function loadGarageMovements() {
   try {
-    const querySnapshot = await getDocs(collection(db, 'GarageMovements'));
+    const querySnapshot = await getDocs(collection('GarageMovements'));
     garageMovementsCache = querySnapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }))
       .sort((a, b) => Number((b.createdAt && b.createdAt.seconds) || 0) - Number((a.createdAt && a.createdAt.seconds) || 0));
     displayGarageMovements(garageMovementsCache);
@@ -1954,14 +2050,46 @@ function displayGarageMovements(movements) {
 // Load lookups
 async function loadLookups() {
   try {
-    const docSnap = await getDoc(doc(db, 'Lookups', 'categories'));
+    const docSnap = await getDoc(doc('Lookups', 'all'));
     if (docSnap.exists()) {
-      const categories = docSnap.data().items || [];
-      populateCategorySelect(categories);
+      const lookups = docSnap.data();
+      populateCategorySelect(lookups.categories || []);
+      populateCategoryFilter(lookups.categories || []);
+      populateStatusFilter(lookups.statuses || []);
+      populateAccountingSelects(lookups.accountingItems || []);
     }
   } catch (error) {
     console.error('Error loading lookups:', error);
   }
+}
+
+function populateCategoryFilter(categories) {
+  const filter = document.getElementById('categoryFilter');
+  if (!filter) return;
+  filter.innerHTML = '<option value="">جميع الفئات</option>';
+  categories.forEach(category => {
+    filter.innerHTML += `<option value="${escapeHtml(category)}">${escapeHtml(category)}</option>`;
+  });
+}
+
+function populateStatusFilter(statuses) {
+  const filter = document.getElementById('statusFilter');
+  if (!filter) return;
+  filter.innerHTML = '<option value="">جميع الحالات</option>';
+  statuses.forEach(status => {
+    filter.innerHTML += `<option value="${escapeHtml(status)}">${escapeHtml(status)}</option>`;
+  });
+}
+
+function populateAccountingSelects(items) {
+  ['custodyAccountingItem', 'settlementAccountingItem'].forEach((selectId) => {
+    const select = document.getElementById(selectId);
+    if (!select) return;
+    select.innerHTML = '<option value="">اختر البند</option>';
+    items.forEach(item => {
+      select.innerHTML += `<option value="${escapeHtml(item)}">${escapeHtml(item)}</option>`;
+    });
+  });
 }
 
 // Populate category select
@@ -1969,7 +2097,7 @@ function populateCategorySelect(categories) {
   const categorySelect = document.getElementById('itemCategory');
   categorySelect.innerHTML = '<option value="">اختر الفئة</option>';
   categories.forEach(category => {
-    categorySelect.innerHTML += `<option value="${category}">${category}</option>`;
+    categorySelect.innerHTML += `<option value="${escapeHtml(category)}">${escapeHtml(category)}</option>`;
   });
 }
 
@@ -1980,21 +2108,35 @@ function updateLookups(items) {
 }
 
 // Modal functions
-async function openItemModal() {
-  currentEditingItem = null;
-  document.getElementById('itemModalTitle').textContent = 'إضافة صنف جديد';
+async function openItemModal(itemData = null, itemId = null) {
+  currentEditingItem = itemId;
+  document.getElementById('itemModalTitle').textContent = itemData ? 'تعديل الصنف' : 'إضافة صنف جديد';
   document.getElementById('itemForm').reset();
+  if (itemData) {
+    document.getElementById('itemName').value = itemData.name || '';
+    document.getElementById('itemCategory').value = itemData.categoryId || '';
+    document.getElementById('itemUnit').value = itemData.unit || '';
+    document.getElementById('itemQuantity').value = itemData.quantity ?? '';
+    document.getElementById('itemUnitPrice').value = itemData.unitPrice ?? '';
+    document.getElementById('itemLocation').value = itemData.location || '';
+    document.getElementById('itemStatus').value = itemData.status || '';
+    document.getElementById('itemBarcode').value = itemData.barcode || '';
+    document.getElementById('itemNotes').value = itemData.notes || '';
+  }
   document.getElementById('itemModal').style.display = 'block';
-  // Generate barcode automatically for new items
-  await generateNewBarcode();
+  if (!itemData) {
+    await generateNewBarcode();
+  }
 }
 
 function closeItemModal() {
   document.getElementById('itemModal').style.display = 'none';
+  currentEditingItem = null;
 }
 
 function openCustodyModal() {
   document.getElementById('custodyForm').reset();
+  document.getElementById('custodyDate').value = new Date().toISOString().split('T')[0];
   document.getElementById('custodyModal').style.display = 'block';
 }
 
@@ -2002,9 +2144,27 @@ function closeCustodyModal() {
   document.getElementById('custodyModal').style.display = 'none';
 }
 
-function openSettlementModal() {
+async function openSettlementModal() {
   settlementItems = [];
   document.getElementById('settlementForm').reset();
+  renderSettlementItemsList();
+
+  const custodySnapshot = await getDocs(query(collection('Custody'), where('status', '==', 'Open')));
+  const select = document.getElementById('settlementCustodyId');
+  select.innerHTML = '<option value="">اختر العهدة</option>';
+  custodySnapshot.forEach((custodyDoc) => {
+    const data = custodyDoc.data();
+    select.innerHTML += `<option value="${custodyDoc.id}">${escapeHtml(data.employeeName)} - ${data.totalAmount?.toFixed(2) || '0.00'} ج.م</option>`;
+  });
+
+  const itemSelect = document.getElementById('settlementItemSelect');
+  itemSelect.innerHTML = '<option value="">اختر الصنف</option>';
+  inventoryItemsCache.forEach((item) => {
+    if (Number(item.quantity || 0) > 0) {
+      itemSelect.innerHTML += `<option value="${item.id}" data-price="${item.unitPrice || 0}">${escapeHtml(item.name)} (${item.quantity})</option>`;
+    }
+  });
+
   document.getElementById('settlementModal').style.display = 'block';
 }
 
@@ -2029,7 +2189,7 @@ async function generateInventoryReport() {
     showAlert('جاري إنشاء تقرير المخزون...', 'success');
     
     // Get all items from Firestore
-    const querySnapshot = await getDocs(collection(db, 'Items'));
+    const querySnapshot = await getDocs(collection('Items'));
     const items = querySnapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
     
     // Calculate totals
@@ -2110,8 +2270,61 @@ async function generateInventoryReport() {
 }
 
 function generateCustodyReport() {
-  showAlert('جاري إنشاء تقرير العهد...', 'success');
-  // Implementation for custody report
+  try {
+    showAlert('جاري إنشاء تقرير العهد...', 'success');
+
+    const garageRows = Array.from(document.getElementById('garageCustodyTableBody')?.getElementsByTagName('tr') || []);
+    const garageData = garageRows.map((row) => {
+      const date = row.cells[0]?.querySelector('input')?.value || '';
+      const officer = row.cells[1]?.querySelector('input')?.value || '';
+      const description = row.cells[2]?.querySelector('input')?.value || '';
+      const custodyIn = parseFloat(row.cells[3]?.querySelector('input')?.value) || 0;
+      const clearanceOut = parseFloat(row.cells[4]?.querySelector('input')?.value) || 0;
+      return { date, officer, description, custodyIn, clearanceOut, balance: custodyIn - clearanceOut };
+    }).filter(row => row.date || row.officer || row.description);
+
+    const reportHTML = `
+      <div style="direction: rtl; padding: 20px; font-family: Arial, sans-serif;">
+        <h1 style="text-align: center;">تقرير العهد</h1>
+        <p style="text-align: center; color: #666;">التاريخ: ${new Date().toLocaleDateString('ar-EG')}</p>
+        <h2>عهدة الجراج</h2>
+        <table style="width: 100%; border-collapse: collapse; margin-bottom: 24px;">
+          <thead>
+            <tr style="background: #007bff; color: white;">
+              <th style="padding: 8px; border: 1px solid #ddd;">التاريخ</th>
+              <th style="padding: 8px; border: 1px solid #ddd;">المسئول</th>
+              <th style="padding: 8px; border: 1px solid #ddd;">البيان</th>
+              <th style="padding: 8px; border: 1px solid #ddd;">داخل</th>
+              <th style="padding: 8px; border: 1px solid #ddd;">خارج</th>
+              <th style="padding: 8px; border: 1px solid #ddd;">المتبقي</th>
+            </tr>
+          </thead>
+          <tbody>
+            ${garageData.map(row => `
+              <tr>
+                <td style="padding: 8px; border: 1px solid #ddd;">${escapeHtml(row.date)}</td>
+                <td style="padding: 8px; border: 1px solid #ddd;">${escapeHtml(row.officer)}</td>
+                <td style="padding: 8px; border: 1px solid #ddd;">${escapeHtml(row.description)}</td>
+                <td style="padding: 8px; border: 1px solid #ddd;">${row.custodyIn.toFixed(2)}</td>
+                <td style="padding: 8px; border: 1px solid #ddd;">${row.clearanceOut.toFixed(2)}</td>
+                <td style="padding: 8px; border: 1px solid #ddd;">${row.balance.toFixed(2)}</td>
+              </tr>
+            `).join('') || '<tr><td colspan="6" style="text-align:center; padding: 12px;">لا توجد بيانات</td></tr>'}
+          </tbody>
+        </table>
+        <h2>عهدة الموظفين</h2>
+        <p style="color: #666;">راجع جدول عهدة الموظفين في الصفحة للتفاصيل المالية المفتوحة والمصفاة.</p>
+      </div>
+    `;
+
+    const reportWindow = window.open('', '_blank');
+    reportWindow.document.write(reportHTML);
+    reportWindow.document.close();
+    showAlert('تم إنشاء تقرير العهد', 'success');
+  } catch (error) {
+    console.error('Error generating custody report:', error);
+    showAlert('حدث خطأ أثناء إنشاء تقرير العهد', 'danger');
+  }
 }
 
 function generateAssetsReport() {
@@ -2225,7 +2438,24 @@ function showAlert(message, type) {
 
 // Filter inventory
 function filterInventory() {
-  // Implementation for filtering
+  const search = document.getElementById('inventorySearch')?.value.trim().toLowerCase() || '';
+  const category = document.getElementById('categoryFilter')?.value || '';
+  const status = document.getElementById('statusFilter')?.value || '';
+
+  const filtered = inventoryItemsCache.filter((item) => {
+    const matchesSearch = !search || [
+      item.name,
+      item.categoryId,
+      item.location,
+      item.barcode
+    ].some(value => String(value || '').toLowerCase().includes(search));
+
+    const matchesCategory = !category || item.categoryId === category;
+    const matchesStatus = !status || item.status === status;
+    return matchesSearch && matchesCategory && matchesStatus;
+  });
+
+  displayInventory(filtered);
 }
 
 // Handle item submit
@@ -2237,7 +2467,7 @@ async function handleItemSubmit(e) {
     
     // Validate barcode format if manually entered
     if (barcodeInput && !validateBarcodeFormat(barcodeInput)) {
-      showAlert('Please enter barcode in format: XX-YY-MM-NNNN (e.g., 01-26-04-0001)', 'danger');
+      showAlert('يرجى إدخال باركود مكوّن من 10 أرقام (مثال: 0126040001)', 'danger');
       return;
     }
     
@@ -2265,21 +2495,19 @@ async function handleItemSubmit(e) {
 
     // Validation
     if (!formData.name || !formData.categoryId || !formData.unit || isNaN(formData.quantity) || isNaN(formData.unitPrice) || !formData.status) {
-      showAlert('Please fill all required fields', 'danger');
+      showAlert('يرجى استكمال جميع الحقول المطلوبة', 'danger');
       return;
     }
 
     if (currentEditingItem) {
-      // Update existing item
-      await updateDoc(doc(db, 'Items', currentEditingItem), formData);
-      showAlert('Item updated successfully', 'success');
+      await updateDoc(doc('Items', currentEditingItem), formData);
+      showAlert('تم تحديث الصنف بنجاح', 'success');
     } else {
-      // Add new item
-      await addDoc(collection(db, 'Items'), {
+      await addDoc(collection('Items'), {
         ...formData,
         createdAt: serverTimestamp()
       });
-      showAlert('Item added successfully', 'success');
+      showAlert('تمت إضافة الصنف بنجاح', 'success');
     }
 
     closeItemModal();
@@ -2293,13 +2521,152 @@ async function handleItemSubmit(e) {
 // Handle custody submit
 async function handleCustodySubmit(e) {
   e.preventDefault();
-  // Implementation for custody submission
+  try {
+    const employeeName = document.getElementById('custodyEmployeeName').value.trim();
+    const date = document.getElementById('custodyDate').value;
+    const totalAmount = parseFloat(document.getElementById('custodyTotalAmount').value);
+    const accountingItem = document.getElementById('custodyAccountingItem').value;
+
+    if (!employeeName || !date || !Number.isFinite(totalAmount) || totalAmount <= 0 || !accountingItem) {
+      showAlert('يرجى استكمال بيانات العهدة', 'danger');
+      return;
+    }
+
+    const custodyId = generateCustodyId();
+    await addDoc(collection('Custody'), {
+      custodyId,
+      employeeName,
+      date,
+      totalAmount,
+      accountingItem,
+      linkedCashId: generateCashId(),
+      status: 'Open',
+      items: [],
+      createdAt: serverTimestamp(),
+      updatedAt: serverTimestamp()
+    });
+
+    await createJournalEntry({
+      date: new Date(date),
+      type: 'CUSTODY',
+      reference: custodyId,
+      description: `عهدة للموظف ${employeeName} - ${accountingItem}`,
+      debit: totalAmount,
+      credit: 0,
+      account: 'custody'
+    });
+
+    await createJournalEntry({
+      date: new Date(date),
+      type: 'CUSTODY',
+      reference: custodyId,
+      description: `مقابل عهدة ${employeeName}`,
+      debit: 0,
+      credit: totalAmount,
+      account: 'expenses'
+    });
+
+    showAlert('تم إنشاء العهدة بنجاح', 'success');
+    closeCustodyModal();
+    loadCustody();
+  } catch (error) {
+    console.error('Error creating custody:', error);
+    showAlert('حدث خطأ أثناء إنشاء العهدة: ' + error.message, 'danger');
+  }
 }
 
 // Handle settlement submit
 async function handleSettlementSubmit(e) {
   e.preventDefault();
-  // Implementation for settlement submission
+  try {
+    const custodyDocId = document.getElementById('settlementCustodyId').value;
+    const accountingItem = document.getElementById('settlementAccountingItem').value;
+
+    if (!custodyDocId || !accountingItem) {
+      showAlert('يرجى اختيار العهدة والبند المحاسبي', 'danger');
+      return;
+    }
+    if (!settlementItems.length) {
+      showAlert('أضف صنفاً واحداً على الأقل للتصفية', 'danger');
+      return;
+    }
+
+    const custodyRef = doc('Custody', custodyDocId);
+    const custodySnap = await getDoc(custodyRef);
+    if (!custodySnap.exists()) {
+      showAlert('العهدة غير موجودة', 'danger');
+      return;
+    }
+
+    const custodyData = custodySnap.data();
+    const settlementTotal = settlementItems.reduce((sum, item) => sum + (item.quantity * item.price), 0);
+
+    await runTransaction(async (transaction) => {
+      for (const line of settlementItems) {
+        const itemRef = doc('Items', line.itemId);
+        const itemSnap = await transaction.get(itemRef);
+        if (!itemSnap.exists()) {
+          throw new Error(`الصنف ${line.itemName} غير موجود`);
+        }
+        const available = Number(itemSnap.data().quantity || 0);
+        if (line.quantity > available) {
+          throw new Error(`الكمية غير كافية للصنف ${line.itemName}. المتاح: ${available}`);
+        }
+        transaction.update(itemRef, {
+          quantity: available - line.quantity,
+          updatedAt: serverTimestamp()
+        });
+      }
+
+      transaction.update(custodyRef, {
+        status: 'Closed',
+        items: settlementItems,
+        settlementAccountingItem: accountingItem,
+        settledAmount: settlementTotal,
+        settledAt: serverTimestamp(),
+        updatedAt: serverTimestamp()
+      });
+    });
+
+    for (const line of settlementItems) {
+      await createStockMovementJournal(
+        'OUT',
+        line.itemId,
+        line.quantity,
+        line.price,
+        `تصفية عهدة ${custodyData.employeeName} - ${line.itemName}`,
+        custodyData.custodyId || custodyDocId
+      );
+    }
+
+    await createJournalEntry({
+      date: new Date(),
+      type: 'SETTLEMENT',
+      reference: custodyData.custodyId || custodyDocId,
+      description: `تصفية عهدة ${custodyData.employeeName}`,
+      debit: settlementTotal,
+      credit: 0,
+      account: 'expenses'
+    });
+
+    await createJournalEntry({
+      date: new Date(),
+      type: 'SETTLEMENT',
+      reference: custodyData.custodyId || custodyDocId,
+      description: `إغلاق عهدة ${custodyData.employeeName}`,
+      debit: 0,
+      credit: settlementTotal,
+      account: 'custody'
+    });
+
+    showAlert('تمت تصفية العهدة بنجاح', 'success');
+    closeSettlementModal();
+    loadCustody();
+    loadInventory();
+  } catch (error) {
+    console.error('Error settling custody:', error);
+    showAlert('حدث خطأ أثناء التصفية: ' + error.message, 'danger');
+  }
 }
 
 // Handle asset submit
@@ -2322,10 +2689,10 @@ async function handleAssetSubmit(e) {
     }
 
     if (currentEditingAsset) {
-      await updateDoc(doc(db, 'Assets', currentEditingAsset), formData);
+      await updateDoc(doc('Assets', currentEditingAsset), formData);
       showAlert('تم تحديث الأصل بنجاح', 'success');
     } else {
-      await addDoc(collection(db, 'Assets'), {
+      await addDoc(collection('Assets'), {
         ...formData,
         createdAt: serverTimestamp()
       });
@@ -2350,7 +2717,7 @@ async function handleGarageWorkerSubmit(e) {
       return;
     }
 
-    await addDoc(collection(db, 'GarageWorkers'), {
+    await addDoc(collection('GarageWorkers'), {
       name,
       type,
       createdAt: serverTimestamp(),
@@ -2379,7 +2746,7 @@ async function handleGarageWorkOrderSubmit(e) {
       return;
     }
 
-    await addDoc(collection(db, 'GarageWorkOrders'), {
+    await addDoc(collection('GarageWorkOrders'), {
       code: 'WO-' + Date.now(),
       assetId,
       workerId: workerId || '',
@@ -2407,7 +2774,7 @@ async function handleGarageIssueSubmit(e) {
   try {
     const itemId = document.getElementById('garageIssueItem').value;
     const workOrderId = document.getElementById('garageIssueWorkOrder').value;
-    const quantity = parseInt(document.getElementById('garageIssueQuantity').value);
+    const quantity = parseInt(document.getElementById('garageIssueQuantity').value, 10);
     const manualCost = parseFloat(document.getElementById('garageIssueCost').value);
     const custodyOfficer = document.getElementById('garageIssueCustodyOfficer').value.trim();
     const replacementFlag = document.getElementById('garageIssueReplacementFlag').value;
@@ -2433,33 +2800,66 @@ async function handleGarageIssueSubmit(e) {
 
     const unitPrice = Number(selectedItem.unitPrice || 0);
     const cost = Number.isFinite(manualCost) && manualCost > 0 ? manualCost : (unitPrice * quantity);
+    const movementRef = db.collection('GarageMovements').doc();
+    const itemRef = doc('Items', itemId);
 
-    await addDoc(collection(db, 'GarageMovements'), {
-      movementType: 'OUT',
-      itemId,
-      itemName: selectedItem.name || '',
-      assetId: selectedWorkOrder.assetId || '',
-      workOrderId,
-      quantity,
-      cost,
-      notes,
-      custodyOfficer,
-      isReplacement: replacementFlag === 'yes',
-      replacementOldPart: oldPartName,
-      scrapValue: Number.isFinite(scrapValue) ? scrapValue : 0,
-      status: 'PENDING',
-      date: new Date().toISOString().split('T')[0],
-      createdBy: currentUser?.email || currentUser?.uid || 'unknown',
-      createdAt: serverTimestamp(),
-      updatedAt: serverTimestamp()
+    await runTransaction(async (transaction) => {
+      const itemSnap = await transaction.get(itemRef);
+      if (!itemSnap.exists()) {
+        throw new Error('الصنف غير موجود في المخزون');
+      }
+      const currentQuantity = Number(itemSnap.data().quantity || 0);
+      if (quantity > currentQuantity) {
+        throw new Error(`الكمية غير كافية. المتاح: ${currentQuantity}`);
+      }
+
+      transaction.update(itemRef, {
+        quantity: currentQuantity - quantity,
+        updatedAt: serverTimestamp()
+      });
+
+      transaction.set(movementRef, {
+        movementType: 'OUT',
+        itemId,
+        itemName: selectedItem.name || '',
+        assetId: selectedWorkOrder.assetId || '',
+        workOrderId,
+        quantity,
+        cost,
+        unitPrice,
+        notes,
+        custodyOfficer,
+        isReplacement: replacementFlag === 'yes',
+        replacementOldPart: oldPartName,
+        scrapValue: Number.isFinite(scrapValue) ? scrapValue : 0,
+        status: 'COMPLETED',
+        date: new Date().toISOString().split('T')[0],
+        createdBy: currentUser?.email || currentUser?.uid || 'unknown',
+        createdAt: serverTimestamp(),
+        updatedAt: serverTimestamp()
+      });
     });
 
+    await createStockMovementJournal(
+      'OUT',
+      itemId,
+      quantity,
+      unitPrice,
+      `صرف قطع غيار - ${selectedItem.name}`,
+      selectedWorkOrder.code || workOrderId
+    );
+
+    if (replacementFlag === 'yes' && Number.isFinite(scrapValue) && scrapValue > 0) {
+      await createScrapJournal(itemId, scrapValue, `خردة ${oldPartName || selectedItem.name}`, movementRef.id);
+    }
+
     document.getElementById('garageIssueForm').reset();
-    showAlert('تم إرسال حركة الصرف للمعالجة المحاسبية', 'success');
+    showAlert('تم تنفيذ الصرف وخصم الكمية من المخزون', 'success');
+    loadInventory();
     loadGarageMovements();
   } catch (error) {
     console.error('Error issuing garage item:', error);
-    showAlert(error.message || 'Error issuing garage item', 'danger');
+    showAlert(error.message || 'حدث خطأ أثناء صرف القطعة', 'danger');
   }
 }
 
@@ -2480,37 +2880,69 @@ async function handleInventoryAdjustmentSubmit(e) {
       return;
     }
 
-    await addDoc(collection(db, 'GarageInventoryAdjustments'), {
-      itemId,
-      itemName: item.name || '',
-      systemQuantity: Number(item.quantity || 0),
-      actualQuantity,
-      difference: actualQuantity - Number(item.quantity || 0),
-      unitPrice: Number(item.unitPrice || 0),
-      notes,
-      status: 'PENDING',
-      createdBy: currentUser?.email || currentUser?.uid || 'unknown',
-      createdAt: serverTimestamp(),
-      updatedAt: serverTimestamp()
+    const systemQuantity = Number(item.quantity || 0);
+    const difference = actualQuantity - systemQuantity;
+    const unitPrice = Number(item.unitPrice || 0);
+    const adjustmentRef = db.collection('GarageInventoryAdjustments').doc();
+    const itemRef = doc('Items', itemId);
+    const reference = 'ADJ-' + Date.now();
+
+    await runTransaction(async (transaction) => {
+      const itemSnap = await transaction.get(itemRef);
+      if (!itemSnap.exists()) {
+        throw new Error('الصنف غير موجود');
+      }
+
+      transaction.update(itemRef, {
+        quantity: actualQuantity,
+        updatedAt: serverTimestamp()
+      });
+
+      transaction.set(adjustmentRef, {
+        itemId,
+        itemName: item.name || '',
+        systemQuantity,
+        actualQuantity,
+        difference,
+        unitPrice,
+        notes,
+        status: 'COMPLETED',
+        reference,
+        createdBy: currentUser?.email || currentUser?.uid || 'unknown',
+        createdAt: serverTimestamp(),
+        updatedAt: serverTimestamp()
+      });
     });
 
-    showAlert('تم إرسال طلب الجرد والتسوية للمعالجة', 'success');
+    if (difference !== 0) {
+      await createAdjustmentJournal(
+        itemId,
+        systemQuantity,
+        actualQuantity,
+        unitPrice,
+        notes || `تسوية جرد للصنف ${item.name}`,
+        reference
+      );
+    }
+
+    showAlert('تمت التسوية وتحديث كمية المخزون', 'success');
     closeInventoryCountPanel();
+    loadInventory();
   } catch (error) {
     console.error('Error creating inventory adjustment:', error);
-    showAlert('Error creating inventory adjustment', 'danger');
+    showAlert('حدث خطأ أثناء التسوية: ' + error.message, 'danger');
   }
 }
 
 // Edit item
 async function editItem(itemId) {
   try {
-    const itemDoc = doc(db, 'Items', itemId);
+    const itemDoc = doc('Items', itemId);
     const itemSnap = await getDoc(itemDoc);
     
     if (itemSnap.exists()) {
       const itemData = itemSnap.data();
-      await openItemModal(itemData);
+      await openItemModal(itemData, itemId);
     }
   } catch (error) {
     console.error('Error loading item for edit:', error);
@@ -2520,7 +2952,7 @@ async function editItem(itemId) {
 
 async function editAsset(assetId) {
   try {
-    const assetSnap = await getDoc(doc(db, 'Assets', assetId));
+    const assetSnap = await getDoc(doc('Assets', assetId));
     if (!assetSnap.exists()) {
       showAlert('الأصل غير موجود', 'danger');
       return;
@@ -2545,7 +2977,7 @@ async function editAsset(assetId) {
 async function deleteAsset(assetId) {
   if (!confirm('هل أنت متأكد من حذف هذا الأصل؟')) return;
   try {
-    await deleteDoc(doc(db, 'Assets', assetId));
+    await deleteDoc(doc('Assets', assetId));
     showAlert('تم حذف الأصل بنجاح', 'success');
     loadAssets();
   } catch (error) {
@@ -2557,7 +2989,7 @@ async function deleteAsset(assetId) {
 async function deleteGarageWorker(workerId) {
   if (!confirm('هل أنت متأكد من حذف هذا العامل؟')) return;
   try {
-    await deleteDoc(doc(db, 'GarageWorkers', workerId));
+    await deleteDoc(doc('GarageWorkers', workerId));
     showAlert('تم حذف العامل', 'success');
     loadGarageWorkers();
   } catch (error) {
@@ -2570,7 +3002,7 @@ async function deleteGarageWorker(workerId) {
 async function deleteItem(itemId) {
   if (confirm('هل أنت متأكد من حذف هذا الصنف؟')) {
     try {
-      await deleteDoc(doc(db, 'Items', itemId));
+      await deleteDoc(doc('Items', itemId));
       showAlert('تم حذف الصنف بنجاح', 'success');
       loadInventory();
     } catch (error) {
@@ -2581,14 +3013,89 @@ async function deleteItem(itemId) {
 }
 
 // Settle custody
-function settleCustody(custodyId) {
+async function settleCustody(custodyId) {
+  await openSettlementModal();
   document.getElementById('settlementCustodyId').value = custodyId;
-  openSettlementModal();
 }
 
 // Add settlement item
+function renderSettlementItemsList() {
+  const container = document.getElementById('settlementItemsList');
+  if (!container) return;
+
+  if (!settlementItems.length) {
+    container.innerHTML = '<p style="color: var(--muted);">لم تتم إضافة أصناف بعد</p>';
+    return;
+  }
+
+  const total = settlementItems.reduce((sum, item) => sum + (item.quantity * item.price), 0);
+  container.innerHTML = `
+    <table style="width: 100%; border-collapse: collapse;">
+      <thead>
+        <tr>
+          <th style="padding: 8px; border: 1px solid var(--border);">الصنف</th>
+          <th style="padding: 8px; border: 1px solid var(--border);">الكمية</th>
+          <th style="padding: 8px; border: 1px solid var(--border);">السعر</th>
+          <th style="padding: 8px; border: 1px solid var(--border);">الإجمالي</th>
+          <th style="padding: 8px; border: 1px solid var(--border);">إجراء</th>
+        </tr>
+      </thead>
+      <tbody>
+        ${settlementItems.map((item, index) => `
+          <tr>
+            <td style="padding: 8px; border: 1px solid var(--border);">${escapeHtml(item.itemName)}</td>
+            <td style="padding: 8px; border: 1px solid var(--border);">${item.quantity}</td>
+            <td style="padding: 8px; border: 1px solid var(--border);">${item.price.toFixed(2)}</td>
+            <td style="padding: 8px; border: 1px solid var(--border);">${(item.quantity * item.price).toFixed(2)}</td>
+            <td style="padding: 8px; border: 1px solid var(--border);">
+              <button type="button" class="danger-btn" onclick="removeSettlementItem(${index})">حذف</button>
+            </td>
+          </tr>
+        `).join('')}
+      </tbody>
+    </table>
+    <p style="margin-top: 8px; font-weight: 700;">الإجمالي: ${total.toFixed(2)} ج.م</p>
+  `;
+}
+
+function removeSettlementItem(index) {
+  settlementItems.splice(index, 1);
+  renderSettlementItemsList();
+}
+
 function addSettlementItem() {
-  // Implementation for adding settlement items
+  const itemId = document.getElementById('settlementItemSelect').value;
+  const quantity = parseInt(document.getElementById('settlementItemQuantity').value, 10);
+  const priceInput = document.getElementById('settlementItemPrice').value;
+  const selectedOption = document.getElementById('settlementItemSelect').selectedOptions[0];
+  const defaultPrice = parseFloat(selectedOption?.getAttribute('data-price') || '0');
+  const price = parseFloat(priceInput) || defaultPrice;
+
+  if (!itemId || !quantity || quantity < 1) {
+    showAlert('اختر الصنف وأدخل كمية صحيحة', 'danger');
+    return;
+  }
+
+  const item = inventoryItemsCache.find(entry => entry.id === itemId);
+  if (!item) {
+    showAlert('الصنف غير موجود', 'danger');
+    return;
+  }
+  if (quantity > Number(item.quantity || 0)) {
+    showAlert(`الكمية المتاحة ${item.quantity} فقط`, 'danger');
+    return;
+  }
+
+  settlementItems.push({
+    itemId,
+    itemName: item.name,
+    quantity,
+    price
+  });
+
+  document.getElementById('settlementItemQuantity').value = '';
+  document.getElementById('settlementItemPrice').value = '';
+  renderSettlementItemsList();
 }
 
 // Garage custody table functions
@@ -2666,11 +3173,25 @@ function updateTotalsFromTable() {
   const dailyClearanceElement = document.getElementById('dailyClearanceTotal');
   const afterClearanceElement = document.getElementById('afterClearanceTotal');
   const finalCustodyElement = document.getElementById('finalCustodyTotal');
-  
+  const previousCustodyElement = document.getElementById('previousCustody');
+
+  let previousCustody = 0;
+  for (let row of rows) {
+    const dateInput = row.cells[0]?.querySelector('input');
+    const custodyInput = row.cells[3]?.querySelector('input');
+    const clearanceInput = row.cells[4]?.querySelector('input');
+    if (dateInput && custodyInput && clearanceInput && dateInput.value < today) {
+      previousCustody += (parseFloat(custodyInput.value) || 0) - (parseFloat(clearanceInput.value) || 0);
+    }
+  }
+
+  const finalTotal = previousCustody + totalCustody - totalClearance;
+
+  if (previousCustodyElement) previousCustodyElement.textContent = previousCustody.toFixed(2);
   if (dailyCustodyElement) dailyCustodyElement.textContent = totalCustody.toFixed(2);
   if (dailyClearanceElement) dailyClearanceElement.textContent = totalClearance.toFixed(2);
   if (afterClearanceElement) afterClearanceElement.textContent = (totalCustody - totalClearance).toFixed(2);
-  if (finalCustodyElement) finalCustodyElement.textContent = (totalCustody - totalClearance).toFixed(2);
+  if (finalCustodyElement) finalCustodyElement.textContent = finalTotal.toFixed(2);
   
   // Calculate and update current total (all rows)
   let currentTotal = 0;
@@ -2744,7 +3265,7 @@ function updateOfficerTotals(officerTotals) {
     <div class="panel" style="padding: 12px; border: 1px solid var(--border); border-radius: 8px;">
       <div style="display: flex; justify-content: space-between; align-items: center;">
         <div>
-          <strong style="color: var(--primary);">${originalNames[normalizedName]}</strong>
+          <strong style="color: var(--primary);">${escapeHtml(originalNames[normalizedName])}</strong>
         </div>
         <div style="text-align: left;">
           <div style="font-size: 1.2rem; font-weight: 700; color: ${total < 0 ? 'var(--danger)' : total > 5000 ? 'var(--success)' : 'var(--accent)'};">
@@ -2764,7 +3285,7 @@ async function saveCustodyData() {
   
   try {
     // Clear existing data
-    const custodyQuery = query(collection(db, 'GarageCustody'));
+    const custodyQuery = query(collection('GarageCustody'));
     const querySnapshot = await getDocs(custodyQuery);
     const deletePromises = [];
     querySnapshot.forEach(doc => {
@@ -2793,15 +3314,21 @@ async function saveCustodyData() {
           updatedAt: serverTimestamp()
         };
         
-        savePromises.push(addDoc(collection(db, 'GarageCustody'), data));
+        savePromises.push(addDoc(collection('GarageCustody'), data));
       }
     }
     
+    if (!savePromises.length) {
+      showAlert('لا توجد بيانات صالحة للحفظ', 'danger');
+      return;
+    }
+
     await Promise.all(savePromises);
-    console.log('Custody data saved successfully');
-    
+    showAlert('تم حفظ بيانات عهدة الجراج بنجاح', 'success');
+    await loadCustodyTables();
   } catch (error) {
     console.error('Error saving custody data:', error);
+    showAlert('حدث خطأ أثناء حفظ البيانات: ' + error.message, 'danger');
   }
 }
 
@@ -2818,7 +3345,7 @@ function calculateCustodyBalance(row) {
 // Load garage custody data
 async function loadCustodyTables() {
   try {
-    const custodyQuery = query(collection(db, 'GarageCustody'), orderBy('date', 'desc'));
+    const custodyQuery = query(collection('GarageCustody'), orderBy('date', 'desc'));
     const custodySnapshot = await getDocs(custodyQuery);
     displayGarageCustodyTable(custodySnapshot.docs);
     calculateDailyTotals(custodySnapshot.docs);
@@ -3006,14 +3533,18 @@ function generateVehicleProfitabilityReport() {
 // Lists management functions
 async function loadLists() {
   try {
-    // Load all lookups
-    const lookupsDoc = await getDoc(doc(db, 'Lookups', 'all'));
+    const lookupsDoc = await getDoc(doc('Lookups', 'all'));
     if (lookupsDoc.exists()) {
       const lookups = lookupsDoc.data();
       displayCategories(lookups.categories || []);
       displayUnits(lookups.units || []);
       displayLocations(lookups.locations || []);
       displayStatuses(lookups.statuses || []);
+      displayAccountingItems(lookups.accountingItems || []);
+      displayAssetTypes(lookups.assetTypes || []);
+      populateCategoryFilter(lookups.categories || []);
+      populateStatusFilter(lookups.statuses || []);
+      populateAccountingSelects(lookups.accountingItems || []);
     }
   } catch (error) {
     console.error('Error loading lists:', error);
@@ -3022,6 +3553,7 @@ async function loadLists() {
 
 function displayCategories(categories) {
   const container = document.getElementById('categoriesList');
+  if (!container) return;
   container.innerHTML = categories.map((cat, index) => `
     <div style="display: flex; justify-content: space-between; align-items: center; padding: 8px; border-bottom: 1px solid var(--border);">
       <span>${cat}</span>
@@ -3032,6 +3564,7 @@ function displayCategories(categories) {
 
 function displayUnits(units) {
   const container = document.getElementById('unitsList');
+  if (!container) return;
   container.innerHTML = units.map((unit, index) => `
     <div style="display: flex; justify-content: space-between; align-items: center; padding: 8px; border-bottom: 1px solid var(--border);">
       <span>${unit}</span>
@@ -3042,6 +3575,7 @@ function displayUnits(units) {
 
 function displayLocations(locations) {
   const container = document.getElementById('locationsList');
+  if (!container) return;
   container.innerHTML = locations.map((loc, index) => `
     <div style="display: flex; justify-content: space-between; align-items: center; padding: 8px; border-bottom: 1px solid var(--border);">
       <span>${loc}</span>
@@ -3052,6 +3586,7 @@ function displayLocations(locations) {
 
 function displayStatuses(statuses) {
   const container = document.getElementById('statusesList');
+  if (!container) return;
   container.innerHTML = statuses.map((status, index) => `
     <div style="display: flex; justify-content: space-between; align-items: center; padding: 8px; border-bottom: 1px solid var(--border);">
       <span>${status}</span>
@@ -3062,6 +3597,7 @@ function displayStatuses(statuses) {
 
 function displayAccountingItems(items) {
   const container = document.getElementById('accountingItemsList');
+  if (!container) return;
   container.innerHTML = items.map((item, index) => `
     <div style="display: flex; justify-content: space-between; align-items: center; padding: 8px; border-bottom: 1px solid var(--border);">
       <span>${item}</span>
@@ -3072,6 +3608,7 @@ function displayAccountingItems(items) {
 
 function displayAssetTypes(types) {
   const container = document.getElementById('assetTypesList');
+  if (!container) return;
   container.innerHTML = types.map((type, index) => `
     <div style="display: flex; justify-content: space-between; align-items: center; padding: 8px; border-bottom: 1px solid var(--border);">
       <span>${type}</span>
@@ -3086,7 +3623,7 @@ async function addCategory() {
   if (!value) return;
   
   try {
-    const lookupsDoc = await getDoc(doc(db, 'Lookups', 'all'));
+    const lookupsDoc = await getDoc(doc('Lookups', 'all'));
     let lookups = {};
     if (lookupsDoc.exists()) {
       lookups = lookupsDoc.data();
@@ -3098,7 +3635,7 @@ async function addCategory() {
       lookups.categories = categories;
       lookups.updatedAt = serverTimestamp();
       
-      await setDoc(doc(db, 'Lookups', 'all'), lookups);
+      await setDoc(doc('Lookups', 'all'), lookups);
       input.value = '';
       displayCategories(categories);
       updateItemFormOptions();
@@ -3112,7 +3649,7 @@ async function removeCategory(category) {
   if (!confirm(`هل أنت متأكد من حذف "${category}"؟`)) return;
   
   try {
-    const lookupsDoc = await getDoc(doc(db, 'Lookups', 'all'));
+    const lookupsDoc = await getDoc(doc('Lookups', 'all'));
     if (lookupsDoc.exists()) {
       let lookups = lookupsDoc.data();
       const categories = lookups.categories || [];
@@ -3121,7 +3658,7 @@ async function removeCategory(category) {
       lookups.categories = updatedCategories;
       lookups.updatedAt = serverTimestamp();
       
-      await setDoc(doc(db, 'Lookups', 'all'), lookups);
+      await setDoc(doc('Lookups', 'all'), lookups);
       displayCategories(updatedCategories);
       updateItemFormOptions();
     }
@@ -3137,7 +3674,7 @@ async function addUnit() {
   if (!value) return;
   
   try {
-    const lookupsDoc = await getDoc(doc(db, 'Lookups', 'all'));
+    const lookupsDoc = await getDoc(doc('Lookups', 'all'));
     let units = [];
     if (lookupsDoc.exists()) {
       units = lookupsDoc.data().units || [];
@@ -3145,7 +3682,7 @@ async function addUnit() {
     
     if (!units.includes(value)) {
       units.push(value);
-      await setDoc(doc(db, 'Lookups', 'all'), {
+      await setDoc(doc('Lookups', 'all'), {
         ...lookupsDoc.data(),
         units,
         updatedAt: serverTimestamp()
@@ -3163,12 +3700,12 @@ async function removeUnit(unit) {
   if (!confirm(`هل أنت متأكد من حذف "${unit}"؟`)) return;
   
   try {
-    const lookupsDoc = await getDoc(doc(db, 'Lookups', 'all'));
+    const lookupsDoc = await getDoc(doc('Lookups', 'all'));
     if (lookupsDoc.exists()) {
       const units = lookupsDoc.data().units || [];
       const updatedUnits = units.filter(u => u !== unit);
       
-      await setDoc(doc(db, 'Lookups', 'all'), {
+      await setDoc(doc('Lookups', 'all'), {
         ...lookupsDoc.data(),
         units: updatedUnits,
         updatedAt: serverTimestamp()
@@ -3187,7 +3724,7 @@ async function addLocation() {
   if (!value) return;
   
   try {
-    const lookupsDoc = await getDoc(doc(db, 'Lookups', 'all'));
+    const lookupsDoc = await getDoc(doc('Lookups', 'all'));
     let locations = [];
     if (lookupsDoc.exists()) {
       locations = lookupsDoc.data().locations || [];
@@ -3195,7 +3732,7 @@ async function addLocation() {
     
     if (!locations.includes(value)) {
       locations.push(value);
-      await setDoc(doc(db, 'Lookups', 'all'), {
+      await setDoc(doc('Lookups', 'all'), {
         ...lookupsDoc.data(),
         locations,
         updatedAt: serverTimestamp()
@@ -3213,12 +3750,12 @@ async function removeLocation(location) {
   if (!confirm(`هل أنت متأكد من حذف "${location}"؟`)) return;
   
   try {
-    const lookupsDoc = await getDoc(doc(db, 'Lookups', 'all'));
+    const lookupsDoc = await getDoc(doc('Lookups', 'all'));
     if (lookupsDoc.exists()) {
       const locations = lookupsDoc.data().locations || [];
       const updatedLocations = locations.filter(loc => loc !== location);
       
-      await setDoc(doc(db, 'Lookups', 'all'), {
+      await setDoc(doc('Lookups', 'all'), {
         ...lookupsDoc.data(),
         locations: updatedLocations,
         updatedAt: serverTimestamp()
@@ -3237,7 +3774,7 @@ async function addStatus() {
   if (!value) return;
   
   try {
-    const lookupsDoc = await getDoc(doc(db, 'Lookups', 'all'));
+    const lookupsDoc = await getDoc(doc('Lookups', 'all'));
     let statuses = [];
     if (lookupsDoc.exists()) {
       statuses = lookupsDoc.data().statuses || [];
@@ -3245,7 +3782,7 @@ async function addStatus() {
     
     if (!statuses.includes(value)) {
       statuses.push(value);
-      await setDoc(doc(db, 'Lookups', 'all'), {
+      await setDoc(doc('Lookups', 'all'), {
         ...lookupsDoc.data(),
         statuses,
         updatedAt: serverTimestamp()
@@ -3263,12 +3800,12 @@ async function removeStatus(status) {
   if (!confirm(`هل أنت متأكد من حذف "${status}"؟`)) return;
   
   try {
-    const lookupsDoc = await getDoc(doc(db, 'Lookups', 'all'));
+    const lookupsDoc = await getDoc(doc('Lookups', 'all'));
     if (lookupsDoc.exists()) {
       const statuses = lookupsDoc.data().statuses || [];
       const updatedStatuses = statuses.filter(s => s !== status);
       
-      await setDoc(doc(db, 'Lookups', 'all'), {
+      await setDoc(doc('Lookups', 'all'), {
         ...lookupsDoc.data(),
         statuses: updatedStatuses,
         updatedAt: serverTimestamp()
@@ -3287,7 +3824,7 @@ async function addAccountingItem() {
   if (!value) return;
   
   try {
-    const lookupsDoc = await getDoc(doc(db, 'Lookups', 'all'));
+    const lookupsDoc = await getDoc(doc('Lookups', 'all'));
     let accountingItems = [];
     if (lookupsDoc.exists()) {
       accountingItems = lookupsDoc.data().accountingItems || [];
@@ -3295,7 +3832,7 @@ async function addAccountingItem() {
     
     if (!accountingItems.includes(value)) {
       accountingItems.push(value);
-      await setDoc(doc(db, 'Lookups', 'all'), {
+      await setDoc(doc('Lookups', 'all'), {
         ...lookupsDoc.data(),
         accountingItems,
         updatedAt: serverTimestamp()
@@ -3312,12 +3849,12 @@ async function removeAccountingItem(item) {
   if (!confirm(`هل أنت متأكد من حذف "${item}"؟`)) return;
   
   try {
-    const lookupsDoc = await getDoc(doc(db, 'Lookups', 'all'));
+    const lookupsDoc = await getDoc(doc('Lookups', 'all'));
     if (lookupsDoc.exists()) {
       const accountingItems = lookupsDoc.data().accountingItems || [];
       const updatedItems = accountingItems.filter(i => i !== item);
       
-      await setDoc(doc(db, 'Lookups', 'all'), {
+      await setDoc(doc('Lookups', 'all'), {
         ...lookupsDoc.data(),
         accountingItems: updatedItems,
         updatedAt: serverTimestamp()
@@ -3335,7 +3872,7 @@ async function addAssetType() {
   if (!value) return;
   
   try {
-    const lookupsDoc = await getDoc(doc(db, 'Lookups', 'all'));
+    const lookupsDoc = await getDoc(doc('Lookups', 'all'));
     let assetTypes = [];
     if (lookupsDoc.exists()) {
       assetTypes = lookupsDoc.data().assetTypes || [];
@@ -3343,7 +3880,7 @@ async function addAssetType() {
     
     if (!assetTypes.includes(value)) {
       assetTypes.push(value);
-      await setDoc(doc(db, 'Lookups', 'all'), {
+      await setDoc(doc('Lookups', 'all'), {
         ...lookupsDoc.data(),
         assetTypes,
         updatedAt: serverTimestamp()
@@ -3361,12 +3898,12 @@ async function removeAssetType(type) {
   if (!confirm(`هل أنت متأكد من حذف "${type}"؟`)) return;
   
   try {
-    const lookupsDoc = await getDoc(doc(db, 'Lookups', 'all'));
+    const lookupsDoc = await getDoc(doc('Lookups', 'all'));
     if (lookupsDoc.exists()) {
       const assetTypes = lookupsDoc.data().assetTypes || [];
       const updatedTypes = assetTypes.filter(t => t !== type);
       
-      await setDoc(doc(db, 'Lookups', 'all'), {
+      await setDoc(doc('Lookups', 'all'), {
         ...lookupsDoc.data(),
         assetTypes: updatedTypes,
         updatedAt: serverTimestamp()
@@ -3382,7 +3919,7 @@ async function removeAssetType(type) {
 // Update form options when lists change
 async function updateItemFormOptions() {
   try {
-    const lookupsDoc = await getDoc(doc(db, 'Lookups', 'all'));
+    const lookupsDoc = await getDoc(doc('Lookups', 'all'));
     if (lookupsDoc.exists()) {
       const lookups = lookupsDoc.data();
       
@@ -3471,7 +4008,7 @@ async function updateItemFormOptions() {
 // Functions to add new items from form dropdowns
 async function addNewCategoryFromForm(categoryName) {
   try {
-    const lookupsDoc = await getDoc(doc(db, 'Lookups', 'all'));
+    const lookupsDoc = await getDoc(doc('Lookups', 'all'));
     let lookups = {};
     if (lookupsDoc.exists()) {
       lookups = lookupsDoc.data();
@@ -3483,7 +4020,7 @@ async function addNewCategoryFromForm(categoryName) {
       lookups.categories = categories;
       lookups.updatedAt = serverTimestamp();
       
-      await setDoc(doc(db, 'Lookups', 'all'), lookups);
+      await setDoc(doc('Lookups', 'all'), lookups);
       
       // Update the form and set the new value
       await updateItemFormOptions();
@@ -3502,7 +4039,7 @@ async function addNewCategoryFromForm(categoryName) {
 
 async function addNewUnitFromForm(unitName) {
   try {
-    const lookupsDoc = await getDoc(doc(db, 'Lookups', 'all'));
+    const lookupsDoc = await getDoc(doc('Lookups', 'all'));
     let lookups = {};
     if (lookupsDoc.exists()) {
       lookups = lookupsDoc.data();
@@ -3514,7 +4051,7 @@ async function addNewUnitFromForm(unitName) {
       lookups.units = units;
       lookups.updatedAt = serverTimestamp();
       
-      await setDoc(doc(db, 'Lookups', 'all'), lookups);
+      await setDoc(doc('Lookups', 'all'), lookups);
       
       // Update the form and set the new value
       await updateItemFormOptions();
@@ -3533,7 +4070,7 @@ async function addNewUnitFromForm(unitName) {
 
 async function addNewLocationFromForm(locationName) {
   try {
-    const lookupsDoc = await getDoc(doc(db, 'Lookups', 'all'));
+    const lookupsDoc = await getDoc(doc('Lookups', 'all'));
     let lookups = {};
     if (lookupsDoc.exists()) {
       lookups = lookupsDoc.data();
@@ -3545,7 +4082,7 @@ async function addNewLocationFromForm(locationName) {
       lookups.locations = locations;
       lookups.updatedAt = serverTimestamp();
       
-      await setDoc(doc(db, 'Lookups', 'all'), lookups);
+      await setDoc(doc('Lookups', 'all'), lookups);
       
       // Update the form and set the new value
       await updateItemFormOptions();
@@ -3564,7 +4101,7 @@ async function addNewLocationFromForm(locationName) {
 
 async function addNewStatusFromForm(statusName) {
   try {
-    const lookupsDoc = await getDoc(doc(db, 'Lookups', 'all'));
+    const lookupsDoc = await getDoc(doc('Lookups', 'all'));
     let lookups = {};
     if (lookupsDoc.exists()) {
       lookups = lookupsDoc.data();
@@ -3576,7 +4113,7 @@ async function addNewStatusFromForm(statusName) {
       lookups.statuses = statuses;
       lookups.updatedAt = serverTimestamp();
       
-      await setDoc(doc(db, 'Lookups', 'all'), lookups);
+      await setDoc(doc('Lookups', 'all'), lookups);
       
       // Update the form and set the new value
       await updateItemFormOptions();
@@ -3596,7 +4133,7 @@ async function addNewStatusFromForm(statusName) {
 // Inventory totals functions
 async function showInventoryTotals() {
   try {
-    const querySnapshot = await getDocs(collection(db, 'Items'));
+    const querySnapshot = await getDocs(collection('Items'));
     const items = [];
     
     querySnapshot.forEach((doc) => {
@@ -3763,12 +4300,12 @@ const CATEGORY_CODES = {
 };
 
 function getCategoryCode(categoryName) {
-  const normalized = categoryName.toLowerCase();
-  if (normalized.includes('oil') || normalized.includes('oil') || normalized.includes('oil')) return '01';
-  if (normalized.includes('clean') || normalized.includes('cleaning') || normalized.includes('clean')) return '02';
-  if (normalized.includes('tool') || normalized.includes('tools') || normalized.includes('tool')) return '03';
-  if (normalized.includes('tire') || normalized.includes('tires') || normalized.includes('tire')) return '04';
-  if (normalized.includes('part') || normalized.includes('parts') || normalized.includes('part')) return '05';
+  const normalized = String(categoryName || '').toLowerCase();
+  if (normalized.includes('زيت') || normalized.includes('oil')) return '01';
+  if (normalized.includes('تنظيف') || normalized.includes('clean')) return '02';
+  if (normalized.includes('أدوات') || normalized.includes('عدة') || normalized.includes('tool')) return '03';
+  if (normalized.includes('إطار') || normalized.includes('كاوتش') || normalized.includes('tire')) return '04';
+  if (normalized.includes('قطع') || normalized.includes('غيار') || normalized.includes('part')) return '05';
   return '99';
 }
 
@@ -3816,7 +4353,7 @@ async function generateCategoryBasedBarcode() {
 
 async function isBarcodeUnique(barcode) {
   try {
-    const querySnapshot = await getDocs(collection(db, 'Items'));
+    const querySnapshot = await getDocs(collection('Items'));
     for (const doc of querySnapshot.docs) {
       if (doc.data().barcode === barcode) {
         return false;
@@ -3829,9 +4366,9 @@ async function isBarcodeUnique(barcode) {
   }
 }
 
-function toggleBarcodeInput() {
+function toggleBarcodeInput(manualBtn) {
   const barcodeInput = document.getElementById('itemBarcode');
-  const manualBtn = event.target;
+  if (!barcodeInput || !manualBtn) return;
   
   if (barcodeInput.readOnly) {
     barcodeInput.readOnly = false;
@@ -3868,7 +4405,7 @@ function validateBarcodeFormat(barcode) {
 
 async function checkExistingItemByBarcode(barcode) {
   try {
-    const querySnapshot = await getDocs(collection(db, 'Items'));
+    const querySnapshot = await getDocs(collection('Items'));
     for (const doc of querySnapshot.docs) {
       if (doc.data().barcode === barcode) {
         return doc.data();
@@ -3974,14 +4511,14 @@ function displayTotalsHTML(totals) {
 async function openDisbursementModal() {
   try {
     // Load items for disbursement
-    const querySnapshot = await getDocs(collection(db, 'Items'));
+    const querySnapshot = await getDocs(collection('Items'));
     const select = document.getElementById('disbursementItem');
     
-    select.innerHTML = '<option value="">Select Item</option>';
-    querySnapshot.forEach((doc) => {
-      const item = doc.data();
+    select.innerHTML = '<option value="">اختر الصنف</option>';
+    querySnapshot.forEach((itemDoc) => {
+      const item = itemDoc.data();
       if (item.quantity > 0) {
-        select.innerHTML += `<option value="${doc.id}" data-quantity="${item.quantity}">${item.name} (${item.quantity} ${item.unit || 'units'})</option>`;
+        select.innerHTML += `<option value="${itemDoc.id}" data-quantity="${item.quantity}">${escapeHtml(item.name)} (${item.quantity} ${escapeHtml(item.unit || 'وحدة')})</option>`;
       }
     });
     
@@ -4020,60 +4557,77 @@ document.getElementById('disbursementForm').addEventListener('submit', async (e)
   
   try {
     const itemId = document.getElementById('disbursementItem').value;
-    const disbursementQuantity = parseInt(document.getElementById('disbursementQuantity').value);
-    const reason = document.getElementById('disbursementReason').value;
-    const recipient = document.getElementById('disbursementRecipient').value;
+    const disbursementQuantity = parseInt(document.getElementById('disbursementQuantity').value, 10);
+    const reason = document.getElementById('disbursementReason').value.trim();
+    const recipient = document.getElementById('disbursementRecipient').value.trim();
     const date = document.getElementById('disbursementDate').value;
-    
-    // Get current item
-    const itemDoc = await getDoc(doc(db, 'Items', itemId));
-    if (!itemDoc.exists()) {
-      showAlert('Item not found', 'danger');
-      return;
-    }
-    
-    const item = itemDoc.data();
-    const currentQuantity = item.quantity || 0;
-    
-    // Check if enough quantity
-    if (disbursementQuantity > currentQuantity) {
-      showAlert('Insufficient quantity. Available: ' + currentQuantity, 'danger');
-      return;
-    }
-    
-    // Update item quantity
-    const newQuantity = currentQuantity - disbursementQuantity;
-    await updateDoc(doc(db, 'Items', itemId), {
-      quantity: newQuantity,
-      updatedAt: serverTimestamp()
+    const itemRef = doc('Items', itemId);
+    const reference = 'DISB-' + Date.now();
+    let itemName = '';
+    let unitPrice = 0;
+    let previousQuantity = 0;
+    let newQuantity = 0;
+
+    await runTransaction(async (transaction) => {
+      const itemSnap = await transaction.get(itemRef);
+      if (!itemSnap.exists()) {
+        throw new Error('الصنف غير موجود');
+      }
+
+      const item = itemSnap.data();
+      itemName = item.name || '';
+      unitPrice = Number(item.unitPrice || 0);
+      previousQuantity = Number(item.quantity || 0);
+
+      if (!disbursementQuantity || disbursementQuantity < 1) {
+        throw new Error('أدخل كمية صحيحة للصرف');
+      }
+      if (disbursementQuantity > previousQuantity) {
+        throw new Error(`الكمية غير كافية. المتاح: ${previousQuantity}`);
+      }
+
+      newQuantity = previousQuantity - disbursementQuantity;
+      transaction.update(itemRef, {
+        quantity: newQuantity,
+        updatedAt: serverTimestamp()
+      });
+
+      const disbursementRef = db.collection('Disbursements').doc();
+      transaction.set(disbursementRef, {
+        itemId,
+        itemName,
+        quantity: disbursementQuantity,
+        reason,
+        recipient,
+        date,
+        previousQuantity,
+        newQuantity,
+        reference,
+        createdAt: serverTimestamp()
+      });
     });
+
+    await createStockMovementJournal(
+      'OUT',
+      itemId,
+      disbursementQuantity,
+      unitPrice,
+      `صرف مخزن - ${reason}`,
+      reference
+    );
     
-    // Record disbursement
-    await addDoc(collection(db, 'Disbursements'), {
-      itemId: itemId,
-      itemName: item.name,
-      quantity: disbursementQuantity,
-      reason: reason,
-      recipient: recipient,
-      date: date,
-      previousQuantity: currentQuantity,
-      newQuantity: newQuantity,
-      createdAt: serverTimestamp()
-    });
-    
-    showAlert('Disbursement processed successfully', 'success');
+    showAlert('تم تنفيذ الصرف بنجاح', 'success');
     closeDisbursementModal();
-    loadInventory(); // Refresh inventory
-    
+    loadInventory();
   } catch (error) {
     console.error('Error processing disbursement:', error);
-    showAlert('Error processing disbursement', 'danger');
+    showAlert('حدث خطأ أثناء الصرف: ' + error.message, 'danger');
   }
 });
 
 async function updateAssetFormOptions() {
   try {
-    const lookupsDoc = await getDoc(doc(db, 'Lookups', 'all'));
+    const lookupsDoc = await getDoc(doc('Lookups', 'all'));
     if (lookupsDoc.exists()) {
       const lookups = lookupsDoc.data();
       
@@ -4161,7 +4715,7 @@ window.updateInventoryAdjustmentPreview = updateInventoryAdjustmentPreview;
 async function openSupplierModal(supplierId = null) {
   try {
     // Load categories for supplier selection
-    const lookupsDoc = await getDoc(doc(db, 'Lookups', 'all'));
+    const lookupsDoc = await getDoc(doc('Lookups', 'all'));
     if (lookupsDoc.exists()) {
       const categories = lookupsDoc.data().categories || [];
       const categoriesSelect = document.getElementById('supplierCategories');
@@ -4173,7 +4727,7 @@ async function openSupplierModal(supplierId = null) {
     
     if (supplierId) {
       // Edit mode
-      const supplierDoc = await getDoc(doc(db, 'Suppliers', supplierId));
+      const supplierDoc = await getDoc(doc('Suppliers', supplierId));
       if (supplierDoc.exists()) {
         const supplier = supplierDoc.data();
         document.getElementById('supplierModalTitle').textContent = 'تعديل مورد';
@@ -4233,12 +4787,12 @@ document.getElementById('supplierForm').addEventListener('submit', async (e) => 
     
     if (currentEditingSupplier) {
       // Update existing supplier
-      await updateDoc(doc(db, 'Suppliers', currentEditingSupplier), supplierData);
+      await updateDoc(doc('Suppliers', currentEditingSupplier), supplierData);
       showAlert('تم تحديث المورد بنجاح', 'success');
     } else {
       // Add new supplier
       supplierData.createdAt = serverTimestamp();
-      await addDoc(collection(db, 'Suppliers'), supplierData);
+      await addDoc(collection('Suppliers'), supplierData);
       showAlert('تم إضافة المورد بنجاح', 'success');
     }
     
@@ -4252,7 +4806,7 @@ document.getElementById('supplierForm').addEventListener('submit', async (e) => 
 
 async function loadSuppliers() {
   try {
-    const querySnapshot = await getDocs(collection(db, 'Suppliers'));
+    const querySnapshot = await getDocs(collection('Suppliers'));
     const suppliers = [];
     
     querySnapshot.forEach((doc) => {
@@ -4298,7 +4852,7 @@ async function deleteSupplier(supplierId) {
   if (!confirm('هل أنت متأكد من حذف هذا المورد؟')) return;
   
   try {
-    await deleteDoc(doc(db, 'Suppliers', supplierId));
+    await deleteDoc(doc('Suppliers', supplierId));
     showAlert('تم حذف المورد بنجاح', 'success');
     loadSuppliers();
   } catch (error) {
@@ -4310,7 +4864,7 @@ async function deleteSupplier(supplierId) {
 // Ledger Functions
 async function loadLedger() {
   try {
-    const querySnapshot = await getDocs(collection(db, 'JournalEntries'));
+    const querySnapshot = await getDocs(collection('JournalEntries'));
     const entries = [];
     
     querySnapshot.forEach((doc) => {
@@ -4320,6 +4874,7 @@ async function loadLedger() {
     // Sort by date descending
     entries.sort((a, b) => new Date(b.date) - new Date(a.date));
     
+    journalEntriesCache = entries;
     displayLedger(entries);
   } catch (error) {
     console.error('Error loading ledger:', error);
@@ -4340,14 +4895,15 @@ function displayLedger(entries) {
     const date = entry.date ? entry.date.toDate ? entry.date.toDate() : new Date(entry.date) : new Date();
     const debit = entry.debit || 0;
     const credit = entry.credit || 0;
+    const entryType = (entry.type || 'unknown').toLowerCase();
     runningBalance += debit - credit;
     
     return `
       <tr>
         <td>${date.toLocaleDateString('ar-EG')}</td>
-        <td>${entry.reference || 'N/A'}</td>
-        <td><span class="status-badge status-${entry.type.toLowerCase()}">${entry.type}</span></td>
-        <td>${entry.description}</td>
+        <td>${escapeHtml(entry.reference || 'N/A')}</td>
+        <td><span class="status-badge status-${escapeHtml(entryType)}">${escapeHtml(entry.type || 'N/A')}</span></td>
+        <td>${escapeHtml(entry.description || '')}</td>
         <td style="text-align: right; color: var(--success);">${debit > 0 ? debit.toFixed(2) : ''}</td>
         <td style="text-align: right; color: var(--danger);">${credit > 0 ? credit.toFixed(2) : ''}</td>
         <td style="text-align: right; font-weight: 600; ${runningBalance < 0 ? 'color: var(--danger);' : 'color: var(--success);'}">
@@ -4381,7 +4937,7 @@ async function filterLedger() {
     const account = document.getElementById('ledgerAccountFilter').value;
     const type = document.getElementById('ledgerTypeFilter').value;
     
-    let q = collection(db, 'JournalEntries');
+    let q = collection('JournalEntries');
     
     if (dateFrom) {
       q = query(q, where('date', '>=', new Date(dateFrom)));
@@ -4404,6 +4960,7 @@ async function filterLedger() {
     });
     
     entries.sort((a, b) => new Date(b.date) - new Date(a.date));
+    journalEntriesCache = entries;
     displayLedger(entries);
   } catch (error) {
     console.error('Error filtering ledger:', error);
@@ -4419,7 +4976,7 @@ async function createJournalEntry(entryData) {
       createdBy: currentUser?.uid || 'system'
     };
     
-    await addDoc(collection(db, 'JournalEntries'), entry);
+    await addDoc(collection('JournalEntries'), entry);
     console.log('Journal entry created:', entry);
   } catch (error) {
     console.error('Error creating journal entry:', error);
@@ -4609,27 +5166,178 @@ function setupImagePreview(inputId, previewId, previewImgId) {
 
 // Report Functions
 async function generateSuppliersReport() {
-  showAlert('جاري إنشاء تقرير الموردين...', 'info');
-  // Implementation for suppliers report
+  try {
+    showAlert('جاري إنشاء تقرير الموردين...', 'info');
+    const querySnapshot = await getDocs(collection('Suppliers'));
+    const suppliers = querySnapshot.docs.map(sup => ({ id: sup.id, ...sup.data() }));
+
+    const reportHTML = `
+      <div style="direction: rtl; padding: 20px; font-family: Arial, sans-serif;">
+        <h1 style="text-align: center;">تقرير الموردين</h1>
+        <p style="text-align: center; color: #666;">التاريخ: ${new Date().toLocaleDateString('ar-EG')}</p>
+        <table style="width: 100%; border-collapse: collapse;">
+          <thead>
+            <tr style="background: #007bff; color: white;">
+              <th style="padding: 8px; border: 1px solid #ddd;">الاسم</th>
+              <th style="padding: 8px; border: 1px solid #ddd;">الهاتف</th>
+              <th style="padding: 8px; border: 1px solid #ddd;">البريد</th>
+              <th style="padding: 8px; border: 1px solid #ddd;">الرصيد</th>
+              <th style="padding: 8px; border: 1px solid #ddd;">الحالة</th>
+            </tr>
+          </thead>
+          <tbody>
+            ${suppliers.map(supplier => `
+              <tr>
+                <td style="padding: 8px; border: 1px solid #ddd;">${escapeHtml(supplier.name)}</td>
+                <td style="padding: 8px; border: 1px solid #ddd;">${escapeHtml(supplier.phone || '-')}</td>
+                <td style="padding: 8px; border: 1px solid #ddd;">${escapeHtml(supplier.email || '-')}</td>
+                <td style="padding: 8px; border: 1px solid #ddd;">${Number(supplier.currentBalance || 0).toFixed(2)}</td>
+                <td style="padding: 8px; border: 1px solid #ddd;">${escapeHtml(supplier.status || '-')}</td>
+              </tr>
+            `).join('') || '<tr><td colspan="5" style="text-align:center;">لا يوجد موردين</td></tr>'}
+          </tbody>
+        </table>
+      </div>
+    `;
+
+    const reportWindow = window.open('', '_blank');
+    reportWindow.document.write(reportHTML);
+    reportWindow.document.close();
+    showAlert('تم إنشاء تقرير الموردين', 'success');
+  } catch (error) {
+    console.error('Error generating suppliers report:', error);
+    showAlert('حدث خطأ أثناء إنشاء تقرير الموردين', 'danger');
+  }
 }
 
 async function generateLedgerReport() {
-  showAlert('جاري إنشاء تقرير الدفتر المحاسبي...', 'info');
-  // Implementation for ledger report
+  try {
+    showAlert('جاري إنشاء تقرير الدفتر المحاسبي...', 'info');
+    if (!journalEntriesCache.length) {
+      await loadLedger();
+    }
+
+    const reportHTML = `
+      <div style="direction: rtl; padding: 20px; font-family: Arial, sans-serif;">
+        <h1 style="text-align: center;">تقرير الدفتر المحاسبي</h1>
+        <p style="text-align: center; color: #666;">التاريخ: ${new Date().toLocaleDateString('ar-EG')}</p>
+        <table style="width: 100%; border-collapse: collapse;">
+          <thead>
+            <tr style="background: #007bff; color: white;">
+              <th style="padding: 8px; border: 1px solid #ddd;">التاريخ</th>
+              <th style="padding: 8px; border: 1px solid #ddd;">المرجع</th>
+              <th style="padding: 8px; border: 1px solid #ddd;">النوع</th>
+              <th style="padding: 8px; border: 1px solid #ddd;">الوصف</th>
+              <th style="padding: 8px; border: 1px solid #ddd;">مدين</th>
+              <th style="padding: 8px; border: 1px solid #ddd;">دائن</th>
+              <th style="padding: 8px; border: 1px solid #ddd;">الحساب</th>
+            </tr>
+          </thead>
+          <tbody>
+            ${journalEntriesCache.map(entry => {
+              const date = entry.date?.toDate ? entry.date.toDate() : new Date(entry.date);
+              return `
+                <tr>
+                  <td style="padding: 8px; border: 1px solid #ddd;">${date.toLocaleDateString('ar-EG')}</td>
+                  <td style="padding: 8px; border: 1px solid #ddd;">${escapeHtml(entry.reference || '-')}</td>
+                  <td style="padding: 8px; border: 1px solid #ddd;">${escapeHtml(entry.type || '-')}</td>
+                  <td style="padding: 8px; border: 1px solid #ddd;">${escapeHtml(entry.description || '')}</td>
+                  <td style="padding: 8px; border: 1px solid #ddd;">${entry.debit ? Number(entry.debit).toFixed(2) : ''}</td>
+                  <td style="padding: 8px; border: 1px solid #ddd;">${entry.credit ? Number(entry.credit).toFixed(2) : ''}</td>
+                  <td style="padding: 8px; border: 1px solid #ddd;">${escapeHtml(getAccountNameArabic(entry.account))}</td>
+                </tr>
+              `;
+            }).join('') || '<tr><td colspan="7" style="text-align:center;">لا توجد قيود</td></tr>'}
+          </tbody>
+        </table>
+      </div>
+    `;
+
+    const reportWindow = window.open('', '_blank');
+    reportWindow.document.write(reportHTML);
+    reportWindow.document.close();
+    showAlert('تم إنشاء تقرير الدفتر', 'success');
+  } catch (error) {
+    console.error('Error generating ledger report:', error);
+    showAlert('حدث خطأ أثناء إنشاء تقرير الدفتر', 'danger');
+  }
 }
 
 async function exportLedgerToExcel() {
-  showAlert('جاري تصدير الدفتر إلى Excel...', 'info');
-  // Implementation for Excel export
+  try {
+    showAlert('جاري تصدير الدفتر إلى Excel...', 'info');
+    if (!journalEntriesCache.length) {
+      await loadLedger();
+    }
+
+    const rows = [
+      ['التاريخ', 'المرجع', 'النوع', 'الوصف', 'مدين', 'دائن', 'الحساب']
+    ];
+
+    journalEntriesCache.forEach((entry) => {
+      const date = entry.date?.toDate ? entry.date.toDate() : new Date(entry.date);
+      rows.push([
+        date.toLocaleDateString('ar-EG'),
+        entry.reference || '',
+        entry.type || '',
+        entry.description || '',
+        entry.debit || 0,
+        entry.credit || 0,
+        getAccountNameArabic(entry.account)
+      ]);
+    });
+
+    const csvContent = '\uFEFF' + rows.map(row => row.map(cell => `"${String(cell).replace(/"/g, '""')}"`).join(',')).join('\n');
+    const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
+    const link = document.createElement('a');
+    link.href = URL.createObjectURL(blob);
+    link.download = `ledger-${new Date().toISOString().split('T')[0]}.csv`;
+    link.click();
+    URL.revokeObjectURL(link.href);
+    showAlert('تم تصدير الدفتر بنجاح', 'success');
+  } catch (error) {
+    console.error('Error exporting ledger:', error);
+    showAlert('حدث خطأ أثناء التصدير', 'danger');
+  }
 }
 
 function printLedger() {
   window.print();
 }
 
-function viewJournalEntry(entryId) {
-  // Implementation to view detailed journal entry
-  console.log('View journal entry:', entryId);
+async function viewJournalEntry(entryId) {
+  try {
+    let entry = journalEntriesCache.find(item => item.id === entryId);
+    if (!entry) {
+      const entrySnap = await getDoc(doc('JournalEntries', entryId));
+      if (!entrySnap.exists()) {
+        showAlert('القيد غير موجود', 'danger');
+        return;
+      }
+      entry = { id: entrySnap.id, ...entrySnap.data() };
+    }
+
+    const date = entry.date?.toDate ? entry.date.toDate() : new Date(entry.date);
+    document.getElementById('journalEntryDetail').innerHTML = `
+      <p><strong>التاريخ:</strong> ${date.toLocaleDateString('ar-EG')}</p>
+      <p><strong>المرجع:</strong> ${escapeHtml(entry.reference || '-')}</p>
+      <p><strong>النوع:</strong> ${escapeHtml(entry.type || '-')}</p>
+      <p><strong>الوصف:</strong> ${escapeHtml(entry.description || '')}</p>
+      <p><strong>مدين:</strong> ${entry.debit ? Number(entry.debit).toFixed(2) : '0.00'} ج.م</p>
+      <p><strong>دائن:</strong> ${entry.credit ? Number(entry.credit).toFixed(2) : '0.00'} ج.م</p>
+      <p><strong>الحساب:</strong> ${escapeHtml(getAccountNameArabic(entry.account))}</p>
+      ${entry.itemId ? `<p><strong>الصنف:</strong> ${escapeHtml(entry.itemId)}</p>` : ''}
+      ${entry.quantity ? `<p><strong>الكمية:</strong> ${entry.quantity}</p>` : ''}
+    `;
+    document.getElementById('journalEntryModal').style.display = 'block';
+  } catch (error) {
+    console.error('Error viewing journal entry:', error);
+    showAlert('حدث خطأ أثناء عرض القيد', 'danger');
+  }
+}
+
+function closeJournalEntryModal() {
+  document.getElementById('journalEntryModal').style.display = 'none';
 }
 
 // Initialize image previews
@@ -4665,9 +5373,6 @@ function switchTab(tabName, event) {
   }
 }
 
-// Global variables for new features
-let currentEditingSupplier = null;
-
 // Make new functions globally accessible
 window.openSupplierModal = openSupplierModal;
 window.closeSupplierModal = closeSupplierModal;
@@ -4679,7 +5384,9 @@ window.generateLedgerReport = generateLedgerReport;
 window.exportLedgerToExcel = exportLedgerToExcel;
 window.printLedger = printLedger;
 window.viewJournalEntry = viewJournalEntry;
-window.captureImage = captureImage;
+window.removeSettlementItem = removeSettlementItem;
+window.renderSettlementItemsList = renderSettlementItemsList;
+window.closeJournalEntryModal = closeJournalEntryModal;
 window.createJournalEntry = createJournalEntry;
 window.createStockMovementJournal = createStockMovementJournal;
 window.createScrapJournal = createScrapJournal;
