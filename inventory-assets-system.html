@@ -244,6 +244,8 @@ tr:hover {
   border-radius: 12px;
   font-size: 0.85rem;
   font-weight: 700;
+  background: rgba(102, 119, 137, 0.1);
+  color: var(--muted);
 }
 
 .status-جديد {
@@ -260,6 +262,7 @@ tr:hover {
   background: rgba(231, 76, 60, 0.1);
   color: var(--danger);
 }
+
 
 .modal {
   display: none;
@@ -3289,17 +3292,17 @@ async function saveCustodyData() {
   const rows = tbody.getElementsByTagName('tr');
   
   try {
-    // Clear existing data
+    const batch = db.batch();
+    let hasData = false;
+    
+    // Delete all existing custody docs within the batch
     const custodyQuery = query(collection('GarageCustody'));
     const querySnapshot = await getDocs(custodyQuery);
-    const deletePromises = [];
     querySnapshot.forEach(doc => {
-      deletePromises.push(deleteDoc(doc.ref));
+      batch.delete(doc.ref);
     });
-    await Promise.all(deletePromises);
     
-    // Save new data
-    const savePromises = [];
+    // Add new data within the same batch
     for (let row of rows) {
       const dateInput = row.cells[0]?.querySelector('input');
       const officerInput = row.cells[1]?.querySelector('input');
@@ -3319,16 +3322,18 @@ async function saveCustodyData() {
           updatedAt: serverTimestamp()
         };
         
-        savePromises.push(addDoc(collection('GarageCustody'), data));
+        const newDocRef = db.collection('GarageCustody').doc();
+        batch.set(newDocRef, data);
+        hasData = true;
       }
     }
     
-    if (!savePromises.length) {
+    if (!hasData) {
       showAlert('لا توجد بيانات صالحة للحفظ', 'danger');
       return;
     }
-
-    await Promise.all(savePromises);
+    
+    await batch.commit();
     showAlert('تم حفظ بيانات عهدة الجراج بنجاح', 'success');
     await loadCustodyTables();
   } catch (error) {
@@ -3381,10 +3386,11 @@ function displayGarageCustodyTable(docs) {
         <td><input type="number" value="${data.clearanceOut || 0}" step="0.01" onchange="calculateCustodyBalance(this.closest('tr')); updateTotalsFromTable()" /></td>
         <td><input type="number" readonly value="${balance.toFixed(2)}" step="0.01" style="background: #f8f9fa;" /></td>
         <td><input type="text" value="${data.notes || ''}" /></td>
-        <td><button class="delete-btn" onclick="this.closest('tr').remove()">حذف</button></td>
+        <td><button class="delete-btn" onclick="this.closest('tr').remove(); updateTotalsFromTable();">حذف</button></td>
       </tr>
     `;
   }).join('');
+  updateTotalsFromTable();
 }
 
 function calculateDailyTotals(docs) {
@@ -4748,18 +4754,18 @@ document.getElementById('supplierForm').addEventListener('submit', async (e) => 
       address: document.getElementById('supplierAddress').value,
       categories: Array.from(document.getElementById('supplierCategories').selectedOptions).map(opt => opt.value),
       openingBalance: parseFloat(document.getElementById('supplierOpeningBalance').value) || 0,
-      currentBalance: parseFloat(document.getElementById('supplierOpeningBalance').value) || 0,
       status: document.getElementById('supplierStatus').value,
       notes: document.getElementById('supplierNotes').value,
       updatedAt: serverTimestamp()
     };
     
     if (currentEditingSupplier) {
-      // Update existing supplier
+      // Update existing supplier - preserve currentBalance
       await updateDoc(doc('Suppliers', currentEditingSupplier), supplierData);
       showAlert('تم تحديث المورد بنجاح', 'success');
     } else {
       // Add new supplier
+      supplierData.currentBalance = supplierData.openingBalance;
       supplierData.createdAt = serverTimestamp();
       await addDoc(collection('Suppliers'), supplierData);
       showAlert('تم إضافة المورد بنجاح', 'success');
