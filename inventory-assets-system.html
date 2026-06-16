@@ -997,11 +997,12 @@ tr:hover {
                   <th>المركبة</th>
                   <th>الكمية</th>
                   <th>القيمة</th>
+                  <th>الإجراءات</th>
                 </tr>
               </thead>
               <tbody id="garageMovementsTableBody">
                 <tr>
-                  <td colspan="5" class="empty-state">لا توجد حركات صرف</td>
+                  <td colspan="6" class="empty-state">لا توجد حركات صرف</td>
                 </tr>
               </tbody>
             </table>
@@ -2043,7 +2044,7 @@ function displayGarageMovements(movements) {
   const tbody = document.getElementById('garageMovementsTableBody');
   if (!tbody) return;
   if (!movements.length) {
-    tbody.innerHTML = '<tr><td colspan="5" class="empty-state">لا توجد حركات صرف</td></tr>';
+    tbody.innerHTML = '<tr><td colspan="6" class="empty-state">لا توجد حركات صرف</td></tr>';
     return;
   }
 
@@ -2056,6 +2057,9 @@ function displayGarageMovements(movements) {
         <td>${asset?.plateNumber || asset?.type || '-'}</td>
         <td>${movement.quantity || 0}</td>
         <td>${Number(movement.cost || 0).toFixed(2)}</td>
+        <td>
+          <button class="danger-btn" onclick="deleteGarageMovement('${movement.id}', '${movement.itemId || ''}', ${movement.quantity || 0})" style="margin:2px;">حذف</button>
+        </td>
       </tr>
     `;
   }).join('');
@@ -3036,6 +3040,36 @@ async function completeGarageWorkOrder(workOrderId) {
   } catch (error) {
     console.error('Error completing work order:', error);
     showAlert('حدث خطأ أثناء إنهاء أمر الصيانة', 'danger');
+  }
+}
+
+async function deleteGarageMovement(movementId, itemId, quantity) {
+  if (!confirm('هل أنت متأكد من حذف حركة الصرف هذه؟')) return;
+  try {
+    await runTransaction(async (transaction) => {
+      // Delete the movement record
+      const movementRef = doc('GarageMovements', movementId);
+      transaction.delete(movementRef);
+
+      // Restore item quantity in inventory
+      if (itemId && quantity > 0) {
+        const itemRef = doc('Items', itemId);
+        const itemSnap = await transaction.get(itemRef);
+        if (docExists(itemSnap)) {
+          const currentQty = Number(itemSnap.data().quantity || 0);
+          transaction.update(itemRef, {
+            quantity: currentQty + quantity,
+            updatedAt: serverTimestamp()
+          });
+        }
+      }
+    });
+    showAlert('تم حذف حركة الصرف وإعادة الكمية للمخزون', 'success');
+    loadGarageMovements();
+    loadInventory();
+  } catch (error) {
+    console.error('Error deleting garage movement:', error);
+    showAlert('حدث خطأ أثناء حذف الحركة: ' + error.message, 'danger');
   }
 }
 
@@ -4682,6 +4716,7 @@ window.deleteAsset = deleteAsset;
 window.deleteGarageWorker = deleteGarageWorker;
 window.deleteGarageWorkOrder = deleteGarageWorkOrder;
 window.completeGarageWorkOrder = completeGarageWorkOrder;
+window.deleteGarageMovement = deleteGarageMovement;
 window.settleCustody = settleCustody;
 window.addCategory = addCategory;
 window.removeCategory = removeCategory;
