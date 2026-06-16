@@ -913,11 +913,12 @@ tr:hover {
                   <th>التاريخ</th>
                   <th>الحالة</th>
                   <th>التكلفة</th>
+                  <th>الإجراءات</th>
                 </tr>
               </thead>
               <tbody id="garageWorkOrdersTableBody">
                 <tr>
-                  <td colspan="6" class="empty-state">لا توجد أوامر صيانة</td>
+                  <td colspan="7" class="empty-state">لا توجد أوامر صيانة</td>
                 </tr>
               </tbody>
             </table>
@@ -1992,13 +1993,14 @@ function displayGarageWorkOrders(workOrders) {
   const tbody = document.getElementById('garageWorkOrdersTableBody');
   if (!tbody) return;
   if (!workOrders.length) {
-    tbody.innerHTML = '<tr><td colspan="6" class="empty-state">لا توجد أوامر صيانة</td></tr>';
+    tbody.innerHTML = '<tr><td colspan="7" class="empty-state">لا توجد أوامر صيانة</td></tr>';
     return;
   }
 
   tbody.innerHTML = workOrders.map(order => {
     const asset = garageAssetsCache.find(item => item.id === order.assetId);
     const worker = garageWorkersCache.find(item => item.id === order.workerId);
+    const isClosed = order.status === 'CLOSED';
     return `
       <tr>
         <td>${order.code || order.id}</td>
@@ -2007,6 +2009,10 @@ function displayGarageWorkOrders(workOrders) {
         <td>${order.date || '-'}</td>
         <td>${order.status || '-'}</td>
         <td>${Number(order.totalCost || 0).toFixed(2)}</td>
+        <td>
+          ${!isClosed ? `<button class="success-btn" onclick="completeGarageWorkOrder('${order.id}')" style="margin:2px;">إنهاء</button>` : ''}
+          <button class="danger-btn" onclick="deleteGarageWorkOrder('${order.id}')" style="margin:2px;">حذف</button>
+        </td>
       </tr>
     `;
   }).join('');
@@ -3003,6 +3009,33 @@ async function deleteGarageWorker(workerId) {
   } catch (error) {
     console.error('Error deleting garage worker:', error);
     showAlert('Error deleting garage worker', 'danger');
+  }
+}
+
+async function deleteGarageWorkOrder(workOrderId) {
+  if (!confirm('هل أنت متأكد من حذف أمر الصيانة هذا؟')) return;
+  try {
+    await deleteDoc(doc('GarageWorkOrders', workOrderId));
+    showAlert('تم حذف أمر الصيانة', 'success');
+    loadGarageWorkOrders();
+  } catch (error) {
+    console.error('Error deleting work order:', error);
+    showAlert('حدث خطأ أثناء حذف أمر الصيانة', 'danger');
+  }
+}
+
+async function completeGarageWorkOrder(workOrderId) {
+  if (!confirm('هل أنت متأكد من إنهاء أمر الصيانة هذا؟')) return;
+  try {
+    await updateDoc(doc('GarageWorkOrders', workOrderId), {
+      status: 'CLOSED',
+      updatedAt: serverTimestamp()
+    });
+    showAlert('تم إنهاء أمر الصيانة بنجاح', 'success');
+    loadGarageWorkOrders();
+  } catch (error) {
+    console.error('Error completing work order:', error);
+    showAlert('حدث خطأ أثناء إنهاء أمر الصيانة', 'danger');
   }
 }
 
@@ -4647,6 +4680,8 @@ window.deleteItem = deleteItem;
 window.editAsset = editAsset;
 window.deleteAsset = deleteAsset;
 window.deleteGarageWorker = deleteGarageWorker;
+window.deleteGarageWorkOrder = deleteGarageWorkOrder;
+window.completeGarageWorkOrder = completeGarageWorkOrder;
 window.settleCustody = settleCustody;
 window.addCategory = addCategory;
 window.removeCategory = removeCategory;
