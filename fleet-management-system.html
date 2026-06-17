@@ -422,14 +422,15 @@ function getTruckPlate(id){const t=allTrucks.find(x=>x.id===id);return t?t.plate
 function getTechName(id){const t=allTechs.find(x=>x.id===id);return t?t.name:id}
 function getPartName(id){const p=allParts.find(x=>x.id===id);return p?p.name:id}
 function getSupplierName(id){const s=allSuppliers.find(x=>x.id===id);return s?s.name:id}
+function getDateVal(v){if(!v)return new Date(0);if(v.toDate)return v.toDate();return new Date(v)}
 
 // ====== Driver Profile ======
 function showDriverProfile(driverId){
   const driver=allDrivers.find(d=>d.id===driverId);
   if(!driver)return showToast('السائق غير موجود','error');
-  const trips=allTrips.filter(t=>t.driverId===driverId).sort((a,b)=>(b.date?b.date.toDate?b.date.toDate():new Date(b.date))-(a.date?a.date.toDate?b.date.toDate():new Date(a.date)));
-  const custodies=allDriverCustody.filter(c=>c.driverId===driverId).sort((a,b)=>(b.date?b.date.toDate?b.date.toDate():new Date(b.date))-(a.date?a.date.toDate?a.date.toDate():new Date(a.date)));
-  const settlements=allSettlements.filter(s=>s.driverId===driverId).sort((a,b)=>(b.date?b.date.toDate?b.date.toDate():new Date(b.date))-(a.date?a.date.toDate?a.date.toDate():new Date(a.date)));
+  const trips=allTrips.filter(t=>t.driverId===driverId).sort((a,b)=>getDateVal(b.date)-getDateVal(a.date));
+  const custodies=allDriverCustody.filter(c=>c.driverId===driverId).sort((a,b)=>getDateVal(b.date)-getDateVal(a.date));
+  const settlements=allSettlements.filter(s=>s.driverId===driverId).sort((a,b)=>getDateVal(b.date)-getDateVal(a.date));
   const balance=parseFloat(driver.balance)||0;
   openModal(`
     <div style="min-width:85vw;max-height:85vh;overflow-y:auto">
