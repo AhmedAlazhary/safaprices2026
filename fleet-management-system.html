@@ -43,6 +43,8 @@ body{font-family:'Segoe UI',Tahoma,sans-serif;background:#e8ebf0;color:#222;dire
 .btn-danger{background:var(--danger);color:#fff}
 .btn-danger:hover{background:#b3261e}
 .btn-warning{background:var(--warning);color:#333}
+.btn-info{background:var(--primary);color:#fff}
+.btn-info:hover{background:#1a5cba}
 .btn-sm{padding:5px 12px;font-size:13px}
 .btn-outline{background:transparent;border:1px solid var(--border);color:var(--gray)}
 .btn-outline:hover{background:var(--light-gray)}
@@ -55,6 +57,24 @@ body{font-family:'Segoe UI',Tahoma,sans-serif;background:#e8ebf0;color:#222;dire
 .stat-card.green .num{color:var(--success)}
 .stat-card.red .num{color:var(--danger)}
 .stat-card.orange .num{color:var(--warning)}
+
+/* Driver Profile tabs */
+.profile-tabs{display:flex;gap:0;margin-bottom:0;border-bottom:2px solid var(--excel-grid)}
+.profile-tab{padding:10px 20px;cursor:pointer;font-weight:600;font-size:14px;color:var(--gray);border-bottom:2px solid transparent;margin-bottom:-2px;transition:.2s}
+.profile-tab.active{color:var(--primary);border-bottom-color:var(--primary)}
+.profile-tab:hover{color:var(--primary)}
+.profile-panel{padding:12px 0}
+
+/* Alert cards */
+.alert-bar{display:flex;flex-direction:column;gap:8px;margin-bottom:16px}
+.alert-item{display:flex;align-items:center;gap:10px;padding:10px 16px;border-radius:6px;font-size:14px;font-weight:600;box-shadow:var(--shadow)}
+.alert-danger{background:#fce8e6;color:#b3261e;border-right:4px solid var(--danger)}
+.alert-warning{background:#fef7e0;color:#e37400;border-right:4px solid var(--warning)}
+.alert-info{background:#e8f0fe;color:var(--primary);border-right:4px solid var(--primary)}
+.alert-success{background:#e6f4ea;color:var(--success);border-right:4px solid var(--success)}
+.alert-item .alert-count{display:inline-flex;align-items:center;justify-content:center;min-width:28px;height:28px;border-radius:50%;font-size:13px;font-weight:700;background:rgba(0,0,0,.1)}
+.alert-item span{flex:1}
+.alert-item .alert-link{cursor:pointer;font-size:13px;color:var(--primary);text-decoration:underline}
 
 /* Excel-like Grid Tables */
 .table-wrap{overflow-x:auto;border:1px solid var(--excel-grid);border-radius:4px}
@@ -172,6 +192,7 @@ td .actions{display:flex;gap:6px;justify-content:center}
   <div class="section active" id="secDashboard">
     <div class="page-header"><h2>لوحة المعلومات</h2></div>
     <div class="stats-grid" id="dashStats"></div>
+    <div id="dashAlerts" style="margin:12px 0"></div>
     <div style="display:grid;grid-template-columns:1fr 1fr;gap:16px">
       <div class="card"><h3>آخر الرحلات</h3><div class="table-wrap"><table id="dashTrips"><thead><tr><th>التاريخ</th><th>الشاحنة</th><th>السائق</th><th>الإيراد</th></tr></thead><tbody></tbody></table></div></div>
       <div class="card"><h3>أحدث حركات الصيانة</h3><div class="table-wrap"><table id="dashMaint"><thead><tr><th>التاريخ</th><th>الشاحنة</th><th>الحالة</th><th>التكلفة</th></tr></thead><tbody></tbody></table></div></div>
@@ -192,7 +213,7 @@ td .actions{display:flex;gap:6px;justify-content:center}
     <div class="page-header"><h2>الشاحنات</h2><button class="btn btn-primary" onclick="showTruckForm()">+ إضافة شاحنة</button></div>
     <div class="card">
       <div class="filter-bar"><input placeholder="بحث..." id="truckSearch" oninput="renderTrucks()"><select id="truckStatusFilter" onchange="renderTrucks()"><option value="">الكل</option><option value="نشط">نشط</option><option value="متوقف">متوقف</option><option value="تحت الصيانة">تحت الصيانة</option></select></div>
-      <div class="table-wrap"><table><thead><tr><th>اللوحة</th><th>الماركة</th><th>الموديل</th><th>السنة</th><th>الحالة</th><th>إجراءات</th></tr></thead><tbody id="trucksTableBody"></tbody></table></div>
+      <div class="table-wrap"><table><thead><tr><th>اللوحة</th><th>الماركة</th><th>الموديل</th><th>السنة</th><th>km</th><th>الحالة</th><th>صيانة دورية</th><th>إجراءات</th></tr></thead><tbody id="trucksTableBody"></tbody></table></div>
     </div>
   </div>
 
@@ -206,7 +227,7 @@ td .actions{display:flex;gap:6px;justify-content:center}
 
   <!-- Spare Parts -->
   <div class="section" id="secParts">
-    <div class="page-header"><h2>قطع الغيار</h2><button class="btn btn-primary" onclick="showPartForm()">+ إضافة قطعة</button></div>
+    <div class="page-header"><h2>قطع الغيار</h2><button class="btn btn-primary" onclick="showPartForm()">+ إضافة قطعة</button><button class="btn btn-success" onclick="showImportParts()">استيراد Excel</button></div>
     <div class="card">
       <div class="filter-bar"><input placeholder="بحث..." id="partSearch" oninput="renderParts()"><select id="partCatFilter" onchange="renderParts()"><option value="">كل التصنيفات</option></select></div>
       <div class="table-wrap"><table><thead><tr><th>الاسم</th><th>التصنيف</th><th>المخزون</th><th>الحد الأدنى</th><th>سعر الشراء</th><th>سعر البيع</th><th>إجراءات</th></tr></thead><tbody id="partsTableBody"></tbody></table></div>
@@ -267,8 +288,8 @@ td .actions{display:flex;gap:6px;justify-content:center}
   <div class="section" id="secTrips">
     <div class="page-header"><h2>الرحلات</h2><button class="btn btn-primary" onclick="showTripForm()">+ إضافة رحلة</button></div>
     <div class="card">
-      <div class="filter-bar"><input type="date" id="tripDateFrom" onchange="renderTrips()"><input type="date" id="tripDateTo" onchange="renderTrips()"><select id="tripDriverFilter" onchange="renderTrips()"><option value="">كل السائقين</option></select><select id="tripTruckFilter" onchange="renderTrips()"><option value="">كل الشاحنات</option></select></div>
-      <div class="table-wrap"><table><thead><tr><th>التاريخ</th><th>الشاحنة</th><th>السائق</th><th>من</th><th>إلى</th><th>الإيراد</th><th>المصروفات</th><th>الصافي</th><th>إجراءات</th></tr></thead><tbody id="tripsTableBody"></tbody></table></div>
+      <div class="filter-bar"><input type="date" id="tripDateFrom" onchange="renderTrips()"><input type="date" id="tripDateTo" onchange="renderTrips()"><select id="tripDriverFilter" onchange="renderTrips()"><option value="">كل السائقين</option></select><select id="tripTruckFilter" onchange="renderTrips()"><option value="">كل الشاحنات</option></select><select id="tripClientFilter" onchange="renderTrips()"><option value="">كل العملاء</option></select></div>
+      <div class="table-wrap"><table><thead><tr><th>التاريخ</th><th>الشاحنة</th><th>السائق</th><th>العميل</th><th>من</th><th>إلى</th><th>الإيراد</th><th>المصروفات</th><th>الصافي</th><th>إجراءات</th></tr></thead><tbody id="tripsTableBody"></tbody></table></div>
     </div>
   </div>
 
@@ -323,6 +344,18 @@ td .actions{display:flex;gap:6px;justify-content:center}
       <div id="listManagerContent"></div>
     </div>
   </div>
+
+  <!-- Clients -->
+  <div class="section" id="secClients">
+    <div class="page-header"><h2>العملاء</h2><button class="btn btn-primary" onclick="showClientForm()">+ إضافة عميل</button></div>
+    <div class="card">
+      <div class="filter-bar"><input placeholder="بحث..." id="clientSearch" oninput="renderClients()"><select id="clientStatusFilter" onchange="renderClients()"><option value="">الكل</option><option value="نشط">نشط</option><option value="غير نشط">غير نشط</option></select></div>
+      <div class="table-wrap"><table><thead><tr><th>الاسم</th><th>الهاتف</th><th>العنوان</th><th>الحالة</th><th>إجمالي المشتريات</th><th>رصيد</th><th>إجراءات</th></tr></thead><tbody id="clientsTableBody"></tbody></table></div>
+    </div>
+    <div class="card"><h3>تقرير العملاء</h3>
+      <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(220px,1fr));gap:12px" id="clientReportStats"></div>
+    </div>
+  </div>
 </div>
 
 <!-- Modals -->
@@ -347,12 +380,12 @@ const COL = {
   mainCustody:'fleet_main_custody',driverCustody:'fleet_driver_custody',
   trips:'fleet_trips',settlements:'fleet_weekly_settlements',
   maintenance:'fleet_maintenance',issueParts:'fleet_issue_parts',
-  transactions:'fleet_transactions',lookups:'fleet_lookups'
+  transactions:'fleet_transactions',lookups:'fleet_lookups',clients:'fleet_clients'
 };
 const LOOKUPS_DOC = 'all';
 let allDrivers=[], allTrucks=[], allTechs=[], allParts=[], allSuppliers=[];
 let allPurchases=[], allMainCustody=[], allDriverCustody=[];
-let allTrips=[], allSettlements=[], allMaintenance=[], allIssueParts=[];
+let allTrips=[], allSettlements=[], allMaintenance=[], allIssueParts=[], allClients=[];
 let lookups={categories:[],expenseTypes:[],locations:[]};
 let currentUser=null;
 
@@ -390,7 +423,56 @@ function getTechName(id){const t=allTechs.find(x=>x.id===id);return t?t.name:id}
 function getPartName(id){const p=allParts.find(x=>x.id===id);return p?p.name:id}
 function getSupplierName(id){const s=allSuppliers.find(x=>x.id===id);return s?s.name:id}
 
-// ====== Nav Tabs ======
+// ====== Driver Profile ======
+function showDriverProfile(driverId){
+  const driver=allDrivers.find(d=>d.id===driverId);
+  if(!driver)return showToast('السائق غير موجود','error');
+  const trips=allTrips.filter(t=>t.driverId===driverId).sort((a,b)=>(b.date?b.date.toDate?b.date.toDate():new Date(b.date))-(a.date?a.date.toDate?b.date.toDate():new Date(a.date)));
+  const custodies=allDriverCustody.filter(c=>c.driverId===driverId).sort((a,b)=>(b.date?b.date.toDate?b.date.toDate():new Date(b.date))-(a.date?a.date.toDate?a.date.toDate():new Date(a.date)));
+  const settlements=allSettlements.filter(s=>s.driverId===driverId).sort((a,b)=>(b.date?b.date.toDate?b.date.toDate():new Date(b.date))-(a.date?a.date.toDate?a.date.toDate():new Date(a.date)));
+  const balance=parseFloat(driver.balance)||0;
+  openModal(`
+    <div style="min-width:85vw;max-height:85vh;overflow-y:auto">
+      <h3 style="display:flex;align-items:center;gap:12px;margin-bottom:8px">
+        <span>ملف السائق: ${driver.name}</span>
+        <span class="badge ${driver.status==='نشط'?'badge-active':'badge-inactive'}" style="font-size:13px">${driver.status}</span>
+      </h3>
+      <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(180px,1fr));gap:10px;margin-bottom:18px;background:#f5f5f5;border-radius:6px;padding:14px">
+        <div><strong>الهاتف:</strong> ${driver.phone||'-'}</div>
+        <div><strong>الرخصة:</strong> ${driver.license||'-'}</div>
+        <div><strong style="color:${balance<0?'var(--danger)':'var(--success)'}">الرصيد:</strong> ${formatCurrency(balance)}</div>
+        <div><strong>إجمالي الرحلات:</strong> ${trips.length}</div>
+        <div><strong>إجمالي التسويات:</strong> ${settlements.length}</div>
+        <div><strong>إجمالي العهد:</strong> ${formatCurrency(custodies.reduce((a,c)=>a+(c.amount||0),0))}</div>
+      </div>
+      <div class="profile-tabs">
+        <div class="profile-tab active" onclick="switchProfileTab(this,'ptTrips${driverId}')">الرحلات (${trips.length})</div>
+        <div class="profile-tab" onclick="switchProfileTab(this,'ptCustody${driverId}')">العهد (${custodies.length})</div>
+        <div class="profile-tab" onclick="switchProfileTab(this,'ptSettlements${driverId}')">التسويات (${settlements.length})</div>
+      </div>
+      <div id="ptTrips${driverId}" class="profile-panel">
+        <div class="table-wrap"><table><thead><tr><th>التاريخ</th><th>التريلة</th><th>الإيراد</th><th>المصروفات</th><th>الوجهة</th></tr></thead><tbody>${
+          trips.length?trips.slice(0,50).map(t=>`<tr><td>${formatDate(t.date)}</td><td>${getTruckPlate(t.truckId)}</td><td>${formatCurrency(t.revenue)}</td><td>${formatCurrency(t.totalExpenses)}</td><td>${t.destination||'-'}</td></tr>`).join(''):'<tr><td colspan="5" style="text-align:center;color:var(--gray)">لا توجد رحلات</td></tr>'
+        }</tbody></table></div>
+      </div>
+      <div id="ptCustody${driverId}" class="profile-panel" style="display:none">
+        <div class="table-wrap"><table><thead><tr><th>التاريخ</th><th>النوع</th><th>المبلغ</th><th>البيان</th></tr></thead><tbody>${
+          custodies.length?custodies.slice(0,50).map(c=>`<tr><td>${formatDate(c.date)}</td><td>${c.type||'صرف'}</td><td>${formatCurrency(c.amount)}</td><td>${c.note||'-'}</td></tr>`).join(''):'<tr><td colspan="4" style="text-align:center;color:var(--gray)">لا توجد عهد</td></tr>'
+        }</tbody></table></div>
+      </div>
+      <div id="ptSettlements${driverId}" class="profile-panel" style="display:none">
+        <div class="table-wrap"><table><thead><tr><th>الأسبوع</th><th>عهدة أول</th><th>مصروفات</th><th>عهدة آخر</th><th>صافي</th><th>الحالة</th></tr></thead><tbody>${
+          settlements.length?settlements.slice(0,50).map(s=>`<tr><td>${s.week||'-'}</td><td>${formatCurrency(s.startCustody)}</td><td>${formatCurrency(s.totalExpenses)}</td><td>${formatCurrency(s.endCustody)}</td><td>${formatCurrency(s.netAmount)}</td><td><span class="badge ${s.paid?'badge-active':s.status==='مستحقة'?'badge-pending':'badge-inactive'}">${s.paid?'مدفوعة':s.status||'مستحقة'}</span></td></tr>`).join(''):'<tr><td colspan="6" style="text-align:center;color:var(--gray)">لا توجد تسويات</td></tr>'
+        }</tbody></table></div>
+      </div>
+    </div>`)
+}
+function switchProfileTab(el,panelId){
+  el.parentElement.querySelectorAll('.profile-tab').forEach(t=>t.classList.remove('active'));
+  el.parentElement.parentElement.querySelectorAll('.profile-panel').forEach(p=>p.style.display='none');
+  el.classList.add('active');
+  document.getElementById(panelId).style.display='block'
+}
 const SECTIONS=[
   {id:'Dashboard',label:'لوحة المعلومات'},
   {id:'Drivers',label:'السائقين'},
@@ -406,6 +488,7 @@ const SECTIONS=[
   {id:'Maintenance',label:'الصيانة'},
   {id:'IssueParts',label:'صرف قطع'},
   {id:'Reports',label:'التقارير'},
+  {id:'Clients',label:'العملاء'},
   {id:'Lists',label:'القوائم'}
 ];
 function buildNav(){const c=document.getElementById('navTabs');c.innerHTML=SECTIONS.map(s=>`<button class="nav-tab${s.id==='Dashboard'?' active':''}" data-section="${s.id}" onclick="showSection('${s.id}')">${s.label}</button>`).join('')}
@@ -420,15 +503,15 @@ async function refreshData(showLoadMsg){
       getAll(COL.parts),getAll(COL.suppliers),getAll(COL.purchases),
       getAll(COL.mainCustody),getAll(COL.driverCustody),
       getAll(COL.trips),getAll(COL.settlements),
-      getAll(COL.maintenance),getAll(COL.issueParts)
+      getAll(COL.maintenance),getAll(COL.issueParts),getAll(COL.clients)
     ]);
     [allDrivers,allTrucks,allTechs,allParts,allSuppliers,allPurchases,
-     allMainCustody,allDriverCustody,allTrips,allSettlements,allMaintenance,allIssueParts]=r;
+     allMainCustody,allDriverCustody,allTrips,allSettlements,allMaintenance,allIssueParts,allClients]=r;
     await loadLookups();
     renderDashboard();renderDrivers();renderTrucks();renderTechs();
     renderParts();renderSuppliers();renderPurchases();
     renderMainCustody();renderDriverCustody();renderTrips();
-    renderSettlements();renderMaintenance();renderIssueParts();
+    renderSettlements();renderMaintenance();renderIssueParts();renderClients();
     populateFilters();
   }catch(e){console.error(e);showToast('خطأ في التحديث: '+e.message,'error')}finally{if(showLoadMsg)hideLoading()}
 }
@@ -445,11 +528,38 @@ function populateFilters(){
   const ttrs=document.getElementById('tripTruckFilter');if(ttrs){ttrs.innerHTML='<option value="">كل الشاحنات</option>'+allTrucks.map(t=>`<option value="${t.id}">${t.plate}</option>`).join('')}
   const pss=document.getElementById('purchaseSupplierFilter');if(pss){pss.innerHTML='<option value="">كل الموردين</option>'+allSuppliers.map(s=>`<option value="${s.id}">${s.name}</option>`).join('')}
   const pcf=document.getElementById('partCatFilter');if(pcf){pcf.innerHTML='<option value="">كل التصنيفات</option>'+lookups.categories.map(c=>`<option value="${c}">${c}</option>`).join('')}
+  const tcf=document.getElementById('tripClientFilter');if(tcf){tcf.innerHTML='<option value="">كل العملاء</option>'+allClients.map(c=>`<option value="${c.id}">${c.name}</option>`).join('')}
 }
 
 function initApp(){buildNav();loadAllData()}
 // ====== END INIT ====== //NEXT_CHUNK
 // ====== Dashboard ======
+function getDashboardAlerts(){
+  const alerts=[];
+  // Low stock parts
+  const lowParts=allParts.filter(p=>(p.stock||0)<=1);
+  if(lowParts.length)alerts.push({type:'danger',count:lowParts.length,msg:`قطع غيار تحتاج لإعادة توريد (${lowParts.length})`,items:lowParts.map(p=>p.name).join('، ')});
+  // Pending unpaid settlements older than 7 days
+  const weekAgo=new Date();weekAgo.setDate(weekAgo.getDate()-7);
+  const pendingSettlements=allSettlements.filter(s=>s.status==='مستحقة'&&(!s.paid||s.paid!==true)&&s.date&&new Date(s.date)<weekAgo);
+  if(pendingSettlements.length)alerts.push({type:'warning',count:pendingSettlements.length,msg:`تسويات أسبوعية معلقة من الأسبوع الماضي (${pendingSettlements.length})`,items:pendingSettlements.map(s=>getDriverName(s.driverId)).join('، ')});
+  // Drivers with very negative balance
+  const negDrivers=allDrivers.filter(d=>(d.balance||0)<-5000);
+  if(negDrivers.length)alerts.push({type:'danger',count:negDrivers.length,msg:`سائقون برصيد سالب كبير (< -5000)`,items:negDrivers.map(d=>`${d.name} (${formatCurrency(d.balance)})`).join('، ')});
+  // Trucks in maintenance without active maintenance order
+  const maintTrucks=allTrucks.filter(t=>t.status==='تحت الصيانة');
+  const activeMaintTruckIds=allMaintenance.filter(m=>m.status!=='مكتملة').map(m=>m.truckId);
+  const noMaintOrder=maintTrucks.filter(t=>!activeMaintTruckIds.includes(t.id));
+  if(noMaintOrder.length)alerts.push({type:'warning',count:noMaintOrder.length,msg:`تريلات تحت الصيانة بدون أمر صيانة نشط`,items:noMaintOrder.map(t=>t.plate).join('، ')});
+  // Preventive maintenance alerts
+  const pmAlerts=allTrucks.filter(t=>t.status==='نشط'&&t.lastOilKm!==undefined&&t.oilInterval);
+  pmAlerts.forEach(t=>{
+    const nextOil=(t.lastOilKm||0)+(t.oilInterval||10000);
+    const remaining=(t.currentKm||0)>=nextOil;
+    if(remaining)alerts.push({type:'info',count:1,msg:`التريلة ${t.plate}: موعد تغيير الزيت تجاوز (آخر تغيير ${t.lastOilKm||0}كم، الحالي ${t.currentKm||0}كم)`});
+  });
+  return alerts;
+}
 function renderDashboard(){
   const s=document.getElementById('dashStats');
   s.innerHTML=`
@@ -464,8 +574,15 @@ function renderDashboard(){
       <div class="label" style="font-weight:700;color:var(--primary)">نظام إدارة الجراج</div>
       <div style="font-size:11px;color:var(--gray);margin-top:4px">اضغط للفتح في تبويب جديد</div>
     </div>`;
+  // Alerts bar
+  const alerts=getDashboardAlerts();
+  const ab=document.getElementById('dashAlerts');
+  if(alerts.length)ab.innerHTML='<div class="alert-bar">'+alerts.map(a=>`<div class="alert-item alert-${a.type}" title="${a.items||''}"><span class="alert-count">${a.count}</span><span>${a.msg}</span></div>`).join('')+'</div>';
+  else ab.innerHTML='<div class="alert-item alert-success"><span class="alert-count">0</span><span>لا توجد تنبيهات، كل شيء على ما يرام.</span></div>';
+  // Recent trips
   const trips=allTrips.slice(-5).reverse();
   document.querySelector('#dashTrips tbody').innerHTML=trips.map(t=>`<tr><td>${formatDate(t.date)}</td><td>${getTruckPlate(t.truckId)}</td><td>${getDriverName(t.driverId)}</td><td>${formatCurrency(t.revenue)}</td></tr>`).join('');
+  // Recent maintenance
   const maint=allMaintenance.slice(-5).reverse();
   document.querySelector('#dashMaint tbody').innerHTML=maint.map(m=>`<tr><td>${formatDate(m.date)}</td><td>${getTruckPlate(m.truckId)}</td><td><span class="badge badge-${m.status==='مكتملة'?'completed':m.status==='قيد التنفيذ'?'pending':'inactive'}">${m.status}</span></td><td>${formatCurrency(m.totalCost)}</td></tr>`).join('')
 }
@@ -493,7 +610,7 @@ function renderDrivers(){
   const t=document.getElementById('driversTableBody');
   let list=allDrivers.filter(d=>!f||d.status===f);
   if(s)list=list.filter(d=>d.name.includes(s)||d.phone.includes(s));
-  t.innerHTML=list.map(d=>`<tr><td>${d.name}</td><td>${d.phone}</td><td>${d.license||'-'}</td><td><span class="badge ${d.status==='نشط'?'badge-active':'badge-inactive'}">${d.status}</span></td><td>${formatCurrency(d.balance)}</td><td class="actions"><button class="btn btn-sm btn-warning" onclick="showDriverForm(${JSON.stringify(d).replace(/"/g,"'")})">تعديل</button><button class="btn btn-sm btn-danger" onclick="if(confirm('حذف السائق?')){deleteDoc(COL.drivers,'${d.id}');allDrivers=allDrivers.filter(x=>x.id!=='${d.id}');renderDrivers();populateFilters();showToast('تم الحذف','info')}">حذف</button></td></tr>`).join('')
+  t.innerHTML=list.map(d=>`<tr><td><a href="#" onclick="event.preventDefault();showDriverProfile('${d.id}')" style="color:var(--primary);font-weight:600;text-decoration:none">${d.name}</a></td><td>${d.phone}</td><td>${d.license||'-'}</td><td><span class="badge ${d.status==='نشط'?'badge-active':'badge-inactive'}">${d.status}</span></td><td>${formatCurrency(d.balance)}</td><td class="actions"><button class="btn btn-sm btn-info" onclick="showDriverProfile('${d.id}')">ملف</button><button class="btn btn-sm btn-warning" onclick="showDriverForm(${JSON.stringify(d).replace(/"/g,"'")})">تعديل</button><button class="btn btn-sm btn-danger" onclick="if(confirm('حذف السائق?')){deleteDoc(COL.drivers,'${d.id}');allDrivers=allDrivers.filter(x=>x.id!=='${d.id}');renderDrivers();populateFilters();showToast('تم الحذف','info')}">حذف</button></td></tr>`).join('')
 }
 
 // ====== Trucks ======
@@ -502,7 +619,7 @@ async function saveTruck(data,id){
   renderTrucks();populateFilters()
 }
 function showTruckForm(data){
-  const d=data||{plate:'',brand:'',model:'',year:new Date().getFullYear(),status:'نشط'};
+  const d=data||{plate:'',brand:'',model:'',year:new Date().getFullYear(),status:'نشط',currentKm:0,lastOilKm:0,oilInterval:10000,lastFilterKm:0,filterInterval:5000};
   openModal(`
     <h3>${data?'تعديل':'إضافة'} شاحنة</h3>
     <div class="form-grid">
@@ -511,8 +628,24 @@ function showTruckForm(data){
       <div class="form-group"><label>الموديل</label><input id="fTrkModel" value="${d.model}"></div>
       <div class="form-group"><label>السنة</label><input type="number" id="fTrkYear" value="${d.year}"></div>
       <div class="form-group"><label>الحالة</label><select id="fTrkStatus"><option ${d.status==='نشط'?'selected':''}>نشط</option><option ${d.status==='متوقف'?'selected':''}>متوقف</option><option ${d.status==='تحت الصيانة'?'selected':''}>تحت الصيانة</option></select></div>
+      <div class="form-group"><label>عداد km الحالي</label><input type="number" id="fTrkKm" value="${d.currentKm||0}"></div>
+      <div class="form-group"><label>آخر تغيير زيت (km)</label><input type="number" id="fTrkOilKm" value="${d.lastOilKm||0}"></div>
+      <div class="form-group"><label>دورة تغيير الزيت (km)</label><input type="number" id="fTrkOilInt" value="${d.oilInterval||10000}" placeholder="10000"></div>
+      <div class="form-group"><label>آخر تغيير فلتر (km)</label><input type="number" id="fTrkFilterKm" value="${d.lastFilterKm||0}"></div>
+      <div class="form-group"><label>دورة تغيير الفلتر (km)</label><input type="number" id="fTrkFilterInt" value="${d.filterInterval||5000}" placeholder="5000"></div>
     </div>
-    <div class="form-actions"><button class="btn btn-outline" onclick="closeModal()">إلغاء</button><button class="btn btn-primary" onclick="saveTruck({plate:document.getElementById('fTrkPlate').value,brand:document.getElementById('fTrkBrand').value,model:document.getElementById('fTrkModel').value,year:parseInt(document.getElementById('fTrkYear').value)||${new Date().getFullYear()},status:document.getElementById('fTrkStatus').value},'${data?.id||''}');closeModal();showToast('تم الحفظ','success')">حفظ</button></div>`)
+    <div class="form-actions"><button class="btn btn-outline" onclick="closeModal()">إلغاء</button><button class="btn btn-primary" onclick="saveTruck({plate:document.getElementById('fTrkPlate').value,brand:document.getElementById('fTrkBrand').value,model:document.getElementById('fTrkModel').value,year:parseInt(document.getElementById('fTrkYear').value)||${new Date().getFullYear()},status:document.getElementById('fTrkStatus').value,currentKm:parseInt(document.getElementById('fTrkKm').value)||0,lastOilKm:parseInt(document.getElementById('fTrkOilKm').value)||0,oilInterval:parseInt(document.getElementById('fTrkOilInt').value)||10000,lastFilterKm:parseInt(document.getElementById('fTrkFilterKm').value)||0,filterInterval:parseInt(document.getElementById('fTrkFilterInt').value)||5000},'${data?.id||''}');closeModal();showToast('تم الحفظ','success')">حفظ</button></div>`)
+}
+function getPmStatus(t){
+  if(!t||t.status!=='نشط'||t.lastOilKm===undefined)return null;
+  const nextOil=(t.lastOilKm||0)+(t.oilInterval||10000);
+  const nextFilter=(t.lastFilterKm||0)+(t.filterInterval||5000);
+  const km=t.currentKm||0;
+  if(km>=nextOil)return{type:'danger',label:'زيت!'};
+  if(km>=nextFilter)return{type:'warning',label:'فلتر!'};
+  if(km>=nextOil-1000)return{type:'warning',label:'زيت قريباً'};
+  if(km>=nextFilter-500)return{type:'info',label:'فلتر قريباً'};
+  return{type:'success',label:'جيد'};
 }
 function renderTrucks(){
   const s=document.getElementById('truckSearch')?.value||'';
@@ -520,7 +653,7 @@ function renderTrucks(){
   const t=document.getElementById('trucksTableBody');
   let list=allTrucks.filter(d=>!f||d.status===f);
   if(s)list=list.filter(d=>d.plate.includes(s)||d.brand.includes(s));
-  t.innerHTML=list.map(d=>`<tr><td>${d.plate}</td><td>${d.brand}</td><td>${d.model||'-'}</td><td>${d.year||'-'}</td><td><span class="badge ${d.status==='نشط'?'badge-active':d.status==='تحت الصيانة'?'badge-pending':'badge-inactive'}">${d.status}</span></td><td class="actions"><button class="btn btn-sm btn-warning" onclick="showTruckForm(${JSON.stringify(d).replace(/"/g,"'")})">تعديل</button><button class="btn btn-sm btn-danger" onclick="if(confirm('حذف الشاحنة?')){deleteDoc(COL.trucks,'${d.id}');allTrucks=allTrucks.filter(x=>x.id!=='${d.id}');renderTrucks();populateFilters();showToast('تم الحذف','info')}">حذف</button></td></tr>`).join('')
+  t.innerHTML=list.map(d=>{const pm=getPmStatus(d);return `<tr><td>${d.plate}</td><td>${d.brand}</td><td>${d.model||'-'}</td><td>${d.year||'-'}</td><td>${d.currentKm?d.currentKm.toLocaleString('ar-EG')+' كم':'-'}</td><td><span class="badge ${d.status==='نشط'?'badge-active':d.status==='تحت الصيانة'?'badge-pending':'badge-inactive'}">${d.status}</span></td><td>${pm?`<span class="badge badge-${pm.type}">${pm.label}</span>`:'-'}</td><td class="actions"><button class="btn btn-sm btn-warning" onclick="showTruckForm(${JSON.stringify(d).replace(/"/g,"'")})">تعديل</button><button class="btn btn-sm btn-danger" onclick="if(confirm('حذف الشاحنة?')){deleteDoc(COL.trucks,'${d.id}');allTrucks=allTrucks.filter(x=>x.id!=='${d.id}');renderTrucks();populateFilters();showToast('تم الحذف','info')}">حذف</button></td></tr>`}).join('')
 }
 
 // ====== Technicians ======
@@ -681,7 +814,10 @@ function renderMainCustody(){
   if(sel){const v=sel.value;sel.innerHTML='<option value="">القطعة</option>'+allParts.map(p=>`<option value="${p.id}">${p.name} (${p.stock||0})</option>`).join('');sel.value=v}
   const mcDate=document.getElementById('mcNewDate');if(mcDate&&!mcDate.value)mcDate.value=todayStr();
   // Render table
-  document.getElementById('mainCustodyTableBody').innerHTML=allMainCustody.map(d=>`<tr><td>${formatDate(d.date)}</td><td>${d.recipient}</td><td>${getPartName(d.partId)}</td><td>${d.qty}</td><td><span class="badge ${d.type==='صرف'?'badge-inactive':'badge-active'}">${d.type}</span></td><td>${d.notes||'-'}</td><td class="actions"><button class="btn btn-sm btn-danger" onclick="if(confirm('حذف?')){deleteDoc(COL.mainCustody,'${d.id}');allMainCustody=allMainCustody.filter(x=>x.id!=='${d.id}');renderMainCustody();showToast('تم الحذف','info')}">حذف</button></td></tr>`).join('')
+  document.getElementById('mainCustodyTableBody').innerHTML=allMainCustody.map(d=>{
+    const ec=(d.editLog||[]).length;
+    return `<tr><td>${formatDate(d.date)}</td><td>${d.recipient}</td><td>${getPartName(d.partId)}</td><td>${d.qty}</td><td><span class="badge ${d.type==='صرف'?'badge-inactive':'badge-active'}">${d.type}</span></td><td>${d.notes||'-'}${ec?`<span class="badge badge-info" style="font-size:11px;margin-right:4px" title="${(d.editLog||[]).map(e=>e.reason).join(' | ')}">ت${ec}</span>`:''}</td><td class="actions">${d.editable?`<button class="btn btn-sm btn-warning" onclick="showMainCustodyEdit('${d.id}')">تعديل</button>`:`<button class="btn btn-sm btn-outline" onclick="reOpenMainCustody('${d.id}')">إعادة فتح</button>`}<button class="btn btn-sm btn-danger" onclick="if(confirm('حذف?')){deleteDoc(COL.mainCustody,'${d.id}');allMainCustody=allMainCustody.filter(x=>x.id!=='${d.id}');renderMainCustody();showToast('تم الحذف','info')}">حذف</button></td></tr>`
+  }).join('')
 }
 async function saveMainCustodyInline(){
   const date=document.getElementById('mcNewDate').value;
@@ -697,13 +833,40 @@ async function saveMainCustodyInline(){
   try{
     if(type==='صرف'&&p){const ns=(p.stock||0)-qty;await updateDoc(COL.parts,partId,{stock:ns});p.stock=ns}
     if(type==='مرتجع'&&p){const ns=(p.stock||0)+qty;await updateDoc(COL.parts,partId,{stock:ns});p.stock=ns}
-    const id=await addDoc(COL.mainCustody,{date,recipient,partId,qty,type,notes});
-    allMainCustody.push({id,date,recipient,partId,qty,type,notes});
+    const id=await addDoc(COL.mainCustody,{date,recipient,partId,qty,type,notes,editable:false});
+    allMainCustody.push({id,date,recipient,partId,qty,type,notes,editable:false});
     document.getElementById('mcNewRecipient').value='';
     document.getElementById('mcNewNotes').value='';
     document.getElementById('mcNewQty').value='1';
     renderMainCustody();showToast('تمت الإضافة','success')
   }catch(e){showToast('خطأ: '+e.message,'error')}finally{hideLoading()}
+}
+function showMainCustodyEdit(id){
+  const d=allMainCustody.find(x=>x.id===id);
+  if(!d)return;
+  const pOpts=allParts.map(p=>`<option value="${p.id}" ${p.id===d.partId?'selected':''}>${p.name}</option>`).join('');
+  const types=['صرف','مرتجع'];
+  openModal(`
+    <h3>تعديل صرف عهدة</h3>
+    <div class="form-grid">
+      <div class="form-group"><label>التاريخ</label><input type="date" id="fmcDate" value="${d.date||todayStr()}"></div>
+      <div class="form-group"><label>المستلم</label><input id="fmcRecipient" value="${d.recipient}"></div>
+      <div class="form-group"><label>القطعة</label><select id="fmcPart">${pOpts}</select></div>
+      <div class="form-group"><label>الكمية</label><input type="number" id="fmcQty" value="${d.qty}" min="1"></div>
+      <div class="form-group"><label>النوع</label><select id="fmcType">${types.map(t=>`<option ${t===d.type?'selected':''}>${t}</option>`).join('')}</select></div>
+      <div class="form-group"><label>ملاحظات</label><input id="fmcNotes" value="${d.notes||''}"></div>
+    </div>
+    <div class="form-actions"><button class="btn btn-outline" onclick="closeModal()">إلغاء</button><button class="btn btn-primary" onclick="saveMainCustodyEdit('${id}')">حفظ التعديل</button></div>`)
+}
+async function saveMainCustodyEdit(id){
+  const data={date:document.getElementById('fmcDate').value,recipient:document.getElementById('fmcRecipient').value,partId:document.getElementById('fmcPart').value,qty:parseInt(document.getElementById('fmcQty').value)||1,type:document.getElementById('fmcType').value,notes:document.getElementById('fmcNotes').value};
+  if(!data.partId||!data.recipient){showToast('يرجى إدخال جميع الحقول','warning');return}
+  try{
+    await updateDoc(COL.mainCustody,id,{...data,editable:false});
+    const i=allMainCustody.findIndex(x=>x.id===id);
+    if(i>=0)allMainCustody[i]={...allMainCustody[i],...data,editable:false};
+    closeModal();renderMainCustody();showToast('تم حفظ التعديل','success')
+  }catch(e){showToast('خطأ: '+e.message,'error')}
 }
 
 // ====== Driver Custody (Excel-style) ======
@@ -711,7 +874,10 @@ function renderDriverCustody(){
   const sel=document.getElementById('dcNewDriverId');
   if(sel){const v=sel.value;sel.innerHTML='<option value="">السائق</option>'+allDrivers.map(d=>`<option value="${d.id}">${d.name}</option>`).join('');sel.value=v}
   const dcDate=document.getElementById('dcNewDate');if(dcDate&&!dcDate.value)dcDate.value=todayStr();
-  document.getElementById('driverCustodyTableBody').innerHTML=allDriverCustody.map(d=>`<tr><td>${formatDate(d.date)}</td><td>${getDriverName(d.driverId)}</td><td>${d.description||'-'}</td><td style="font-weight:700">${formatCurrency(d.amount)}</td><td><span class="badge ${d.type==='صرف'?'badge-inactive':'badge-active'}">${d.type}</span></td><td>${d.notes||'-'}</td><td class="actions"><button class="btn btn-sm btn-danger" onclick="if(confirm('حذف?')){deleteDoc(COL.driverCustody,'${d.id}');allDriverCustody=allDriverCustody.filter(x=>x.id!=='${d.id}');renderDriverCustody();showToast('تم الحذف','info')}">حذف</button></td></tr>`).join('')
+  document.getElementById('driverCustodyTableBody').innerHTML=allDriverCustody.map(d=>{
+    const ec=(d.editLog||[]).length;
+    return `<tr><td>${formatDate(d.date)}</td><td>${getDriverName(d.driverId)}</td><td>${d.description||'-'}</td><td style="font-weight:700">${formatCurrency(d.amount)}</td><td><span class="badge ${d.type==='صرف'?'badge-inactive':'badge-active'}">${d.type}</span></td><td>${d.notes||'-'}${ec?`<span class="badge badge-info" style="font-size:11px;margin-right:4px" title="${(d.editLog||[]).map(e=>e.reason).join(' | ')}">ت${ec}</span>`:''}</td><td class="actions">${d.editable?`<button class="btn btn-sm btn-warning" onclick="showDrvCustodyEdit('${d.id}')">تعديل</button>`:`<button class="btn btn-sm btn-outline" onclick="reOpenDrvCustody('${d.id}')">إعادة فتح</button>`}<button class="btn btn-sm btn-danger" onclick="if(confirm('حذف?')){deleteDoc(COL.driverCustody,'${d.id}');allDriverCustody=allDriverCustody.filter(x=>x.id!=='${d.id}');renderDriverCustody();showToast('تم الحذف','info')}">حذف</button></td></tr>`
+  }).join('')
 }
 async function saveDriverCustodyInline(){
   const date=document.getElementById('dcNewDate').value;
@@ -723,8 +889,8 @@ async function saveDriverCustodyInline(){
   if(!driverId||!amount){showToast('يرجى إدخال السائق والمبلغ','warning');return}
   showLoading('جاري الحفظ...');
   try{
-    const id=await addDoc(COL.driverCustody,{date,driverId,description,amount,type,notes});
-    allDriverCustody.push({id,date,driverId,description,amount,type,notes});
+    const id=await addDoc(COL.driverCustody,{date,driverId,description,amount,type,notes,editable:false});
+    allDriverCustody.push({id,date,driverId,description,amount,type,notes,editable:false});
     const drv=allDrivers.find(x=>x.id===driverId);
     if(drv){const nb=(drv.balance||0)+(type==='صرف'?amount:-amount);await updateDoc(COL.drivers,driverId,{balance:nb});drv.balance=nb}
     document.getElementById('dcNewDesc').value='';
@@ -742,6 +908,7 @@ async function saveTrip(data,id){
 function showTripForm(){
   const drvOpts=allDrivers.filter(d=>d.status==='نشط').map(d=>`<option value="${d.id}">${d.name}</option>`).join('');
   const trkOpts=allTrucks.filter(t=>t.status==='نشط').map(t=>`<option value="${t.id}">${t.plate}</option>`).join('');
+  const clOpts=allClients.filter(c=>c.status==='نشط').map(c=>`<option value="${c.id}">${c.name}</option>`).join('');
   const expOpts=lookups.expenseTypes.map(e=>`<option value="${e}">${e}</option>`).join('');
   openModal(`
     <h3>إضافة رحلة</h3>
@@ -749,9 +916,12 @@ function showTripForm(){
       <div class="form-group"><label>التاريخ</label><input type="date" id="fTrDate" value="${todayStr()}"></div>
       <div class="form-group"><label>الشاحنة</label><select id="fTrTruck">${trkOpts}</select></div>
       <div class="form-group"><label>السائق</label><select id="fTrDriver">${drvOpts}</select></div>
+      <div class="form-group"><label>العميل</label><select id="fTrClient"><option value="">بدون عميل</option>${clOpts}</select></div>
       <div class="form-group"><label>من</label><input id="fTrFrom" placeholder="مدينة الانطلاق"></div>
       <div class="form-group"><label>إلى</label><input id="fTrTo" placeholder="مدينة الوصول"></div>
       <div class="form-group"><label>الإيراد</label><input type="number" id="fTrRevenue" value="0"></div>
+      <div class="form-group"><label>عداد الخروج (km)</label><input type="number" id="fTrKmOut" value="0" min="0"></div>
+      <div class="form-group"><label>عداد الدخول (km)</label><input type="number" id="fTrKmIn" value="0" min="0"></div>
     </div>
     <h4 style="margin:12px 0 8px;font-size:14px">المصروفات</h4>
     <div id="tripExpenses">
@@ -764,7 +934,7 @@ function showTripForm(){
     </div>
     <button class="btn btn-sm btn-primary" onclick="addTripExpense()" style="margin:4px 0">+ إضافة مصروف</button>
     <div style="margin:8px 0;font-weight:700">إجمالي المصروفات: <span id="tripExpTotal">0.00</span></div>
-    <div class="form-actions"><button class="btn btn-outline" onclick="closeModal()">إلغاء</button><button class="btn btn-success" onclick="saveTripFromForm()">حفظ الرحلة</button></div>`,data?'modal-lg':'modal-lg')
+    <div class="form-actions"><button class="btn btn-outline" onclick="closeModal()">إلغاء</button><button class="btn btn-success" onclick="saveTripFromForm()">حفظ الرحلة</button></div>`,'modal-lg')
 }
 function addTripExpense(){
   const expOpts=lookups.expenseTypes.map(e=>`<option value="${e}">${e}</option>`).join('');
@@ -781,7 +951,7 @@ function calcTripTotal(){
   if(el)el.textContent=formatCurrency(total)
 }
 async function saveTripFromForm(){
-  const d={date:document.getElementById('fTrDate').value,truckId:document.getElementById('fTrTruck').value,driverId:document.getElementById('fTrDriver').value,from:document.getElementById('fTrFrom').value,to:document.getElementById('fTrTo').value,revenue:parseFloat(document.getElementById('fTrRevenue').value)||0};
+  const d={date:document.getElementById('fTrDate').value,truckId:document.getElementById('fTrTruck').value,driverId:document.getElementById('fTrDriver').value,clientId:document.getElementById('fTrClient').value||'',from:document.getElementById('fTrFrom').value,to:document.getElementById('fTrTo').value,revenue:parseFloat(document.getElementById('fTrRevenue').value)||0,kmOut:parseInt(document.getElementById('fTrKmOut').value)||0,kmIn:parseInt(document.getElementById('fTrKmIn').value)||0};
   if(!d.truckId||!d.driverId){showToast('اختر الشاحنة والسائق','warning');return}
   const expenses=[];
   document.querySelectorAll('#tripExpenses .form-grid').forEach(row=>{
@@ -802,9 +972,24 @@ async function saveTripFromForm(){
       const driverSnap=await transaction.get(driverRef);
       const curBal=driverSnap.exists?(driverSnap.data().balance||0):0;
       transaction.update(driverRef,{balance:curBal+d.netIncome});
+      // Update truck currentKm from odometer
+      if(d.kmIn>0){
+        const truckRef=db.collection(COL.trucks).doc(d.truckId);
+        const truckSnap=await transaction.get(truckRef);
+        if(truckSnap.exists){
+          const td=truckSnap.data();
+          const oldKm=td.currentKm||0;
+          if(d.kmIn>oldKm)transaction.update(truckRef,{currentKm:d.kmIn})
+        }
+      }
       allTrips.push({id:tripRef.id,...d});
       const drv=allDrivers.find(x=>x.id===d.driverId);
-      if(drv)drv.balance=curBal+d.netIncome
+      if(drv)drv.balance=curBal+d.netIncome;
+      // Update local truck cache
+      if(d.kmIn>0){
+        const trk=allTrucks.find(x=>x.id===d.truckId);
+        if(trk&&d.kmIn>(trk.currentKm||0))trk.currentKm=d.kmIn
+      }
     });
     closeModal();renderTrips();renderDashboard();showToast('تم حفظ الرحلة','success')
   }catch(e){showToast('خطأ: '+e.message,'error')}finally{hideLoading()}
@@ -814,12 +999,14 @@ function renderTrips(){
   const td=document.getElementById('tripDateTo')?.value||'';
   const df=document.getElementById('tripDriverFilter')?.value||'';
   const tf=document.getElementById('tripTruckFilter')?.value||'';
+  const cf=document.getElementById('tripClientFilter')?.value||'';
   let list=allTrips;
   if(fd)list=list.filter(t=>t.date>=fd);
   if(td)list=list.filter(t=>t.date<=td);
   if(df)list=list.filter(t=>t.driverId===df);
   if(tf)list=list.filter(t=>t.truckId===tf);
-  document.getElementById('tripsTableBody').innerHTML=list.map(d=>`<tr><td>${formatDate(d.date)}</td><td>${getTruckPlate(d.truckId)}</td><td>${getDriverName(d.driverId)}</td><td>${d.from||'-'}</td><td>${d.to||'-'}</td><td>${formatCurrency(d.revenue)}</td><td>${formatCurrency(d.totalExpenses)}</td><td style="font-weight:700;color:${(d.netIncome||0)>=0?'var(--success)':'var(--danger)'}">${formatCurrency(d.netIncome)}</td><td class="actions"><button class="btn btn-sm btn-danger" onclick="if(confirm('حذف الرحلة?')){deleteDoc(COL.trips,'${d.id}');allTrips=allTrips.filter(x=>x.id!=='${d.id}');renderTrips();renderDashboard();showToast('تم الحذف','info')}">حذف</button></td></tr>`).join('')
+  if(cf)list=list.filter(t=>t.clientId===cf);
+  document.getElementById('tripsTableBody').innerHTML=list.map(d=>`<tr><td>${formatDate(d.date)}</td><td>${getTruckPlate(d.truckId)}</td><td>${getDriverName(d.driverId)}</td><td>${d.clientId?getClientName(d.clientId):'-'}</td><td>${d.from||'-'}</td><td>${d.to||'-'}</td><td>${formatCurrency(d.revenue)}</td><td>${formatCurrency(d.totalExpenses)}</td><td style="font-weight:700;color:${(d.netIncome||0)>=0?'var(--success)':'var(--danger)'}">${formatCurrency(d.netIncome)}</td><td class="actions"><button class="btn btn-sm btn-danger" onclick="if(confirm('حذف الرحلة?')){deleteDoc(COL.trips,'${d.id}');allTrips=allTrips.filter(x=>x.id!=='${d.id}');renderTrips();renderDashboard();showToast('تم الحذف','info')}">حذف</button></td></tr>`).join('')
 }
 // ====== END DRIVER CUSTODY/TRIPS ====== //NEXT_CHUNK
 // ====== Weekly Settlements ======
@@ -891,7 +1078,10 @@ function renderSettlements(){
   let list=allSettlements;
   if(df)list=list.filter(s=>s.driverId===df);
   if(sf)list=list.filter(s=>s.status===sf);
-  document.getElementById('settlementsTableBody').innerHTML=list.map(s=>`<tr><td>${getDriverName(s.driverId)}</td><td>${formatDate(s.periodFrom)}</td><td>${formatDate(s.periodTo)}</td><td>${formatCurrency(s.revenue)}</td><td>${formatCurrency(s.expenses)}</td><td>${formatCurrency(s.custody)}</td><td style="font-weight:700">${formatCurrency(s.netAmount)}</td><td><span class="badge ${s.status==='مدفوعة'?'badge-active':'badge-pending'}">${s.status}</span></td><td class="actions">${s.status==='غير مدفوعة'?`<button class="btn btn-sm btn-success" onclick="markSettlementPaid('${s.id}')">تسديد</button>`:''}<button class="btn btn-sm btn-danger" onclick="if(confirm('حذف التسوية?')){deleteDoc(COL.settlements,'${s.id}');allSettlements=allSettlements.filter(x=>x.id!=='${s.id}');renderSettlements();showToast('تم الحذف','info')}">حذف</button></td></tr>`).join('')
+  document.getElementById('settlementsTableBody').innerHTML=list.map(s=>{
+    const editCount=(s.editLog||[]).length;
+    return `<tr><td>${getDriverName(s.driverId)}</td><td>${formatDate(s.periodFrom)}</td><td>${formatDate(s.periodTo)}</td><td>${formatCurrency(s.revenue)}</td><td>${formatCurrency(s.expenses)}</td><td>${formatCurrency(s.custody)}</td><td style="font-weight:700">${formatCurrency(s.netAmount)}</td><td><span class="badge ${s.status==='مدفوعة'?'badge-active':'badge-pending'}">${s.status}</span>${editCount?`<span class="badge badge-info" title="${(s.editLog||[]).map(e=>e.reason).join(' | ')}">تعديل ${editCount}</span>`:''}</td><td class="actions">${s.status==='غير مدفوعة'?`<button class="btn btn-sm btn-success" onclick="markSettlementPaid('${s.id}')">تسديد</button>`:''}${s.status==='مدفوعة'?`<button class="btn btn-sm btn-warning" onclick="reopenSettlement('${s.id}')">إعادة فتح</button>`:''}<button class="btn btn-sm btn-danger" onclick="if(confirm('حذف التسوية?')){deleteDoc(COL.settlements,'${s.id}');allSettlements=allSettlements.filter(x=>x.id!=='${s.id}');renderSettlements();showToast('تم الحذف','info')}">حذف</button></td></tr>`
+  }).join('')
 }
 // ====== END SETTLEMENTS ====== //NEXT_CHUNK
 // ====== Maintenance ======
@@ -1087,6 +1277,167 @@ async function removeListItem(type,index){
   await saveLookups();
   renderListItems(type);
   populateFilters();showToast('تم الحذف','info')
+}
+
+// ====== Clients (#10) ======
+async function saveClient(data,id){
+  if(id){await updateDoc(COL.clients,id,data);const i=allClients.findIndex(c=>c.id===id);if(i>=0)allClients[i]={...allClients[i],...data}}else{const id2=await addDoc(COL.clients,data);allClients.push({id:id2,...data})}
+  renderClients()
+}
+function showClientForm(data){
+  const d=data||{name:'',phone:'',address:'',status:'نشط',balance:0};
+  openModal(`
+    <h3>${data?'تعديل':'إضافة'} عميل</h3>
+    <div class="form-grid">
+      <div class="form-group"><label>الاسم</label><input id="fClName" value="${d.name}"></div>
+      <div class="form-group"><label>الهاتف</label><input id="fClPhone" value="${d.phone}"></div>
+      <div class="form-group"><label>العنوان</label><input id="fClAddr" value="${d.address||''}"></div>
+      <div class="form-group"><label>الحالة</label><select id="fClStatus"><option ${d.status==='نشط'?'selected':''}>نشط</option><option ${d.status==='غير نشط'?'selected':''}>غير نشط</option></select></div>
+    </div>
+    <div class="form-actions"><button class="btn btn-outline" onclick="closeModal()">إلغاء</button><button class="btn btn-primary" onclick="saveClient({name:document.getElementById('fClName').value,phone:document.getElementById('fClPhone').value,address:document.getElementById('fClAddr').value,status:document.getElementById('fClStatus').value,balance:${data?data.balance:0}},'${data?.id||''}');closeModal();showToast('تم الحفظ','success')">حفظ</button></div>`)
+}
+function renderClients(){
+  const s=document.getElementById('clientSearch')?.value||'';
+  const f=document.getElementById('clientStatusFilter')?.value||'';
+  const t=document.getElementById('clientsTableBody');
+  let list=allClients.filter(c=>!f||c.status===f);
+  if(s)list=list.filter(c=>c.name.includes(s)||c.phone.includes(s));
+  // Calculate total purchases per client
+  const clientTrips={};
+  allTrips.forEach(tr=>{if(tr.clientId){clientTrips[tr.clientId]=(clientTrips[tr.clientId]||0)+(tr.revenue||0)}});
+  t.innerHTML=list.map(c=>`<tr><td>${c.name}</td><td>${c.phone||'-'}</td><td>${c.address||'-'}</td><td><span class="badge ${c.status==='نشط'?'badge-active':'badge-inactive'}">${c.status}</span></td><td>${formatCurrency(clientTrips[c.id]||0)}</td><td style="font-weight:700;color:${(c.balance||0)>=0?'var(--success)':'var(--danger)'}">${formatCurrency(c.balance)}</td><td class="actions"><button class="btn btn-sm btn-warning" onclick="showClientForm(${JSON.stringify(c).replace(/"/g,"'")})">تعديل</button><button class="btn btn-sm btn-danger" onclick="if(confirm('حذف العميل?')){deleteDoc(COL.clients,'${c.id}');allClients=allClients.filter(x=>x.id!=='${c.id}');renderClients();showToast('تم الحذف','info')}">حذف</button></td></tr>`).join('');
+  // Client report stats
+  const totalRev=Object.values(clientTrips).reduce((a,v)=>a+v,0);
+  const topClients=Object.entries(clientTrips).sort((a,b)=>b[1]-a[1]).slice(0,5);
+  const statsEl=document.getElementById('clientReportStats');
+  statsEl.innerHTML=`<div class="stat-card"><div class="num">${allClients.length}</div><div class="label">إجمالي العملاء</div></div><div class="stat-card green"><div class="num">${formatCurrency(totalRev)}</div><div class="label">إجمالي مشتريات العملاء</div></div>`+
+    (topClients.length?topClients.map(([id,rev],i)=>`<div class="stat-card" style="border-right:3px solid var(--primary)"><div class="num" style="font-size:1.2rem">${getClientName(id)}</div><div class="label">${formatCurrency(rev)}</div></div>`).join(''):'')
+}
+function getClientName(id){const c=allClients.find(x=>x.id===id);return c?c.name:id}
+
+// ====== Re-open Settlements (#3) ======
+function reopenSettlement(id){
+  const s=allSettlements.find(x=>x.id===id);
+  if(!s)return;
+  const reason=prompt('سبب إعادة فتح التسوية:');
+  if(!reason||!reason.trim()){showToast('يجب إدخال سبب التعديل','warning');return}
+  showLoading('جاري إعادة فتح التسوية...');
+  try{
+    updateDoc(COL.settlements,id,{status:'غير مدفوعة',editLog:firebase.firestore.FieldValue.arrayUnion({reason:reason.trim(),by:currentUser?.email||'unknown',at:new Date().toISOString()})});
+    addDoc(COL.transactions,{type:'edit_log',refId:id,description:'إعادة فتح تسوية: '+reason.trim(),createdAt:firebase.firestore.FieldValue.serverTimestamp()});
+    s.status='غير مدفوعة';
+    if(!s.editLog)s.editLog=[];
+    s.editLog.push({reason:reason.trim(),by:currentUser?.email||'unknown',at:new Date().toISOString()});
+    renderSettlements();showToast('تم إعادة فتح التسوية','success')
+  }catch(e){showToast('خطأ: '+e.message,'error')}finally{hideLoading()}
+}
+function reOpenMainCustody(id){
+  const c=allMainCustody.find(x=>x.id===id);
+  if(!c)return;
+  const reason=prompt('سبب تعديل العهدة:');
+  if(!reason||!reason.trim()){showToast('يجب إدخال سبب التعديل','warning');return}
+  showLoading('جاري فتح العهدة للتعديل...');
+  try{
+    updateDoc(COL.mainCustody,id,{editable:true,editLog:firebase.firestore.FieldValue.arrayUnion({reason:reason.trim(),by:currentUser?.email||'unknown',at:new Date().toISOString()})});
+    addDoc(COL.transactions,{type:'edit_log',refId:id,description:'تعديل عهدة: '+reason.trim(),createdAt:firebase.firestore.FieldValue.serverTimestamp()});
+    c.editable=true;
+    if(!c.editLog)c.editLog=[];
+    c.editLog.push({reason:reason.trim(),by:currentUser?.email||'unknown',at:new Date().toISOString()});
+    renderMainCustody();showToast('تم فتح العهدة للتعديل','success')
+  }catch(e){showToast('خطأ: '+e.message,'error')}finally{hideLoading()}
+}
+function reOpenDrvCustody(id){
+  const c=allDriverCustody.find(x=>x.id===id);
+  if(!c)return;
+  const reason=prompt('سبب تعديل عهدة السائق:');
+  if(!reason||!reason.trim()){showToast('يجب إدخال سبب التعديل','warning');return}
+  showLoading('جاري فتح العهدة للتعديل...');
+  try{
+    updateDoc(COL.driverCustody,id,{editable:true,editLog:firebase.firestore.FieldValue.arrayUnion({reason:reason.trim(),by:currentUser?.email||'unknown',at:new Date().toISOString()})});
+    addDoc(COL.transactions,{type:'edit_log',refId:id,description:'تعديل عهدة سائق: '+reason.trim(),createdAt:firebase.firestore.FieldValue.serverTimestamp()});
+    c.editable=true;
+    if(!c.editLog)c.editLog=[];
+    c.editLog.push({reason:reason.trim(),by:currentUser?.email||'unknown',at:new Date().toISOString()});
+    renderDriverCustody();showToast('تم فتح العهدة للتعديل','success')
+  }catch(e){showToast('خطأ: '+e.message,'error')}finally{hideLoading()}
+}
+function showDrvCustodyEdit(id){
+  const d=allDriverCustody.find(x=>x.id===id);
+  if(!d)return;
+  const drvOpts=allDrivers.map(dr=>`<option value="${dr.id}" ${dr.id===d.driverId?'selected':''}>${dr.name}</option>`).join('');
+  const types=['صرف','سداد'];
+  openModal(`
+    <h3>تعديل عهدة سائق</h3>
+    <div class="form-grid">
+      <div class="form-group"><label>التاريخ</label><input type="date" id="fdcDate" value="${d.date||todayStr()}"></div>
+      <div class="form-group"><label>السائق</label><select id="fdcDriver">${drvOpts}</select></div>
+      <div class="form-group"><label>البيان</label><input id="fdcDesc" value="${d.description||''}"></div>
+      <div class="form-group"><label>المبلغ</label><input type="number" id="fdcAmount" value="${d.amount}"></div>
+      <div class="form-group"><label>النوع</label><select id="fdcType">${types.map(t=>`<option ${t===d.type?'selected':''}>${t}</option>`).join('')}</select></div>
+      <div class="form-group"><label>ملاحظات</label><input id="fdcNotes" value="${d.notes||''}"></div>
+    </div>
+    <div class="form-actions"><button class="btn btn-outline" onclick="closeModal()">إلغاء</button><button class="btn btn-primary" onclick="saveDrvCustodyEdit('${id}')">حفظ التعديل</button></div>`)
+}
+async function saveDrvCustodyEdit(id){
+  const data={date:document.getElementById('fdcDate').value,driverId:document.getElementById('fdcDriver').value,description:document.getElementById('fdcDesc').value,amount:parseFloat(document.getElementById('fdcAmount').value)||0,type:document.getElementById('fdcType').value,notes:document.getElementById('fdcNotes').value,editable:false};
+  if(!data.driverId||!data.amount){showToast('يرجى إدخال جميع الحقول','warning');return}
+  try{
+    await updateDoc(COL.driverCustody,id,data);
+    const i=allDriverCustody.findIndex(x=>x.id===id);
+    if(i>=0)allDriverCustody[i]={...allDriverCustody[i],...data};
+    closeModal();renderDriverCustody();showToast('تم حفظ التعديل','success')
+  }catch(e){showToast('خطأ: '+e.message,'error')}
+}
+
+// ====== Excel Import (#13) ======
+function showImportParts(){
+  openModal(`
+    <h3>استيراد قطع غيار من Excel</h3>
+    <p style="font-size:14px;color:var(--gray);margin:8px 0">انسخ البيانات من Excel والصقها في الحقل أدناه. التنسيق المطلوب لكل سطر:<br><code>الاسم, الكمية, سعر الشراء, سعر البيع, التصنيف, الحد الأدنى, المورد</code></p>
+    <textarea id="importData" style="width:100%;height:200px;padding:10px;border:1px solid var(--border);border-radius:6px;font-size:14px;direction:ltr" placeholder="مثال:
+فلتر زيت,10,150,200,فلتر,5,مورد أ
+طقم فرامل,5,800,1200,فرامل,2,مورد ب"></textarea>
+    <div id="importPreview" style="margin:10px 0;max-height:200px;overflow-y:auto"></div>
+    <div class="form-actions">
+      <button class="btn btn-outline" onclick="closeModal()">إلغاء</button>
+      <button class="btn btn-primary" onclick="previewImport()">معاينة</button>
+      <button class="btn btn-success" id="importExecBtn" style="display:none" onclick="executeImport()">تأكيد الاستيراد</button>
+    </div>`)
+}
+let importRows=[];
+function previewImport(){
+  const raw=document.getElementById('importData').value.trim();
+  if(!raw){showToast('الرجاء إدخال البيانات','warning');return}
+  const lines=raw.split('\n').filter(l=>l.trim());
+  importRows=[];
+  const errors=[];
+  lines.forEach((line,i)=>{
+    const parts=line.split(',').map(p=>p.trim());
+    if(parts.length<4){errors.push(`سطر ${i+1}: البيانات غير مكتملة`);return}
+    const name=parts[0];const qty=parseInt(parts[1])||0;const buy=parseFloat(parts[2])||0;const sell=parseFloat(parts[3])||0;
+    const cat=parts[4]||'';const min=parseInt(parts[5])||1;const supp=parts[6]||'';
+    if(!name){errors.push(`سطر ${i+1}: الاسم مطلوب`);return}
+    importRows.push({name,stock:qty,buyPrice:buy,sellPrice:sell,category:cat,minStock:min,supplier:supp})
+  });
+  const preview=document.getElementById('importPreview');
+  if(errors.length)preview.innerHTML='<div style="color:var(--danger);margin-bottom:8px">'+errors.join('<br>')+'</div>';
+  if(importRows.length){
+    preview.innerHTML+='<div style="color:var(--success);font-weight:700">تم قراءة '+importRows.length+' قطعة بنجاح</div>';
+    preview.innerHTML+='<table style="width:100%;font-size:13px;margin-top:8px"><thead><tr style="background:var(--light-gray)"><th>الاسم</th><th>الكمية</th><th>الشراء</th><th>البيع</th><th>التصنيف</th></tr></thead><tbody>'+importRows.map(r=>`<tr><td>${r.name}</td><td>${r.stock}</td><td>${r.buyPrice}</td><td>${r.sellPrice}</td><td>${r.category||'-'}</td></tr>`).join('')+'</tbody></table>';
+    document.getElementById('importExecBtn').style.display='inline-block'
+  }
+}
+async function executeImport(){
+  if(!importRows.length)return;
+  showLoading('جاري استيراد '+importRows.length+' قطعة...');
+  try{
+    const batch=db.batch();
+    importRows.forEach(row=>{const ref=db.collection(COL.parts).doc();batch.set(ref,{...row,createdAt:firebase.firestore.FieldValue.serverTimestamp()})});
+    await batch.commit();
+    await refreshData(false);
+    closeModal();showToast('تم استيراد '+importRows.length+' قطعة بنجاح','success');
+    importRows=[]
+  }catch(e){showToast('خطأ في الاستيراد: '+e.message,'error')}finally{hideLoading()}
 }
 
 // ====== Closing ======
