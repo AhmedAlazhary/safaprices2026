@@ -1,13 +1,7 @@
 // js/role-manager.js - Role Management and Assignment
-import { auth, db, doc, setDoc, getDoc, collection, getDocs, query, where, updateDoc } from '../firebase-config.js';
-import { httpsCallable } from 'https://www.gstatic.com/firebasejs/9.23.0/firebase-functions.js';
+import { auth, db, doc, setDoc, getDoc, collection, getDocs, query, where, updateDoc, deleteDoc } from '../firebase-config.js';
 
-// Cloud Functions references
-let functions;
-let assignUserRoleFunction;
-let getAllUsersFunction;
-let deleteUserFunction;
-let createUserWithRoleFunction;
+let useLocalFallback = false;
 const ORIGINAL_ADMIN_EMAILS = new Set([
     'ahmed@safatrans.com',
     'hesham@safatrans.com',
@@ -19,83 +13,107 @@ function isOriginalAdminEmail(email) {
     return ORIGINAL_ADMIN_EMAILS.has(String(email || '').trim().toLowerCase());
 }
 
-// تهيئة Firebase Functions
-async function initFunctions() {
-    if (!functions) {
+// Try Cloud Functions first, fall back to direct Firestore operations
+async function withFallback(funcName, fn, fallbackFn) {
+    if (useLocalFallback) return fallbackFn();
+    try {
+        const { httpsCallable } = await import('https://www.gstatic.com/firebasejs/9.23.0/firebase-functions.js');
         const { getFunctions } = await import('https://www.gstatic.com/firebasejs/9.23.0/firebase-functions.js');
-        functions = getFunctions();
-        assignUserRoleFunction = httpsCallable(functions, 'assignUserRole');
-        getAllUsersFunction = httpsCallable(functions, 'getAllUsers');
-        deleteUserFunction = httpsCallable(functions, 'deleteUser');
-        createUserWithRoleFunction = httpsCallable(functions, 'createUserWithRole');
+        const functions = getFunctions();
+        const callable = httpsCallable(functions, funcName);
+        const result = await fn(callable);
+        return result;
+    } catch (error) {
+        if (error.code === 'internal' || error.message?.includes('internal') || 
+            error.message?.includes('not-found') || error.message?.includes('CORS') ||
+            error.message?.includes('NETWORK_ERROR')) {
+            console.warn(`Cloud Function ${funcName} unavailable, using local fallback`);
+            useLocalFallback = true;
+            return fallbackFn();
+        }
+        throw error;
     }
 }
 
 // تعيين دور للمستخدم
 export async function assignUserRole(uid, role, assignedBy = null) {
-    try {
-        await initFunctions();
-        
-        const result = await assignUserRoleFunction({
-            uid: uid,
-            role: role,
-            assignedBy: assignedBy || auth.currentUser.uid
-        });
-        
-        return result.data;
-    } catch (error) {
-        console.error('Error assigning user role:', error);
-        throw new Error(error.message);
-    }
+    return withFallback('assignUserRole',
+        async (callable) => {
+            const result = await callable({ uid, role, assignedBy: assignedBy || auth.currentUser.uid });
+            return result.data;
+        },
+        async () => {
+            const userRoleRef = doc(db, 'user_roles', uid);
+            const existing = await getDoc(userRoleRef);
+            const data = existing.exists() ? existing.data() : {};
+            await setDoc(userRoleRef, {
+                ...data,
+                role: role,
+                updatedAt: new Date(),
+                updatedBy: auth.currentUser?.uid || 'system',
+                email: data.email || ''
+            }, { merge: true });
+            return { success: true };
+        }
+    );
 }
 
 // الحصول على جميع المستخدمين مع أدوارهم
 export async function getAllUsers() {
-    try {
-        await initFunctions();
-        
-        const result = await getAllUsersFunction();
-        return result.data.users;
-    } catch (error) {
-        console.error('Error getting all users:', error);
-        throw new Error(error.message);
-    }
+    return withFallback('getAllUsers',
+        async (callable) => {
+            const result = await callable();
+            return result.data;
+        },
+        async () => {
+            const snapshot = await getDocs(collection(db, 'user_roles'));
+            const users = [];
+            snapshot.forEach(doc => {
+                const data = doc.data();
+                users.push({
+                    uid: doc.id,
+                    email: data.email || '',
+                    displayName: data.displayName || '',
+                    role: data.role || 'viewer',
+                    isOriginal: data.isOriginalUser === true || isOriginalAdminEmail(data.email),
+                    createdAt: data.createdAt?.toDate?.()?.toISOString?.() || data.createdAt || '',
+                    lastSignIn: data.lastSignIn?.toDate?.()?.toISOString?.() || data.lastSignIn || '',
+                    disabled: data.disabled || false,
+                    emailVerified: data.emailVerified || false
+                });
+            });
+            users.sort((a, b) => a.email.localeCompare(b.email));
+            return { users };
+        }
+    );
 }
 
 // حذف مستخدم
 export async function deleteUser(uid, deletedBy = null) {
-    try {
-        await initFunctions();
-        
-        const result = await deleteUserFunction({
-            uid: uid,
-            deletedBy: deletedBy || auth.currentUser.uid
-        });
-        
-        return result.data;
-    } catch (error) {
-        console.error('Error deleting user:', error);
-        throw new Error(error.message);
-    }
+    return withFallback('deleteUser',
+        async (callable) => {
+            const result = await callable({ uid, deletedBy: deletedBy || auth.currentUser.uid });
+            return result.data;
+        },
+        async () => {
+            await deleteDoc(doc(db, 'user_roles', uid));
+            await deleteDoc(doc(db, 'audit_logs', uid));
+            console.warn('deleteUser fallback: removed from user_roles. Auth user NOT deleted (requires Cloud Functions)');
+            return { success: true, note: 'تم حذف الدور فقط. لم يتم حذف حساب Auth لأنه يتطلب نشر Functions.' };
+        }
+    );
 }
 
 export async function createUserWithRole(email, password, displayName, role = 'viewer', createdBy = null) {
-    try {
-        await initFunctions();
-
-        const result = await createUserWithRoleFunction({
-            email,
-            password,
-            displayName,
-            role,
-            createdBy: createdBy || auth.currentUser?.uid || null
-        });
-
-        return result.data;
-    } catch (error) {
-        console.error('Error creating user with role:', error);
-        throw new Error(error.message);
-    }
+    return withFallback('createUserWithRole',
+        async (callable) => {
+            const result = await callable({ email, password, displayName, role, createdBy: createdBy || auth.currentUser?.uid || null });
+            return result.data;
+        },
+        async () => {
+            throw new Error('إنشاء المستخدمين يتطلب نشر Cloud Functions. شغّل: firebase deploy --only functions');
+        }
+    );
 }
 
 // التأكد من أن المستخدم لديه دور

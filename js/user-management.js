@@ -56,10 +56,10 @@ export async function renderUsersTable(containerId) {
     } catch (error) {
         console.error('Error rendering users table:', error);
         container.innerHTML = `
-            <div class="error-message">
-                <h3>تعذر تحميل المستخدمين</h3>
-                <p>${escapeHtml(error.message || 'حدث خطأ غير متوقع')}</p>
-                <button class="retry-btn" onclick="location.reload()">إعادة المحاولة</button>
+            <div style="background:#f8d7da;border:1px solid #f5c6cb;border-radius:8px;padding:2rem;text-align:center;margin:2rem 0">
+                <h3 style="color:#721c24;margin-bottom:1rem">خطأ في تحميل المستخدمين</h3>
+                <p style="color:#721c24">${escapeHtml(error.message || 'حدث خطأ غير متوقع')}</p>
+                <button class="retry-btn" onclick="location.reload()" style="margin-top:1rem">إعادة المحاولة</button>
             </div>
         `;
     }
@@ -67,7 +67,7 @@ export async function renderUsersTable(containerId) {
 
 async function fetchAllUsers() {
     const result = await getAllUsers();
-    return result.data || result;
+    return result.users || result.data?.users || [];
 }
 
 function renderTable(container, users) {
@@ -292,8 +292,11 @@ async function handleUserDeletion(uid, email, name) {
             return;
         }
 
-        await deleteUser(uid);
+        const result = await deleteUser(uid);
         showNotification('success', `تم حذف المستخدم ${name || email}`);
+        if (result.note) {
+            setTimeout(() => showNotification('error', result.note), 500);
+        }
     } catch (error) {
         console.error('Error deleting user:', error);
         showNotification('error', `فشل حذف المستخدم: ${error.message}`);
