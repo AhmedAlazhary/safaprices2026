@@ -254,16 +254,19 @@ td .actions{display:flex;gap:6px;justify-content:center}
   <div class="section" id="secMainCustody">
     <div class="page-header"><h2>عهد المستودع</h2></div>
     <div class="card">
+      <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(140px,1fr));gap:8px;margin-bottom:12px;padding:10px;background:var(--light-gray);border-radius:6px" id="mcSectionStats"></div>
       <div class="excel-newrow" id="mcNewRow">
         <input type="date" id="mcNewDate">
         <input id="mcNewRecipient" placeholder="المستلم" style="flex:0.8">
         <select id="mcNewPartId"><option value="">القطعة</option></select>
         <input type="number" id="mcNewQty" value="1" min="1" style="width:70px;flex:none">
+        <select id="mcNewSection"><option value="عام">عام</option><option value="صيانة">صيانة</option><option value="إطارات">إطارات</option><option value="زيت">زيت</option><option value="كهرباء">كهرباء</option></select>
         <select id="mcNewType" style="width:80px;flex:none"><option value="صرف">صرف</option><option value="مرتجع">مرتجع</option></select>
         <input id="mcNewNotes" placeholder="ملاحظات" style="flex:0.6">
         <button class="btn btn-sm btn-success" onclick="saveMainCustodyInline()">إضافة</button>
       </div>
-      <div class="table-wrap"><table><thead><tr><th>التاريخ</th><th>المستلم</th><th>القطعة</th><th>الكمية</th><th>النوع</th><th>ملاحظات</th><th>إجراءات</th></tr></thead><tbody id="mainCustodyTableBody"></tbody></table></div>
+      <div class="filter-bar" style="margin-bottom:8px"><select id="mcSectionFilter" onchange="renderMainCustody()"><option value="">كل الأقسام</option><option value="عام">عام</option><option value="صيانة">صيانة</option><option value="إطارات">إطارات</option><option value="زيت">زيت</option><option value="كهرباء">كهرباء</option></select></div>
+      <div class="table-wrap"><table><thead><tr><th>التاريخ</th><th>المستلم</th><th>القطعة</th><th>الكمية</th><th>القسم</th><th>النوع</th><th>ملاحظات</th><th>إجراءات</th></tr></thead><tbody id="mainCustodyTableBody"></tbody></table></div>
     </div>
   </div>
 
@@ -810,14 +813,22 @@ function renderPurchases(){
 
 // ====== Main Custody (Excel-style) ======
 function renderMainCustody(){
+  const sf=document.getElementById('mcSectionFilter')?.value||'';
   // Populate new-row dropdown
   const sel=document.getElementById('mcNewPartId');
   if(sel){const v=sel.value;sel.innerHTML='<option value="">القطعة</option>'+allParts.map(p=>`<option value="${p.id}">${p.name} (${p.stock||0})</option>`).join('');sel.value=v}
   const mcDate=document.getElementById('mcNewDate');if(mcDate&&!mcDate.value)mcDate.value=todayStr();
-  // Render table
-  document.getElementById('mainCustodyTableBody').innerHTML=allMainCustody.map(d=>{
+  // Section stats
+  const sections=['عام','صيانة','إطارات','زيت','كهرباء'];
+  const totals={};sections.forEach(s=>{totals[s]=allMainCustody.filter(d=>d.section===s&&d.type==='صرف').reduce((a,d)=>a+d.qty,0)});
+  const statsEl=document.getElementById('mcSectionStats');
+  statsEl.innerHTML=sections.map(s=>`<div style="text-align:center;padding:6px;background:#fff;border-radius:6px;border-right:3px solid var(--primary)"><div style="font-size:11px;color:var(--gray)">${s}</div><div style="font-weight:700;font-size:18px">${totals[s]}</div></div>`).join('');
+  // Filter & render
+  let list=allMainCustody;
+  if(sf)list=list.filter(d=>d.section===sf);
+  document.getElementById('mainCustodyTableBody').innerHTML=list.map(d=>{
     const ec=(d.editLog||[]).length;
-    return `<tr><td>${formatDate(d.date)}</td><td>${d.recipient}</td><td>${getPartName(d.partId)}</td><td>${d.qty}</td><td><span class="badge ${d.type==='صرف'?'badge-inactive':'badge-active'}">${d.type}</span></td><td>${d.notes||'-'}${ec?`<span class="badge badge-info" style="font-size:11px;margin-right:4px" title="${(d.editLog||[]).map(e=>e.reason).join(' | ')}">ت${ec}</span>`:''}</td><td class="actions">${d.editable?`<button class="btn btn-sm btn-warning" onclick="showMainCustodyEdit('${d.id}')">تعديل</button>`:`<button class="btn btn-sm btn-outline" onclick="reOpenMainCustody('${d.id}')">إعادة فتح</button>`}<button class="btn btn-sm btn-danger" onclick="if(confirm('حذف?')){deleteDoc(COL.mainCustody,'${d.id}');allMainCustody=allMainCustody.filter(x=>x.id!=='${d.id}');renderMainCustody();showToast('تم الحذف','info')}">حذف</button></td></tr>`
+    return `<tr><td>${formatDate(d.date)}</td><td>${d.recipient}</td><td>${getPartName(d.partId)}</td><td>${d.qty}</td><td><span class="badge badge-info">${d.section||'عام'}</span></td><td><span class="badge ${d.type==='صرف'?'badge-inactive':'badge-active'}">${d.type}</span></td><td>${d.notes||'-'}${ec?`<span class="badge badge-info" style="font-size:11px;margin-right:4px" title="${(d.editLog||[]).map(e=>e.reason).join(' | ')}">ت${ec}</span>`:''}</td><td class="actions">${d.editable?`<button class="btn btn-sm btn-warning" onclick="showMainCustodyEdit('${d.id}')">تعديل</button>`:`<button class="btn btn-sm btn-outline" onclick="reOpenMainCustody('${d.id}')">إعادة فتح</button>`}<button class="btn btn-sm btn-danger" onclick="if(confirm('حذف?')){deleteDoc(COL.mainCustody,'${d.id}');allMainCustody=allMainCustody.filter(x=>x.id!=='${d.id}');renderMainCustody();showToast('تم الحذف','info')}">حذف</button></td></tr>`
   }).join('')
 }
 async function saveMainCustodyInline(){
@@ -825,6 +836,7 @@ async function saveMainCustodyInline(){
   const recipient=document.getElementById('mcNewRecipient').value;
   const partId=document.getElementById('mcNewPartId').value;
   const qty=parseFloat(document.getElementById('mcNewQty').value)||1;
+  const section=document.getElementById('mcNewSection').value||'عام';
   const type=document.getElementById('mcNewType').value;
   const notes=document.getElementById('mcNewNotes').value;
   if(!partId||!recipient){showToast('يرجى إدخال المستلم والقطعة','warning');return}
@@ -834,8 +846,8 @@ async function saveMainCustodyInline(){
   try{
     if(type==='صرف'&&p){const ns=(p.stock||0)-qty;await updateDoc(COL.parts,partId,{stock:ns});p.stock=ns}
     if(type==='مرتجع'&&p){const ns=(p.stock||0)+qty;await updateDoc(COL.parts,partId,{stock:ns});p.stock=ns}
-    const id=await addDoc(COL.mainCustody,{date,recipient,partId,qty,type,notes,editable:false});
-    allMainCustody.push({id,date,recipient,partId,qty,type,notes,editable:false});
+    const id=await addDoc(COL.mainCustody,{date,recipient,partId,qty,section,type,notes,editable:false});
+    allMainCustody.push({id,date,recipient,partId,qty,section,type,notes,editable:false});
     document.getElementById('mcNewRecipient').value='';
     document.getElementById('mcNewNotes').value='';
     document.getElementById('mcNewQty').value='1';
@@ -846,6 +858,7 @@ function showMainCustodyEdit(id){
   const d=allMainCustody.find(x=>x.id===id);
   if(!d)return;
   const pOpts=allParts.map(p=>`<option value="${p.id}" ${p.id===d.partId?'selected':''}>${p.name}</option>`).join('');
+  const sections=['عام','صيانة','إطارات','زيت','كهرباء'];
   const types=['صرف','مرتجع'];
   openModal(`
     <h3>تعديل صرف عهدة</h3>
@@ -854,13 +867,14 @@ function showMainCustodyEdit(id){
       <div class="form-group"><label>المستلم</label><input id="fmcRecipient" value="${d.recipient}"></div>
       <div class="form-group"><label>القطعة</label><select id="fmcPart">${pOpts}</select></div>
       <div class="form-group"><label>الكمية</label><input type="number" id="fmcQty" value="${d.qty}" min="1"></div>
+      <div class="form-group"><label>القسم</label><select id="fmcSection">${sections.map(s=>`<option ${s===(d.section||'عام')?'selected':''}>${s}</option>`).join('')}</select></div>
       <div class="form-group"><label>النوع</label><select id="fmcType">${types.map(t=>`<option ${t===d.type?'selected':''}>${t}</option>`).join('')}</select></div>
       <div class="form-group"><label>ملاحظات</label><input id="fmcNotes" value="${d.notes||''}"></div>
     </div>
     <div class="form-actions"><button class="btn btn-outline" onclick="closeModal()">إلغاء</button><button class="btn btn-primary" onclick="saveMainCustodyEdit('${id}')">حفظ التعديل</button></div>`)
 }
 async function saveMainCustodyEdit(id){
-  const data={date:document.getElementById('fmcDate').value,recipient:document.getElementById('fmcRecipient').value,partId:document.getElementById('fmcPart').value,qty:parseInt(document.getElementById('fmcQty').value)||1,type:document.getElementById('fmcType').value,notes:document.getElementById('fmcNotes').value};
+  const data={date:document.getElementById('fmcDate').value,recipient:document.getElementById('fmcRecipient').value,partId:document.getElementById('fmcPart').value,qty:parseInt(document.getElementById('fmcQty').value)||1,section:document.getElementById('fmcSection').value,type:document.getElementById('fmcType').value,notes:document.getElementById('fmcNotes').value};
   if(!data.partId||!data.recipient){showToast('يرجى إدخال جميع الحقول','warning');return}
   try{
     await updateDoc(COL.mainCustody,id,{...data,editable:false});
@@ -1081,7 +1095,9 @@ function renderSettlements(){
   if(sf)list=list.filter(s=>s.status===sf);
   document.getElementById('settlementsTableBody').innerHTML=list.map(s=>{
     const editCount=(s.editLog||[]).length;
-    return `<tr><td>${getDriverName(s.driverId)}</td><td>${formatDate(s.periodFrom)}</td><td>${formatDate(s.periodTo)}</td><td>${formatCurrency(s.revenue)}</td><td>${formatCurrency(s.expenses)}</td><td>${formatCurrency(s.custody)}</td><td style="font-weight:700">${formatCurrency(s.netAmount)}</td><td><span class="badge ${s.status==='مدفوعة'?'badge-active':'badge-pending'}">${s.status}</span>${editCount?`<span class="badge badge-info" title="${(s.editLog||[]).map(e=>e.reason).join(' | ')}">تعديل ${editCount}</span>`:''}</td><td class="actions">${s.status==='غير مدفوعة'?`<button class="btn btn-sm btn-success" onclick="markSettlementPaid('${s.id}')">تسديد</button>`:''}${s.status==='مدفوعة'?`<button class="btn btn-sm btn-warning" onclick="reopenSettlement('${s.id}')">إعادة فتح</button>`:''}<button class="btn btn-sm btn-danger" onclick="if(confirm('حذف التسوية?')){deleteDoc(COL.settlements,'${s.id}');allSettlements=allSettlements.filter(x=>x.id!=='${s.id}');renderSettlements();showToast('تم الحذف','info')}">حذف</button></td></tr>`
+    const phone=allDrivers.find(d=>d.id===s.driverId)?.phone||'';
+    const waUrl=phone?`https://wa.me/${phone.replace(/^0/,'966').replace(/[^0-9]/g,'')}`:'';
+    return `<tr><td>${getDriverName(s.driverId)}</td><td>${formatDate(s.periodFrom)}</td><td>${formatDate(s.periodTo)}</td><td>${formatCurrency(s.revenue)}</td><td>${formatCurrency(s.expenses)}</td><td>${formatCurrency(s.custody)}</td><td style="font-weight:700">${formatCurrency(s.netAmount)}</td><td><span class="badge ${s.status==='مدفوعة'?'badge-active':'badge-pending'}">${s.status}</span>${editCount?`<span class="badge badge-info" title="${(s.editLog||[]).map(e=>e.reason).join(' | ')}">تعديل ${editCount}</span>`:''}</td><td class="actions">${s.status==='غير مدفوعة'?`<button class="btn btn-sm btn-success" onclick="markSettlementPaid('${s.id}')">تسديد</button>`:''}${s.status==='مدفوعة'?`<button class="btn btn-sm btn-warning" onclick="reopenSettlement('${s.id}')">إعادة فتح</button>`:''}${waUrl?`<button class="btn btn-sm btn-success" onclick="sendWa('${waUrl}','${encodeURIComponent(getDriverName(s.driverId))}','${s.periodFrom}','${s.periodTo}','${s.revenue}','${s.expenses}','${s.custody}','${s.netAmount}')">واتساب</button>`:''}<button class="btn btn-sm btn-danger" onclick="if(confirm('حذف التسوية?')){deleteDoc(COL.settlements,'${s.id}');allSettlements=allSettlements.filter(x=>x.id!=='${s.id}');renderSettlements();showToast('تم الحذف','info')}">حذف</button></td></tr>`
   }).join('')
 }
 // ====== END SETTLEMENTS ====== //NEXT_CHUNK
@@ -1331,6 +1347,16 @@ function reopenSettlement(id){
     s.editLog.push({reason:reason.trim(),by:currentUser?.email||'unknown',at:new Date().toISOString()});
     renderSettlements();showToast('تم إعادة فتح التسوية','success')
   }catch(e){showToast('خطأ: '+e.message,'error')}finally{hideLoading()}
+}
+function sendWa(url,name,from,to,rev,exp,cust,net){
+  const txt=`السلام عليكم ${name}
+تسوية الأسبوع من ${from} إلى ${to}
+الإيرادات: ${formatCurrency(parseFloat(rev))}
+المصروفات: ${formatCurrency(parseFloat(exp))}
+العهد: ${formatCurrency(parseFloat(cust))}
+الصافي: ${formatCurrency(parseFloat(net))}
+برجاء الرد بالموافقة أو الاعتراض.`;
+  window.open(url+'?text='+encodeURIComponent(txt),'_blank')
 }
 function reOpenMainCustody(id){
   const c=allMainCustody.find(x=>x.id===id);
