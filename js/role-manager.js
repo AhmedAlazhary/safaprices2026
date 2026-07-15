@@ -1,5 +1,6 @@
 // js/role-manager.js - Role Management and Assignment
 import { auth, db, doc, setDoc, getDoc, collection, getDocs, query, where, updateDoc, deleteDoc } from '../firebase-config.js';
+import { createUserWithEmailAndPassword, signInWithEmailAndPassword } from 'https://www.gstatic.com/firebasejs/9.23.0/firebase-auth.js';
 
 let useLocalFallback = false;
 const ORIGINAL_ADMIN_EMAILS = new Set([
@@ -111,7 +112,45 @@ export async function createUserWithRole(email, password, displayName, role = 'v
             return result.data;
         },
         async () => {
-            throw new Error('إنشاء المستخدمين يتطلب نشر Cloud Functions. شغّل: firebase deploy --only functions');
+            const currentUser = auth.currentUser;
+            if (!currentUser || !currentUser.email) {
+                throw new Error('يجب تسجيل الدخول كمسؤول أولاً');
+            }
+            const adminEmail = currentUser.email;
+            const adminPassword = prompt('لإنشاء مستخدم جديد، أدخل كلمة مرور المسؤول لإعادة تسجيل الدخول بعد الإنشاء:');
+            if (!adminPassword) {
+                throw new Error('تم إلغاء إنشاء المستخدم');
+            }
+
+            window.__skipReinit = true;
+
+            try {
+                const userCred = await createUserWithEmailAndPassword(auth, email, password);
+                const newUid = userCred.user.uid;
+
+                await setDoc(doc(db, 'user_roles', newUid), {
+                    email,
+                    displayName,
+                    role: role || 'viewer',
+                    isOriginalUser: false,
+                    createdBy: createdBy || currentUser.uid || 'system',
+                    createdAt: new Date(),
+                    updatedAt: new Date()
+                });
+
+                await signInWithEmailAndPassword(auth, adminEmail, adminPassword);
+                window.__skipReinit = false;
+                return { success: true, uid: newUid };
+            } catch (err) {
+                window.__skipReinit = false;
+                if (err.code === 'auth/email-already-in-use') {
+                    throw new Error('البريد الإلكتروني مستخدم بالفعل');
+                }
+                if (err.code === 'auth/weak-password') {
+                    throw new Error('كلمة المرور ضعيفة جداً (6 أحرف على الأقل)');
+                }
+                throw new Error('فشل إنشاء المستخدم: ' + (err.message || 'خطأ غير متوقع'));
+            }
         }
     );
 }

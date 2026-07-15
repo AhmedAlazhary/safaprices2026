@@ -658,6 +658,11 @@
                             window.location.href = 'dashboard.html';
                             return;
                         }
+
+                        // Skip re-init during fallback user creation re-auth
+                        if (window.__skipReinit) {
+                            return;
+                        }
                         
                         // Initialize user management
                         await initUserManagement();
