@@ -11,7 +11,11 @@ import {
     filterUsersByRole,
     sortUsers,
     exportUsersToCSV,
-    getRoleStatistics
+    getRoleStatistics,
+    PAGE_REGISTRY,
+    saveUserPagePermissions,
+    getUserPagePermissions,
+    getDefaultPermissions
 } from './role-manager.js';
 import { getCurrentUserRole, isAdmin } from './auth-guard-module.js';
 
@@ -415,4 +419,91 @@ function showNotification(type, message) {
     setTimeout(() => {
         notification.remove();
     }, 3000);
+}
+
+// --- Permission Editor ---
+
+let _permUsers = [];
+
+export async function populatePermUserSelect() {
+    const select = document.getElementById('perm-user-select');
+    if (!select) return;
+    try {
+        const result = await getAllUsers();
+        _permUsers = result.users || result.data?.users || [];
+        select.innerHTML = '<option value="">-- اختر مستخدم --</option>' +
+            _permUsers
+                .filter(u => !u.isOriginal)
+                .map(u => `<option value="${u.uid}">${escapeHtml(u.displayName || u.email)} (${escapeHtml(u.email)})</option>`)
+                .join('');
+    } catch (e) {
+        console.error('perm editor: could not load users', e);
+    }
+}
+
+window.loadUserPermissions = async function() {
+    const select = document.getElementById('perm-user-select');
+    const uid = select?.value;
+    const container = document.getElementById('perm-grid-container');
+    const saveBtn = document.getElementById('perm-save-btn');
+    if (!uid || !container || !saveBtn) { return; }
+
+    container.innerHTML = '<div class="perm-loading"><i class="fas fa-spinner fa-spin"></i> جارٍ تحميل الصلاحيات...</div>';
+    saveBtn.disabled = true;
+
+    try {
+        const pages = await getUserPagePermissions(uid);
+        const defaultPerms = getDefaultPermissions();
+        const merged = { ...defaultPerms, ...pages };
+
+        const pageEntries = Object.entries(PAGE_REGISTRY);
+        const cols = pageEntries.length;
+
+        let html = '<div class="perm-grid"><div class="perm-header"><div>الصفحة</div><div>ممنوع</div><div>عرض</div><div>تعديل</div></div>';
+        pageEntries.forEach(([id, info], idx) => {
+            const val = merged[id];
+            html += `<div class="perm-row${idx % 2 === 1 ? ' odd' : ''}">`;
+            html += `<div>${info.title}</div>`;
+            html += `<div><label><input type="radio" name="perm_${id}" value="" ${val === null || val === undefined || val === '' ? 'checked' : ''}> ممنوع</label></div>`;
+            html += `<div><label><input type="radio" name="perm_${id}" value="view" ${val === 'view' ? 'checked' : ''}> عرض</label></div>`;
+            html += `<div><label><input type="radio" name="perm_${id}" value="edit" ${val === 'edit' ? 'checked' : ''}> تعديل</label></div>`;
+            html += '</div>';
+        });
+        html += '</div>';
+        container.innerHTML = html;
+        saveBtn.disabled = false;
+        saveBtn.dataset.uid = uid;
+    } catch (e) {
+        container.innerHTML = `<p class="perm-loading" style="color:#c00">خطأ: ${escapeHtml(e.message)}</p>`;
+    }
+};
+
+window.saveUserPermissions = async function() {
+    const saveBtn = document.getElementById('perm-save-btn');
+    const uid = saveBtn?.dataset.uid;
+    if (!uid) { showNotification('error', 'اختر مستخدم أولاً'); return; }
+
+    const pages = {};
+    for (const id of Object.keys(PAGE_REGISTRY)) {
+        const radios = document.querySelectorAll(`input[name="perm_${id}"]`);
+        radios.forEach(r => { if (r.checked) pages[id] = r.value || null; });
+    }
+
+    try {
+        saveBtn.disabled = true;
+        saveBtn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> جارٍ الحفظ...';
+        await saveUserPagePermissions(uid, pages);
+        showNotification('success', 'تم حفظ الصلاحيات بنجاح');
+    } catch (e) {
+        showNotification('error', 'فشل حفظ الصلاحيات: ' + e.message);
+    } finally {
+        saveBtn.disabled = false;
+        saveBtn.innerHTML = '<i class="fas fa-save"></i> حفظ الصلاحيات';
+    }
+};
+
+// Initialize permission editor when admin panel loads
+// Called from setupStaticEvents or admin-panel.html
+export async function initPermEditor() {
+    await populatePermUserSelect();
 }

@@ -528,6 +528,101 @@
         .notification.error {
             background: #f44336;
         }
+
+        /* Permission Editor */
+        .perm-editor-card {
+            background: white;
+            border-radius: 12px;
+            padding: 1.5rem;
+            margin-top: 2rem;
+            box-shadow: 0 2px 12px rgba(0,0,0,0.08);
+        }
+        .perm-editor-card h3 {
+            margin-bottom: 1.5rem;
+            color: #333;
+        }
+        .perm-editor-card .user-selector {
+            margin-bottom: 1.5rem;
+        }
+        .perm-editor-card .user-selector select {
+            width: 100%;
+            padding: 10px;
+            border: 2px solid #e0e0e0;
+            border-radius: 8px;
+            font-size: 15px;
+            font-family: inherit;
+        }
+        .perm-grid {
+            display: grid;
+            gap: 1px;
+            background: #e0e0e0;
+            border: 1px solid #e0e0e0;
+            border-radius: 8px;
+            overflow: hidden;
+        }
+        .perm-grid .perm-header {
+            display: contents;
+        }
+        .perm-grid .perm-header > div {
+            background: #4a148c;
+            color: white;
+            padding: 12px;
+            font-weight: bold;
+            text-align: center;
+        }
+        .perm-grid .perm-row {
+            display: contents;
+        }
+        .perm-grid .perm-row > div {
+            background: white;
+            padding: 10px 12px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+        .perm-grid .perm-row > div:first-child {
+            justify-content: flex-start;
+            font-weight: 500;
+        }
+        .perm-grid .perm-row > div label {
+            display: flex;
+            align-items: center;
+            gap: 5px;
+            cursor: pointer;
+            font-size: 13px;
+        }
+        .perm-grid .perm-row > div input[type="radio"] {
+            width: 16px;
+            height: 16px;
+            cursor: pointer;
+        }
+        .perm-grid .perm-row.odd > div {
+            background: #f8f5ff;
+        }
+        .perm-save-btn {
+            margin-top: 1rem;
+            padding: 12px 32px;
+            background: #4a148c;
+            color: white;
+            border: none;
+            border-radius: 8px;
+            font-size: 16px;
+            font-family: inherit;
+            cursor: pointer;
+            transition: background 0.3s;
+        }
+        .perm-save-btn:hover {
+            background: #6a1b9a;
+        }
+        .perm-save-btn:disabled {
+            background: #b0b0b0;
+            cursor: not-allowed;
+        }
+        .perm-loading {
+            text-align: center;
+            padding: 2rem;
+            color: #666;
+        }
         
         @keyframes slideIn {
             from {
@@ -621,13 +716,29 @@
                 <p>جاري تحميل المستخدمين...</p>
             </div>
         </div>
+
+        <!-- Permission Editor -->
+        <section class="perm-editor-card" id="perm-editor-section">
+            <h3><i class="fas fa-lock"></i> صلاحيات الصفحات</h3>
+            <div class="user-selector">
+                <select id="perm-user-select" onchange="loadUserPermissions()">
+                    <option value="">-- اختر مستخدم --</option>
+                </select>
+            </div>
+            <div id="perm-grid-container">
+                <p class="perm-loading">اختر مستخدم لعرض صلاحياته</p>
+            </div>
+            <button class="perm-save-btn" id="perm-save-btn" onclick="saveUserPermissions()" disabled>
+                <i class="fas fa-save"></i> حفظ الصلاحيات
+            </button>
+        </section>
     </main>
 
     <!-- Firebase Configuration -->
     <script type="module">
         // Import Firebase modules
         import { auth, onAuthStateChanged } from './firebase-config.js';
-        import { initUserManagement, renderUsersTable, updateUserStatistics } from './js/user-management.js';
+        import { initUserManagement, renderUsersTable, updateUserStatistics, initPermEditor } from './js/user-management.js';
         import { logout, getCurrentUserRole } from './js/auth-guard-module.js';
 
         // Make logout available globally
@@ -666,6 +777,8 @@
                         
                         // Initialize user management
                         await initUserManagement();
+                        // Initialize permission editor
+                        await initPermEditor();
                     } else {
                         // Redirect to login if not authenticated
                         window.location.href = 'index.html';

@@ -14,6 +14,67 @@ function isOriginalAdminEmail(email) {
     return ORIGINAL_ADMIN_EMAILS.has(String(email || '').trim().toLowerCase());
 }
 
+// Page registry for permission system
+export const PAGE_REGISTRY = {
+    "dashboard": { id: "dashboard", title: "لوحة التحكم", file: "dashboard.html", default: "edit" },
+    "fleet": { id: "fleet", title: "إدارة الأسطول", file: "fleet-management-system.html", default: "view" },
+    "inventory": { id: "inventory", title: "المخزون والأصول", file: "inventory-assets-system.html", default: "view" },
+    "lists": { id: "lists", title: "القوائم المشتركة", file: "shared-lists.html", default: "view" },
+    "admin": { id: "admin", title: "لوحة الإدارة", file: "admin-panel.html", default: null }
+};
+
+export function getPageIdFromFile(file) {
+    for (const [id, info] of Object.entries(PAGE_REGISTRY)) {
+        if (info.file === file) return id;
+    }
+    return null;
+}
+
+export function getCurrentPageId() {
+    const path = window.location.pathname.split('/').pop() || 'dashboard.html';
+    return getPageIdFromFile(path);
+}
+
+// Save page permissions for a user
+export async function saveUserPagePermissions(uid, pages) {
+    const userRoleRef = doc(db, 'user_roles', uid);
+    await setDoc(userRoleRef, { pages }, { merge: true });
+    return true;
+}
+
+// Get page permissions for a user
+export async function getUserPagePermissions(uid) {
+    const userRoleDoc = await getDoc(doc(db, 'user_roles', uid));
+    if (userRoleDoc.exists()) {
+        return userRoleDoc.data().pages || {};
+    }
+    return {};
+}
+
+// Check if current user can access a given page
+export async function canAccessPage(pageId) {
+    if (!auth.currentUser) return false;
+    const uid = auth.currentUser.uid;
+    const email = auth.currentUser.email || '';
+    if (isOriginalAdminEmail(email)) return 'edit';
+
+    const pages = await getUserPagePermissions(uid);
+    const perm = pages[pageId];
+    if (perm === 'edit' || perm === 'view') return perm;
+
+    const pageInfo = PAGE_REGISTRY[pageId];
+    return pageInfo ? pageInfo.default : null;
+}
+
+// Get default permissions map for a new user (all pages with their defaults)
+export function getDefaultPermissions() {
+    const perms = {};
+    for (const [id, info] of Object.entries(PAGE_REGISTRY)) {
+        perms[id] = info.default;
+    }
+    return perms;
+}
+
 // Try Cloud Functions first, fall back to direct Firestore operations
 async function withFallback(funcName, fn, fallbackFn) {
     if (useLocalFallback) return fallbackFn();
@@ -135,7 +196,8 @@ export async function createUserWithRole(email, password, displayName, role = 'v
                     isOriginalUser: false,
                     createdBy: createdBy || currentUser.uid || 'system',
                     createdAt: new Date(),
-                    updatedAt: new Date()
+                    updatedAt: new Date(),
+                    pages: getDefaultPermissions()
                 });
 
                 await signInWithEmailAndPassword(auth, adminEmail, adminPassword);

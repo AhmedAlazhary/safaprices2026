@@ -1,4 +1,5 @@
 import { auth, db, onAuthStateChanged, signOut, doc, getDoc } from '../firebase-config.js';
+import { getUserPagePermissions, getCurrentPageId, PAGE_REGISTRY } from './role-manager.js';
 
 const ORIGINAL_ADMIN_EMAILS = new Set([
     'ahmed@safatrans.com',
@@ -77,6 +78,19 @@ function hasAccess(page, userRole) {
     return requiredRoles.includes(userRole);
 }
 
+// Check page-level permission for current user on a given pageId
+export async function getPageLevelPermission(pageId) {
+    const email = String(sessionStorage.getItem('userEmail') || '').trim().toLowerCase();
+    if (ORIGINAL_ADMIN_EMAILS.has(email)) {
+        return 'edit';
+    }
+    const uid = sessionStorage.getItem('userUID');
+    if (!uid) return null;
+    const pages = await getUserPagePermissions(uid);
+    return pages[pageId] || null;
+}
+
+// Combined route guard: role + page permission
 export function initRouteGuard() {
     const currentPath = window.location.pathname;
     const currentPage = currentPath.split('/').pop() || 'index.html';
@@ -97,9 +111,41 @@ export function initRouteGuard() {
         const role = await getUserRole(user);
         sessionStorage.setItem('userRole', role);
 
+        // Role-based guard
         if (!hasAccess(currentPage, role)) {
             window.location.href = 'dashboard.html';
+            return;
         }
+
+        // Page-level permission guard
+        const pageId = getCurrentPageId();
+        if (pageId) {
+            const pagePerm = await getPageLevelPermission(pageId);
+            sessionStorage.setItem('pagePermission', pagePerm || '');
+            if (pagePerm === null) {
+                window.location.href = 'dashboard.html';
+            }
+        }
+    });
+}
+
+// Protect UI elements based on page permission (view = hide edit buttons)
+export function protectPageElements(editSelectors) {
+    const perm = sessionStorage.getItem('pagePermission');
+    if (perm === 'edit') return; // full access
+    if (!perm) return; // no permission set (not a protected page)
+
+    // view-only: disable/hide edit elements
+    const selectors = editSelectors || [
+        'button:not(.view-safe)', 'input[type="submit"]',
+        '.delete-btn', '.edit-btn', '.save-btn',
+        'form', '[data-requires="edit"]'
+    ];
+    document.querySelectorAll(selectors.join(',')).forEach(el => {
+        el.disabled = true;
+        el.style.opacity = '0.5';
+        el.style.pointerEvents = 'none';
+        el.title = 'عرض فقط - لا يمكن التعديل';
     });
 }
 
@@ -127,6 +173,48 @@ export async function logout() {
     }
 }
 
+// Auto-execute page permission check when module loads
+(function() {
+    const pageId = getCurrentPageId();
+    if (!pageId) return; // not a registered page (e.g. index.html)
+
+    onAuthStateChanged(auth, async (user) => {
+        if (!user) return; // let other guards handle redirect
+        const email = String(user.email || '').trim().toLowerCase();
+
+        // Original admins get full access
+        if (ORIGINAL_ADMIN_EMAILS.has(email)) {
+            sessionStorage.setItem('pagePermission', 'edit');
+            return;
+        }
+
+        // Get role from Firestore for permission check
+        const uid = user.uid;
+        let role = sessionStorage.getItem('userRole');
+        if (!role) {
+            const roleDoc = await getDoc(doc(db, 'user_roles', uid));
+            if (roleDoc.exists()) {
+                role = roleDoc.data().role || 'viewer';
+                sessionStorage.setItem('userRole', role);
+            }
+        }
+
+        // Admins (by role) get full access to everything
+        if (role === 'admin') {
+            sessionStorage.setItem('pagePermission', 'edit');
+            return;
+        }
+
+        const pages = await getUserPagePermissions(uid);
+        const perm = pages[pageId] || PAGE_REGISTRY[pageId]?.default || null;
+        sessionStorage.setItem('pagePermission', perm || '');
+
+        if (perm === null) {
+            window.location.href = 'dashboard.html';
+        }
+    });
+})();
+
 window.authGuardModule = {
     getCurrentUserRole,
     isAdmin,
@@ -135,5 +223,9 @@ window.authGuardModule = {
     getUserRole,
     initRouteGuard,
     protectButton,
-    logout
+    logout,
+    getPageLevelPermission,
+    protectPageElements,
+    getCurrentPageId,
+    PAGE_REGISTRY
 };
