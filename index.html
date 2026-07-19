@@ -896,7 +896,7 @@
     <script type="module">
         import { initializeApp } from "https://www.gstatic.com/firebasejs/9.23.0/firebase-app.js";
         import { getAuth, onAuthStateChanged, signInWithEmailAndPassword } from "https://www.gstatic.com/firebasejs/9.23.0/firebase-auth.js";
-        import { getFirestore } from "https://www.gstatic.com/firebasejs/9.23.0/firebase-firestore.js";
+        import { getFirestore, collection, getDocs } from "https://www.gstatic.com/firebasejs/9.23.0/firebase-firestore.js";
         import { getFunctions } from "https://www.gstatic.com/firebasejs/9.23.0/firebase-functions.js";
         
         // Firebase configuration
@@ -924,14 +924,48 @@
 
         console.log('Firebase initialized successfully!');
 
-        // Users mapping (for existing users)
-        const usersMap = {
+        // Users mapping — merge hardcoded admins with dynamically loaded users
+        const hardcodedMap = {
             "ahmed": "ahmed@safatrans.com",
-            "hesham": "hesham@safatrans.com", 
+            "hesham": "hesham@safatrans.com",
             "omar": "omar@safatrans.com",
             "sabry": "sabry@safatrans.com"
         };
-        const originalAdminEmails = new Set(Object.values(usersMap));
+        let usersMap = { ...hardcodedMap };
+        const originalAdminEmails = new Set(Object.values(hardcodedMap));
+
+        // Load additional users from Firestore
+        (async () => {
+            try {
+                const snapshot = await getDocs(collection(db, 'user_roles'));
+                snapshot.forEach(doc => {
+                    const data = doc.data();
+                    if (data.email) {
+                        const username = data.email.split('@')[0];
+                        if (!usersMap[username]) {
+                            usersMap[username] = data.email;
+                        }
+                    }
+                });
+            } catch (err) {
+                console.warn('Could not load user_roles for login map:', err);
+            }
+        })();
+
+        // Get user role from Firestore
+        async function getUserRoleFromFirestore(email) {
+            try {
+                const snapshot = await getDocs(collection(db, 'user_roles'));
+                let role = null;
+                snapshot.forEach(doc => {
+                    const data = doc.data();
+                    if (data.email === email) {
+                        role = data.role;
+                    }
+                });
+                return role;
+            } catch { return null; }
+        }
 
         async function syncOriginalAdminRole(email) {
             if (!originalAdminEmails.has(email)) {
@@ -1006,8 +1040,19 @@
                     loginError.classList.add('d-none');
                     loginSuccess.classList.add('d-none');
                     
-                    // Validate username
-                    const email = usersMap[username];
+                    // Validate username — check map (hardcoded + loaded), then try direct Firestore lookup
+                    let email = usersMap[username];
+                    if (!email) {
+                        try {
+                            const snap = await getDocs(collection(db, 'user_roles'));
+                            snap.forEach(doc => {
+                                const d = doc.data();
+                                if (d.email && d.email.split('@')[0] === username) {
+                                    email = d.email;
+                                }
+                            });
+                        } catch {}
+                    }
                     if (!email) {
                         showError('Username not found. Please check your username and try again.');
                         return;
@@ -1024,7 +1069,10 @@
                         // Show success message
                         showSuccess('Login successful! Redirecting to dashboard...');
 
-                        sessionStorage.setItem('userRole', originalAdminEmails.has(email) ? 'admin' : 'viewer');
+                        // Determine role: check Firestore first, fall back to hardcoded admins
+                        const firestoreRole = await getUserRoleFromFirestore(email);
+                        const role = firestoreRole || (originalAdminEmails.has(email) ? 'admin' : 'viewer');
+                        sessionStorage.setItem('userRole', role);
                         sessionStorage.setItem('userEmail', email);
                         
                         // Close modal
