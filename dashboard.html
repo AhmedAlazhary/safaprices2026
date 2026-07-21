@@ -460,16 +460,30 @@ document.getElementById("logoutBtn").addEventListener("click", async () => {
 });
 
 // Check authentication state
-onAuthStateChanged(auth, user => {
+onAuthStateChanged(auth, async user => {
   if (!user) {
     window.location.href = "index.html";
     return;
   }
   
   console.log('User logged in:', user.email);
-  sessionStorage.setItem("userRole", "admin");
   sessionStorage.setItem("userUID", user.uid);
   sessionStorage.setItem("userEmail", user.email || "");
+
+  // Determine role from Firestore
+  try {
+    const { doc, getDoc } = await import("https://www.gstatic.com/firebasejs/9.23.0/firebase-firestore.js");
+    const { getFirestore } = await import("https://www.gstatic.com/firebasejs/9.23.0/firebase-firestore.js");
+    const db = getFirestore(app);
+    const roleDoc = await getDoc(doc(db, 'user_roles', user.uid));
+    if (roleDoc.exists()) {
+      sessionStorage.setItem("userRole", roleDoc.data().role || "viewer");
+    } else {
+      sessionStorage.setItem("userRole", "viewer");
+    }
+  } catch {
+    sessionStorage.setItem("userRole", "viewer");
+  }
 });
 </script>
 

@@ -2,7 +2,8 @@
 import { auth, db, doc, setDoc, getDoc, collection, getDocs, query, where, updateDoc, deleteDoc } from '../firebase-config.js';
 import { createUserWithEmailAndPassword, signInWithEmailAndPassword } from 'https://www.gstatic.com/firebasejs/9.23.0/firebase-auth.js';
 
-let useLocalFallback = false;
+// Skip Cloud Functions on GitHub Pages (CORS not configured)
+let useLocalFallback = window.location.hostname.includes('github.io');
 const ORIGINAL_ADMIN_EMAILS = new Set([
     'ahmed@safatrans.com',
     'hesham@safatrans.com',
@@ -16,11 +17,18 @@ function isOriginalAdminEmail(email) {
 
 // Page registry for permission system
 export const PAGE_REGISTRY = {
-    "dashboard": { id: "dashboard", title: "لوحة التحكم", file: "dashboard.html", default: "edit" },
-    "fleet": { id: "fleet", title: "إدارة الأسطول", file: "fleet-management-system.html", default: "view" },
-    "inventory": { id: "inventory", title: "المخزون والأصول", file: "inventory-assets-system.html", default: "view" },
-    "lists": { id: "lists", title: "القوائم المشتركة", file: "shared-lists.html", default: "view" },
-    "admin": { id: "admin", title: "لوحة الإدارة", file: "admin-panel.html", default: null }
+    "dashboard":      { id: "dashboard",      title: "لوحة التحكم",         file: "dashboard.html",                 default: "edit" },
+    "fleet":          { id: "fleet",          title: "إدارة الأسطول",       file: "fleet-management-system.html",    default: "view" },
+    "inventory":      { id: "inventory",      title: "المخزون والأصول",     file: "inventory-assets-system.html",    default: "view" },
+    "prices":         { id: "prices",         title: "أسعار الحاويات",      file: "prices.html",                     default: "view" },
+    "daily":          { id: "daily",          title: "الشغل اليومي",        file: "daily.html",                      default: "view" },
+    "drivers_roles":  { id: "drivers_roles",  title: "أدوار السواقين",      file: "drivers-roles-page.html",         default: "view" },
+    "treasury":       { id: "treasury",       title: "الخزنة والتشغيل",     file: "treasury-system.html",            default: "view" },
+    "warehouse":      { id: "warehouse",      title: "إدارة العهد",        file: "warehouse-management-fixed.html", default: "view" },
+    "treasury_banks": { id: "treasury_banks", title: "الخزينة والبنوك",      file: "treasury-banks.html",             default: "view" },
+    "garage":         { id: "garage",         title: "نظام الجراج",         file: "garage_system.html",              default: "view" },
+    "lists":          { id: "lists",          title: "القوائم المشتركة",    file: "shared-lists.html",               default: "view" },
+    "admin":          { id: "admin",          title: "لوحة الإدارة",        file: "admin-panel.html",                default: null }
 };
 
 export function getPageIdFromFile(file) {
