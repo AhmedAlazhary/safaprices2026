@@ -87,7 +87,7 @@ export async function getPageLevelPermission(pageId) {
     const uid = sessionStorage.getItem('userUID');
     if (!uid) return null;
     const pages = await getUserPagePermissions(uid);
-    return pages[pageId] || null;
+    return pages[pageId] ?? null;
 }
 
 // Combined route guard: role + page permission
@@ -121,7 +121,7 @@ export function initRouteGuard() {
         const pageId = getCurrentPageId();
         if (pageId) {
             const pagePerm = await getPageLevelPermission(pageId);
-            sessionStorage.setItem('pagePermission', pagePerm || '');
+            sessionStorage.setItem('pagePermission', pagePerm ?? '');
             if (pagePerm === null) {
                 window.location.href = 'dashboard.html';
             }
@@ -206,8 +206,8 @@ export async function logout() {
         }
 
         const pages = await getUserPagePermissions(uid);
-        const perm = pages[pageId] || PAGE_REGISTRY[pageId]?.default || null;
-        sessionStorage.setItem('pagePermission', perm || '');
+        const perm = pages[pageId] ?? PAGE_REGISTRY[pageId]?.default ?? null;
+        sessionStorage.setItem('pagePermission', perm ?? '');
 
         if (perm === null) {
             window.location.href = 'dashboard.html';
