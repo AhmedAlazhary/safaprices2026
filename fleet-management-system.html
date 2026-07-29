@@ -1471,5 +1471,6 @@ async function executeImport(){
 // Ensure auth prompt doesn't block anonymous usage
 setTimeout(()=>{if(!currentUser)auth.signInAnonymously().catch(console.error)},500);
 </script>
+<script type="module" src="js/auth-guard-module.js"></script>
 </body>
 </html>
