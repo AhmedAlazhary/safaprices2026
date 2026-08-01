@@ -177,6 +177,22 @@ export async function logout() {
     window.location.href = 'index.html';
 }
 
+// Read a user_roles doc using whichever Firestore is authenticated on this page.
+// Pages that sign in via the compat SDK (possibly a different version, e.g. fleet v10)
+// have an unauthenticated modular `db`, so we must read through the compat Firestore.
+async function readUserRoleDoc(uid) {
+    try {
+        if (window.firebase && typeof window.firebase.firestore === 'function') {
+            const fs = window.firebase.firestore();
+            const snap = await fs.collection('user_roles').doc(uid).get();
+            if (snap.exists) return snap.data();
+            return null;
+        }
+    } catch (e) {}
+    const roleDoc = await getDoc(doc(db, 'user_roles', uid));
+    return roleDoc.exists() ? roleDoc.data() : null;
+}
+
 // Auto-execute page permission check when module loads
 (function() {
     const pageId = getCurrentPageId();
@@ -198,12 +214,14 @@ export async function logout() {
         const perm = pages[pageId] ?? PAGE_REGISTRY[pageId]?.default ?? null;
         sessionStorage.setItem('pagePermission', perm ?? '');
         if (perm === null) {
+            console.log(`[auth-guard] BLOCKED ${email} from ${pageId} (sync)`);
             window.location.href = 'dashboard.html';
             return;
         }
+        console.log(`[auth-guard] allowed ${email} on ${pageId} (sync, perm=${perm})`);
     }
 
-    // 2) Async verification for fresh tabs / direct page loads.
+    // 2) Async verification for fresh tabs / direct page loads / stale caches.
     async function enforce(user) {
         if (!user) return;
         const uEmail = String(user.email || '').trim().toLowerCase();
@@ -218,13 +236,14 @@ export async function logout() {
         let uRole = sessionStorage.getItem('userRole');
         if (!uRole) {
             try {
-                const roleDoc = await getDoc(doc(db, 'user_roles', uid));
-                if (roleDoc.exists()) {
-                    uRole = roleDoc.data().role || 'viewer';
+                const data = await readUserRoleDoc(uid);
+                if (data) {
+                    uRole = data.role || 'viewer';
                     sessionStorage.setItem('userRole', uRole);
+                    if (data.pages) sessionStorage.setItem('userPages', JSON.stringify(data.pages));
                 }
             } catch (error) {
-                console.error('auth-guard: role read failed', error);
+                console.error('[auth-guard] role read failed', error);
             }
         }
 
@@ -234,16 +253,20 @@ export async function logout() {
         }
 
         try {
-            const pages = await getUserPagePermissions(uid);
+            const data = await readUserRoleDoc(uid);
+            const pages = (data && data.pages) || {};
             sessionStorage.setItem('userPages', JSON.stringify(pages));
             const perm = pages[pageId] ?? PAGE_REGISTRY[pageId]?.default ?? null;
             sessionStorage.setItem('pagePermission', perm ?? '');
 
             if (perm === null) {
+                console.log(`[auth-guard] BLOCKED ${uEmail} from ${pageId} (async)`);
                 window.location.href = 'dashboard.html';
+            } else {
+                console.log(`[auth-guard] allowed ${uEmail} on ${pageId} (async, perm=${perm})`);
             }
         } catch (error) {
-            console.error('auth-guard: permission read failed', error);
+            console.error('[auth-guard] permission read failed for', uid, error);
         }
     }
 
