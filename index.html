@@ -896,7 +896,7 @@
     <script type="module">
         import { initializeApp } from "https://www.gstatic.com/firebasejs/9.23.0/firebase-app.js";
         import { getAuth, onAuthStateChanged, signInWithEmailAndPassword } from "https://www.gstatic.com/firebasejs/9.23.0/firebase-auth.js";
-        import { getFirestore, collection, getDocs } from "https://www.gstatic.com/firebasejs/9.23.0/firebase-firestore.js";
+        import { getFirestore, collection, getDocs, doc, getDoc } from "https://www.gstatic.com/firebasejs/9.23.0/firebase-firestore.js";
         import { getFunctions } from "https://www.gstatic.com/firebasejs/9.23.0/firebase-functions.js";
         
         // Firebase configuration
@@ -1074,6 +1074,15 @@
                         const role = firestoreRole || (originalAdminEmails.has(email) ? 'admin' : 'viewer');
                         sessionStorage.setItem('userRole', role);
                         sessionStorage.setItem('userEmail', email);
+                        sessionStorage.setItem('userUID', auth.currentUser.uid);
+                        try {
+                            const roleSnap = await getDoc(doc(db, 'user_roles', auth.currentUser.uid));
+                            if (roleSnap.exists()) {
+                                sessionStorage.setItem('userPages', JSON.stringify(roleSnap.data().pages || {}));
+                            }
+                        } catch (err) {
+                            console.warn('Could not cache user pages:', err);
+                        }
                         
                         // Close modal
                         const modal = bootstrap.Modal.getInstance(document.getElementById('loginModal'));

@@ -167,10 +167,14 @@ export async function logout() {
         await signOut(auth);
     } catch (error) {
         console.error('Logout error:', error);
-    } finally {
-        sessionStorage.clear();
-        window.location.href = 'index.html';
     }
+    try {
+        if (window.firebase && typeof window.firebase.auth === 'function') {
+            await window.firebase.auth().signOut();
+        }
+    } catch (error) {}
+    sessionStorage.clear();
+    window.location.href = 'index.html';
 }
 
 // Auto-execute page permission check when module loads
@@ -178,40 +182,87 @@ export async function logout() {
     const pageId = getCurrentPageId();
     if (!pageId) return; // not a registered page (e.g. index.html)
 
-    onAuthStateChanged(auth, async (user) => {
-        if (!user) return; // let other guards handle redirect
-        const email = String(user.email || '').trim().toLowerCase();
+    // 1) Synchronous check using login session. Works on every page regardless of
+    //    which Firebase SDK version signed the user in (sessionStorage is shared).
+    const email = String(sessionStorage.getItem('userEmail') || '').trim().toLowerCase();
+    const role = sessionStorage.getItem('userRole') || '';
+    const isAdminUser = ORIGINAL_ADMIN_EMAILS.has(email) || role === 'admin';
 
-        // Original admins get full access
-        if (ORIGINAL_ADMIN_EMAILS.has(email)) {
+    if (isAdminUser) {
+        sessionStorage.setItem('pagePermission', 'edit');
+    } else {
+        let pages = {};
+        try {
+            pages = JSON.parse(sessionStorage.getItem('userPages') || '{}');
+        } catch (e) {}
+        const perm = pages[pageId] ?? PAGE_REGISTRY[pageId]?.default ?? null;
+        sessionStorage.setItem('pagePermission', perm ?? '');
+        if (perm === null) {
+            window.location.href = 'dashboard.html';
+            return;
+        }
+    }
+
+    // 2) Async verification for fresh tabs / direct page loads.
+    async function enforce(user) {
+        if (!user) return;
+        const uEmail = String(user.email || '').trim().toLowerCase();
+
+        if (ORIGINAL_ADMIN_EMAILS.has(uEmail)) {
             sessionStorage.setItem('pagePermission', 'edit');
             return;
         }
 
-        // Get role from Firestore for permission check
         const uid = user.uid;
-        let role = sessionStorage.getItem('userRole');
-        if (!role) {
-            const roleDoc = await getDoc(doc(db, 'user_roles', uid));
-            if (roleDoc.exists()) {
-                role = roleDoc.data().role || 'viewer';
-                sessionStorage.setItem('userRole', role);
+        sessionStorage.setItem('userUID', uid);
+        let uRole = sessionStorage.getItem('userRole');
+        if (!uRole) {
+            try {
+                const roleDoc = await getDoc(doc(db, 'user_roles', uid));
+                if (roleDoc.exists()) {
+                    uRole = roleDoc.data().role || 'viewer';
+                    sessionStorage.setItem('userRole', uRole);
+                }
+            } catch (error) {
+                console.error('auth-guard: role read failed', error);
             }
         }
 
-        // Admins (by role) get full access to everything
-        if (role === 'admin') {
+        if (uRole === 'admin') {
             sessionStorage.setItem('pagePermission', 'edit');
             return;
         }
 
-        const pages = await getUserPagePermissions(uid);
-        const perm = pages[pageId] ?? PAGE_REGISTRY[pageId]?.default ?? null;
-        sessionStorage.setItem('pagePermission', perm ?? '');
+        try {
+            const pages = await getUserPagePermissions(uid);
+            sessionStorage.setItem('userPages', JSON.stringify(pages));
+            const perm = pages[pageId] ?? PAGE_REGISTRY[pageId]?.default ?? null;
+            sessionStorage.setItem('pagePermission', perm ?? '');
 
-        if (perm === null) {
-            window.location.href = 'dashboard.html';
+            if (perm === null) {
+                window.location.href = 'dashboard.html';
+            }
+        } catch (error) {
+            console.error('auth-guard: permission read failed', error);
         }
+    }
+
+    onAuthStateChanged(auth, (user) => {
+        if (user) {
+            enforce(user);
+            return;
+        }
+        // Page may be signed in via a different-version compat SDK (e.g. fleet v10 compat)
+        try {
+            if (window.firebase && typeof window.firebase.auth === 'function') {
+                const compatAuth = window.firebase.auth();
+                if (compatAuth) {
+                    compatAuth.onAuthStateChanged((cUser) => {
+                        if (cUser) enforce(cUser);
+                    });
+                }
+            }
+        } catch (e) {}
     });
 })();
 
