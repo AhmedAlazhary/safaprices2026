@@ -32,6 +32,106 @@ service cloud.firestore {
              get(/databases/$(database)/documents/user_roles/$(userId)).data.isOriginalUser == true;
     }
 
+    // SAFATRANS client-prices permission. This intentionally uses the same
+    // four original administrator email identities recognized by the current
+    // page guard, plus the explicit page-level `edit` grant in user_roles.
+    // No custom claims are required for this module.
+    function canManageClientPrices() {
+      return isAuthenticated() && (
+        request.auth.token.get('email', '') in [
+          'ahmed@safatrans.com',
+          'hesham@safatrans.com',
+          'omar@safatrans.com',
+          'sabry@safatrans.com'
+        ] || (
+          exists(/databases/$(database)/documents/user_roles/$(request.auth.uid)) && (
+            get(/databases/$(database)/documents/user_roles/$(request.auth.uid)).data.role == 'admin' ||
+            get(/databases/$(database)/documents/user_roles/$(request.auth.uid)).data.pages.client_prices == 'edit'
+          )
+        )
+      );
+    }
+
+    function hasValidCoordinates(data) {
+      return (
+        !data.keys().hasAny(['lat', 'lng']) &&
+        !data.keys().hasAny(['coordinateSource'])
+      ) || (
+        data.keys().hasAll(['lat', 'lng', 'coordinateSource', 'coordinatesVerified']) &&
+        data.lat is number && data.lat >= -90 && data.lat <= 90 &&
+        data.lng is number && data.lng >= -180 && data.lng <= 180 &&
+        data.coordinateSource is string && data.coordinateSource.size() > 0 &&
+        data.coordinatesVerified == true
+      );
+    }
+
+    function validClientPriceDraft(data, destinationId) {
+      return data.keys().hasAll([
+          'destinationId', 'name', 'light8t20ft', 'container40ft',
+          'two20ft', 'currency', 'updatedAt', 'updatedBy'
+        ]) &&
+        data.keys().hasOnly([
+          'destinationId', 'name', 'light8t20ft', 'container40ft',
+          'two20ft', 'currency', 'lat', 'lng', 'coordinateSource', 'coordinatesVerified',
+          'updatedAt', 'updatedBy'
+        ]) &&
+        data.destinationId == destinationId &&
+        data.name is string && data.name.size() > 0 && data.name.size() <= 120 &&
+        data.light8t20ft is number && data.light8t20ft > 0 &&
+        data.container40ft is number && data.container40ft > 0 &&
+        data.two20ft is number && data.two20ft > 0 &&
+        data.currency == 'EGP' &&
+        data.updatedAt == request.time &&
+        data.updatedBy == request.auth.uid &&
+        hasValidCoordinates(data);
+    }
+
+    function validPublicClientPrice(data, destinationId) {
+      return data.keys().hasAll([
+          'destinationId', 'name', 'light8t20ft', 'container40ft',
+          'two20ft', 'currency', 'publishedAt', 'version'
+        ]) &&
+        data.keys().hasOnly([
+          'destinationId', 'name', 'light8t20ft', 'container40ft',
+          'two20ft', 'currency', 'publishedAt', 'version', 'lat', 'lng'
+        ]) &&
+        data.destinationId == destinationId &&
+        data.name is string && data.name.size() > 0 && data.name.size() <= 120 &&
+        data.light8t20ft is number && data.light8t20ft > 0 &&
+        data.container40ft is number && data.container40ft > 0 &&
+        data.two20ft is number && data.two20ft > 0 &&
+        data.currency == 'EGP' &&
+        data.publishedAt == request.time &&
+        data.version is int && data.version > 0 &&
+        (
+          !data.keys().hasAny(['lat', 'lng']) ||
+          (
+            data.keys().hasAll(['lat', 'lng']) &&
+            data.lat is number && data.lat >= -90 && data.lat <= 90 &&
+            data.lng is number && data.lng >= -180 && data.lng <= 180
+          )
+        );
+    }
+
+    function isActiveClientPriceVersion(versionId) {
+      return exists(/databases/$(database)/documents/clientPriceControl/current) &&
+        get(/databases/$(database)/documents/clientPriceControl/current).data.activeVersionId == versionId;
+    }
+
+    function validClientPriceAudit(data) {
+      return data.keys().hasAll(['action', 'createdAt', 'createdBy']) &&
+        data.keys().hasOnly([
+          'action', 'createdAt', 'createdBy', 'destinationId',
+          'before', 'after', 'version', 'sourceFile', 'rowCount'
+        ]) &&
+        data.action in [
+          'draft_saved', 'destination_added', 'destination_updated',
+          'destination_deleted', 'import_applied', 'published', 'restored'
+        ] &&
+        data.createdAt == request.time &&
+        data.createdBy == request.auth.uid;
+    }
+
     // User roles collection - Admin only
     match /user_roles/{userId} {
       allow read: isAdmin() || isOwner(userId);
@@ -210,6 +310,100 @@ service cloud.firestore {
       allow create: isManagerOrAbove();
       allow update: isManagerOrAbove();
       allow delete: isAdmin();
+    }
+
+    // Client prices: editor-only drafts, history, and immutable audit entries.
+    match /clientPriceDrafts/{draftId} {
+      allow read: canManageClientPrices();
+      allow create, update: canManageClientPrices() &&
+        request.resource.data.keys().hasOnly([
+          'baseVersion', 'destinationCount', 'updatedAt', 'updatedBy'
+        ]) &&
+        request.resource.data.destinationCount is int &&
+        request.resource.data.destinationCount >= 0 &&
+        request.resource.data.destinationCount <= 150 &&
+        request.resource.data.updatedAt == request.time &&
+        request.resource.data.updatedBy == request.auth.uid;
+      allow delete: false;
+
+      match /destinations/{destinationId} {
+        allow read: canManageClientPrices();
+        allow create, update: canManageClientPrices() &&
+          validClientPriceDraft(request.resource.data, destinationId);
+        allow delete: canManageClientPrices();
+      }
+    }
+
+    match /clientPriceDraftRevisions/{revisionId} {
+      allow read: canManageClientPrices();
+      allow create: canManageClientPrices() &&
+        request.resource.data.keys().hasOnly([
+          'createdAt', 'createdBy', 'destinationCount', 'source', 'baseVersion'
+        ]) &&
+        request.resource.data.createdAt == request.time &&
+        request.resource.data.createdBy == request.auth.uid &&
+        request.resource.data.destinationCount is int &&
+        request.resource.data.destinationCount >= 0 &&
+        request.resource.data.destinationCount <= 150;
+      allow update, delete: false;
+
+      match /destinations/{destinationId} {
+        allow read: canManageClientPrices();
+        allow create: canManageClientPrices() &&
+          validClientPriceDraft(request.resource.data, destinationId);
+        allow update, delete: false;
+      }
+    }
+
+    match /clientPriceVersionMeta/{versionId} {
+      allow read: canManageClientPrices();
+      allow create: canManageClientPrices() &&
+        request.resource.data.keys().hasOnly([
+          'version', 'createdAt', 'createdBy', 'destinationCount',
+          'sourceDraftRevisionId', 'restoredFrom'
+        ]) &&
+        request.resource.data.version is int && request.resource.data.version > 0 &&
+        request.resource.data.createdAt == request.time &&
+        request.resource.data.createdBy == request.auth.uid &&
+        request.resource.data.destinationCount is int &&
+        request.resource.data.destinationCount > 0 &&
+        request.resource.data.destinationCount <= 450;
+      allow update, delete: false;
+    }
+
+    match /clientPriceVersions/{versionId}/destinations/{destinationId} {
+      allow get, list: canManageClientPrices() || isActiveClientPriceVersion(versionId);
+      allow create: canManageClientPrices() &&
+        validPublicClientPrice(request.resource.data, destinationId);
+      allow update, delete: false;
+    }
+
+    match /clientPriceControl/{controlId} {
+      allow get: controlId == 'current';
+      allow list: false;
+      allow create: controlId == 'current' && canManageClientPrices() &&
+        request.resource.data.keys().hasOnly([
+          'activeVersionId', 'version', 'currency', 'publishedAt'
+        ]) &&
+        request.resource.data.version == 1 &&
+        request.resource.data.currency == 'EGP' &&
+        request.resource.data.publishedAt == request.time &&
+        getAfter(/databases/$(database)/documents/clientPriceVersionMeta/$(request.resource.data.activeVersionId)).data.version == 1;
+      allow update: controlId == 'current' && canManageClientPrices() &&
+        request.resource.data.keys().hasOnly([
+          'activeVersionId', 'version', 'currency', 'publishedAt'
+        ]) &&
+        request.resource.data.version == resource.data.version + 1 &&
+        request.resource.data.currency == 'EGP' &&
+        request.resource.data.publishedAt == request.time &&
+        getAfter(/databases/$(database)/documents/clientPriceVersionMeta/$(request.resource.data.activeVersionId)).data.version == request.resource.data.version;
+      allow delete: false;
+    }
+
+    match /clientPriceAudit/{eventId} {
+      allow read: canManageClientPrices();
+      allow create: canManageClientPrices() && validClientPriceAudit(request.resource.data);
+      allow update, delete: false;
     }
 
     // Deny all other access
