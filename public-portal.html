@@ -1,0 +1,137 @@
+<!doctype html>
+<html lang="ar" dir="rtl">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width,initial-scale=1">
+  <meta name="theme-color" content="#102b47">
+  <meta name="description" content="احسب السعر التقديري للنقل البري مع SAFATRANS، واختر وجهتك ونوع الحاوية بسهولة.">
+  <title>SAFATRANS | نقل بري يربط أعمالك بوجهتها</title>
+  <link rel="icon" href="logo.png" type="image/png">
+  <link rel="stylesheet" href="vendor/leaflet/leaflet.css">
+  <link rel="stylesheet" href="css/public-portal.css">
+  <script src="vendor/leaflet/leaflet.js" defer></script>
+  <script type="module" src="js/public-portal.js"></script>
+</head>
+<body>
+  <header class="site-header" id="top">
+    <a class="site-brand" href="#top" aria-label="SAFATRANS الصفحة الرئيسية"><img src="logo.png" alt="شعار SAFATRANS"></a>
+    <button class="menu-toggle" id="menuToggle" type="button" aria-label="فتح القائمة" aria-expanded="false"><span></span><span></span><span></span></button>
+    <nav class="site-nav" id="siteNav" aria-label="القائمة الرئيسية">
+      <a href="#services">خدماتنا</a>
+      <a href="#destinations">الوجهات</a>
+      <a href="#calculator">حاسبة الأسعار</a>
+      <a href="#contact">تواصل معنا</a>
+    </nav>
+    <a class="header-cta" href="#calculator"><span>احسب سعر النقل</span><b aria-hidden="true">↙</b></a>
+  </header>
+
+  <main>
+    <section class="hero-section" aria-labelledby="heroTitle">
+      <div class="hero-copy reveal">
+        <p class="hero-kicker"><span></span> حلول النقل والخدمات اللوجستية</p>
+        <h1 id="heroTitle">نقل بري يربط أعمالك <em>بوجهتها</em></h1>
+        <p class="hero-description">اختر وجهتك ونوع الحاوية، واعرف السعر التقديري بكل وضوح قبل التواصل مع فريقنا.</p>
+        <div class="hero-actions">
+          <a class="button button-orange" href="#calculator">احسب سعر النقل <span aria-hidden="true">←</span></a>
+          <a class="text-action" href="#services">اكتشف خدماتنا <span aria-hidden="true">↓</span></a>
+        </div>
+        <div class="hero-assurance"><span class="assurance-line"></span><span>خيارات واضحة · تواصل مباشر · أسعار منشورة</span></div>
+      </div>
+      <div class="hero-visual reveal" aria-label="شاحنة نقل حاويات على الطريق">
+        <img class="hero-photo" src="pictures/inland.jpg" alt="مشهد من خدمات النقل البري" fetchpriority="high">
+        <div class="hero-photo-shade"></div>
+        <div class="hero-photo-caption"><span class="caption-dot"></span><span>نقل بري داخل مصر</span></div>
+      </div>
+      <div class="hero-scroll" aria-hidden="true"><span></span> اكتشف المزيد</div>
+    </section>
+
+    <section class="trust-strip" aria-label="قيم الخدمة">
+      <span>وجهات منشورة ومعتمدة</span><i></i><span>أسعار واضحة قبل التواصل</span><i></i><span>تواصل مباشر مع المكتب</span>
+    </section>
+
+    <section class="section services-section" id="services" aria-labelledby="servicesTitle">
+      <div class="section-heading reveal">
+        <div><p class="eyebrow">خدمات SAFATRANS</p><h2 id="servicesTitle">نقل وخدمات لوجستية<br><em>لأعمالك في مصر</em></h2></div>
+        <p>حلول عملية للنقل البري واحتياجات الأعمال، مع معلومات واضحة تساعدك على بدء التخطيط.</p>
+      </div>
+      <div class="service-grid">
+        <article class="service-card reveal"><span class="service-icon icon-road" aria-hidden="true"><svg viewBox="0 0 48 48"><path d="M17 5 10 43M31 5l7 38M24 9v7m0 7v7m0 7v5"/></svg></span><span class="service-number">01</span><h3>النقل البري</h3><p>خدمة نقل بري للوجهات المتاحة في حاسبة الأسعار.</p></article>
+        <article class="service-card reveal"><span class="service-icon icon-box" aria-hidden="true"><svg viewBox="0 0 48 48"><path d="m6 14 18-9 18 9v21l-18 9-18-9zM6 14l18 9 18-9M24 23v21M15 9l18 10"/></svg></span><span class="service-number">02</span><h3>الخدمات اللوجستية</h3><p>حلول لوجستية تدعم احتياجات الشركات وسلاسل الإمداد.</p></article>
+        <article class="service-card reveal"><span class="service-icon icon-crane" aria-hidden="true"><svg viewBox="0 0 48 48"><path d="M7 42h34M12 42V9h24M12 14h23l-8 7H12m17-7v13m0 0-4 4m4-4 4 4M8 9h8m15 0v5"/></svg></span><span class="service-number">03</span><h3>المشروعات الكبيرة</h3><p>تنسيق خدمات لوجستية تناسب طبيعة المشروع ومتطلباته.</p></article>
+      </div>
+    </section>
+
+    <section class="section destinations-section" id="destinations" aria-labelledby="destinationsTitle">
+      <div class="section-heading reveal">
+        <div><p class="eyebrow">تغطية الوجهات</p><h2 id="destinationsTitle">وجهتك التالية<br><em>على الخريطة</em></h2></div>
+        <p>تظهر على الخريطة الوجهات المنشورة ذات الإحداثيات المعتمدة. اضغط على العلامة لبدء حساب السعر.</p>
+      </div>
+      <div class="map-card reveal">
+        <div id="egyptMap" class="egypt-map" role="application" aria-label="خريطة مصر التفاعلية"></div>
+        <div class="map-overlay map-title"><span class="map-pin-symbol" aria-hidden="true">⌖</span><span>وجهات SAFATRANS</span></div>
+        <div id="mapEmptyMessage" class="map-empty-message" hidden>لا توجد إحداثيات معتمدة للوجهات المنشورة حتى الآن. يمكنك اختيارها من حاسبة الأسعار.</div>
+        <div class="map-caption"><span>جمهورية مصر العربية</span><span class="map-attribution">حدود جغرافية عامة · Natural Earth</span></div>
+      </div>
+    </section>
+
+    <section class="section calculator-section" id="calculator" aria-labelledby="calculatorTitle">
+      <div class="calculator-heading reveal"><p class="eyebrow">حاسبة أسعار النقل</p><h2 id="calculatorTitle">خطوتان لمعرفة <em>السعر التقديري</em></h2><p>اختر الوجهة ونوع الحاوية. السعر المنشور لا يشمل الإيصالات الرسمية.</p></div>
+      <div class="calculator-card reveal">
+        <div class="calculator-form">
+          <label class="field-label" for="destinationSelect">الوجهة</label>
+          <select id="destinationSelect" required><option value="">جارٍ تحميل الوجهات…</option></select>
+          <label class="field-label" for="containerSelect">نوع الحاوية</label>
+          <select id="containerSelect" required>
+            <option value="light8t20ft">خفيف 8 طن / 20 قدم</option>
+            <option value="container40ft">حاوية 40 قدم</option>
+            <option value="two20ft">عدد 2 حاوية 20 قدم</option>
+          </select>
+          <label class="field-label" for="quantityInput">العدد</label>
+          <div class="quantity-control"><button type="button" id="decreaseQuantity" aria-label="تقليل العدد">−</button><input id="quantityInput" type="number" min="1" max="99" step="1" value="1" inputmode="numeric"><button type="button" id="increaseQuantity" aria-label="زيادة العدد">+</button></div>
+          <p id="calculatorHint" class="calculator-hint" aria-live="polite">حمّل الوجهات المنشورة لبدء الحساب.</p>
+        </div>
+        <div class="price-result" aria-live="polite" aria-atomic="true">
+          <div class="result-label"><span class="result-icon" aria-hidden="true">↗</span><span>السعر الإجمالي التقديري</span></div>
+          <strong id="totalPrice" class="total-price">—</strong>
+          <span id="resultDetails" class="result-details">اختر وجهة ونوع الحاوية</span>
+          <span class="receipt-note">الأسعار لا تشمل الإيصالات الرسمية.</span>
+          <button id="whatsAppButton" class="button button-whatsapp" type="button" disabled aria-disabled="true" title="سيُفعّل بعد اعتماد رقم WhatsApp">التواصل عبر WhatsApp <span aria-hidden="true">↗</span></button>
+          <small id="whatsAppStatus" class="whatsapp-status">رقم WhatsApp قيد التأكيد.</small>
+        </div>
+      </div>
+      <p id="priceLoadState" class="price-load-state" role="status" aria-live="polite"></p>
+    </section>
+
+    <section class="steps-section" aria-labelledby="stepsTitle">
+      <div class="section steps-inner">
+        <div class="steps-heading reveal"><p class="eyebrow">كيف تبدأ؟</p><h2 id="stepsTitle">طريقك للخدمة<br><em>بثلاث خطوات</em></h2></div>
+        <ol class="steps-list">
+          <li class="step-item reveal"><span class="step-index">01</span><div><h3>اختر الوجهة</h3><p>استخدم الخريطة أو قائمة الوجهات المنشورة.</p></div><span class="step-arrow" aria-hidden="true">←</span></li>
+          <li class="step-item reveal"><span class="step-index">02</span><div><h3>احسب السعر</h3><p>حدد نوع الحاوية والعدد لعرض الإجمالي التقديري.</p></div><span class="step-arrow" aria-hidden="true">←</span></li>
+          <li class="step-item reveal"><span class="step-index">03</span><div><h3>تواصل مع المكتب</h3><p>راجع التفاصيل وأكمل استفسارك عبر قناة التواصل المعتمدة.</p></div><span class="step-arrow" aria-hidden="true">✓</span></li>
+        </ol>
+      </div>
+    </section>
+
+    <section class="contact-section section" id="contact" aria-labelledby="contactTitle">
+      <div class="contact-card reveal">
+        <div class="contact-copy"><p class="eyebrow">تواصل معنا</p><h2 id="contactTitle">نحن هنا<br><em>لمساعدتك</em></h2><p>للتأكد من توفر الخدمة أو تفاصيل السعر، تواصل مباشرة مع المكتب.</p><a class="button button-orange" href="tel:+201555541485">اتصل بالمكتب <span aria-hidden="true">↗</span></a></div>
+        <div class="contact-details">
+          <div><span>الهاتف المحمول</span><a href="tel:+201555541485" dir="ltr">+20 1555541485</a></div>
+          <div><span>الهاتف الأرضي</span><a href="tel:+2034842651" dir="ltr">+20 3 4842651</a></div>
+          <div><span>العنوان الظاهر بالموقع</span><strong>5 بحري بك البن · الإسكندرية، مصر</strong></div>
+          <div><span>البريد الإلكتروني</span><a href="mailto:omar_sabry11@yahoo.com" dir="ltr">omar_sabry11@yahoo.com</a></div>
+          <div class="contact-pending"><span>WhatsApp</span><strong>سيُضاف الرابط بعد تأكيد الرقم.</strong></div>
+        </div>
+      </div>
+    </section>
+  </main>
+
+  <footer class="site-footer">
+    <a class="footer-brand" href="#top"><img src="logo.png" alt="SAFATRANS"></a>
+    <p>حلول النقل والخدمات اللوجستية في مصر.</p>
+    <small>© SAFATRANS · جميع الحقوق محفوظة</small>
+  </footer>
+  <button id="backToTop" class="back-to-top" type="button" aria-label="العودة إلى أعلى الصفحة">↑</button>
+</body>
+</html>

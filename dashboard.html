@@ -363,6 +363,11 @@ button:hover,
     <p>اختر الصفحة المناسبة، وتابع آخر حركة للجراج والمخزن لحظيًا من خلال Firestore بدون الحاجة لإعادة تحميل الصفحة.</p>
 
     <div class="grid nav-grid">
+      <article class="nav-card highlight" id="clientPricesCard" hidden>
+        <h3>إدارة أسعار العملاء</h3>
+        <p>إدارة مسودات الأسعار ومراجعة التغييرات ونشر الإصدار المعتمد للعملاء.</p>
+        <button data-target="client-prices.html">فتح وحدة أسعار العملاء</button>
+      </article>
       <article class="nav-card">
         <h3>أسعار الحاويات</h3>
         <p>إدارة الأسعار والبيانات المرجعية المرتبطة بالتشغيل اليومي.</p>
@@ -419,6 +424,11 @@ button:hover,
 </div>
 
 <script>
+  function isOriginalAdminEmail(email) {
+    return ['ahmed@safatrans.com', 'hesham@safatrans.com', 'omar@safatrans.com', 'sabry@safatrans.com']
+      .includes(String(email || '').trim().toLowerCase());
+  }
+
   window.goToDashboardPage = function(target) {
     if (!target) return;
     window.location.href = target;
@@ -477,12 +487,22 @@ onAuthStateChanged(auth, async user => {
     const db = getFirestore(app);
     const roleDoc = await getDoc(doc(db, 'user_roles', user.uid));
     if (roleDoc.exists()) {
-      sessionStorage.setItem("userRole", roleDoc.data().role || "viewer");
+      const roleData = roleDoc.data();
+      sessionStorage.setItem("userRole", roleData.role || "viewer");
+      sessionStorage.setItem("userPages", JSON.stringify(roleData.pages || {}));
+      if (roleData.pages?.client_prices === 'edit' || roleData.role === 'admin' || isOriginalAdminEmail(user.email)) {
+        document.getElementById('clientPricesCard').hidden = false;
+      }
     } else {
       sessionStorage.setItem("userRole", "viewer");
+      sessionStorage.setItem("userPages", "{}");
+      if (isOriginalAdminEmail(user.email)) {
+        document.getElementById('clientPricesCard').hidden = false;
+      }
     }
   } catch {
     sessionStorage.setItem("userRole", "viewer");
+    sessionStorage.setItem("userPages", "{}");
   }
 });
 </script>

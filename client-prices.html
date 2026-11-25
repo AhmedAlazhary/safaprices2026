@@ -1,0 +1,165 @@
+<!doctype html>
+<html lang="ar" dir="rtl">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width,initial-scale=1">
+  <meta name="theme-color" content="#102b47">
+  <title>إدارة أسعار العملاء | SAFATRANS</title>
+  <link rel="icon" href="logo.png" type="image/png">
+  <link rel="stylesheet" href="css/client-prices.css">
+  <script src="https://cdn.jsdelivr.net/npm/xlsx@0.18.5/dist/xlsx.full.min.js" defer></script>
+  <script type="module" src="js/auth-guard-module.js"></script>
+  <script type="module" src="js/client-prices-admin.js"></script>
+</head>
+<body>
+  <header class="admin-header">
+    <a class="brand" href="dashboard.html" aria-label="العودة إلى لوحة التحكم">
+      <img src="logo.png" alt="شعار SAFATRANS">
+      <span>إدارة أسعار العملاء</span>
+    </a>
+    <div class="header-actions">
+      <a class="button button-quiet" href="dashboard.html">لوحة التحكم</a>
+      <button id="logoutButton" class="button button-quiet" type="button">تسجيل الخروج</button>
+    </div>
+  </header>
+
+  <main class="admin-shell">
+    <section class="intro-card">
+      <div>
+        <p class="eyebrow">SAFATRANS · بوابة إدارة العملاء</p>
+        <h1>أسعار واضحة، ونشر تحت سيطرتك</h1>
+        <p class="intro-copy">حرّر الأسعار في مسودة مستقلة، راجعها، ثم انشر إصدارًا كاملًا للعملاء عند اعتمادك.</p>
+      </div>
+      <div class="status-stack" aria-live="polite">
+        <span class="status-label">حالة المسودة</span>
+        <strong id="draftStatus" class="status-pill">جارٍ التحقق…</strong>
+        <span id="publishedStatus" class="published-meta">لا يوجد إصدار منشور بعد</span>
+      </div>
+    </section>
+
+    <section id="accessMessage" class="notice notice-error" hidden>
+      هذا الحساب لا يملك صلاحية <strong>edit</strong> لوحدة أسعار العملاء.
+    </section>
+    <section id="appMessage" class="notice" role="status" aria-live="polite" hidden></section>
+
+    <section id="editorApp" hidden>
+      <div class="toolbar-card">
+        <div class="toolbar-copy">
+          <h2>مسودة الأسعار</h2>
+          <p>العملة: الجنيه المصري (EGP). التعديلات لا تظهر للعملاء حتى تنشرها.</p>
+        </div>
+        <div class="toolbar-actions">
+          <button id="addDestinationButton" class="button button-outline" type="button">＋ إضافة وجهة</button>
+          <label class="button button-outline file-button" for="importFile">استيراد Excel أو PDF</label>
+          <input id="importFile" type="file" accept=".xlsx,.xls,.csv,.pdf" hidden>
+          <button id="saveDraftButton" class="button button-primary" type="button">حفظ المسودة</button>
+          <button id="previewButton" class="button button-light" type="button">معاينة البوابة</button>
+          <button id="publishButton" class="button button-publish" type="button">نشر للعملاء</button>
+        </div>
+      </div>
+
+      <section id="importPanel" class="import-panel" hidden aria-labelledby="importHeading">
+        <div class="section-heading">
+          <div>
+            <p class="eyebrow">مراجعة قبل الحفظ</p>
+            <h2 id="importHeading">معاينة البيانات المستوردة</h2>
+          </div>
+          <button id="closeImportButton" class="icon-button" type="button" aria-label="إغلاق المعاينة">×</button>
+        </div>
+        <p id="importSummary" class="muted"></p>
+        <div id="columnMapping" class="mapping-grid" hidden></div>
+        <div id="importIssues" class="import-issues" aria-live="polite"></div>
+        <div class="table-wrap import-table-wrap">
+          <table class="data-table import-table">
+            <thead><tr><th>الحالة</th><th>الوجهة</th><th>خفيف 8 طن / 20 قدم</th><th>40 قدم</th><th>2 × 20 قدم</th></tr></thead>
+            <tbody id="importPreviewBody"></tbody>
+          </table>
+        </div>
+        <div class="import-actions">
+          <button id="mergeImportButton" class="button button-outline" type="button">دمج في المسودة</button>
+          <button id="replaceImportButton" class="button button-primary" type="button">استبدال المسودة بالمعاينة</button>
+        </div>
+      </section>
+
+      <section class="table-card" aria-labelledby="destinationsHeading">
+        <div class="section-heading table-heading">
+          <div>
+            <p class="eyebrow">البيانات التي ستراجعها قبل النشر</p>
+            <h2 id="destinationsHeading">الوجهات والأسعار</h2>
+          </div>
+          <label class="search-box"><span class="visually-hidden">بحث بالوجهة</span><input id="destinationSearch" type="search" placeholder="ابحث عن وجهة…"></label>
+        </div>
+        <div class="table-wrap">
+          <table class="data-table">
+            <thead>
+              <tr>
+                <th>الوجهة</th>
+                <th>خفيف 8 طن / 20 قدم <small>EGP</small></th>
+                <th>حاوية 40 قدم <small>EGP</small></th>
+                <th>حاويتان 20 قدم <small>EGP</small></th>
+                <th>إحداثيات الخريطة</th>
+                <th><span class="visually-hidden">إجراءات</span></th>
+              </tr>
+            </thead>
+            <tbody id="destinationRows"></tbody>
+          </table>
+          <div id="emptyState" class="empty-state" hidden>
+            <span class="empty-icon" aria-hidden="true">⌖</span>
+            <strong>لا توجد وجهات في المسودة بعد</strong>
+            <p>أضف وجهة أو استورد ملفًا. الأسعار المنشورة لا تتغير قبل النشر.</p>
+            <button class="button button-primary" type="button" id="emptyAddButton">إضافة أول وجهة</button>
+          </div>
+        </div>
+      </section>
+
+      <section class="bottom-grid">
+        <article class="panel-card">
+          <div class="section-heading">
+            <div><p class="eyebrow">مراجعة منفصلة</p><h2>الإصدار العام الحالي</h2></div>
+          </div>
+          <p id="releaseSummary" class="muted">لا يوجد إصدار منشور. يمكنك مراجعة المسودة ثم نشرها.</p>
+          <a class="text-link" href="public-portal.html" target="_blank" rel="noopener">فتح بوابة العملاء في تبويب جديد ↗</a>
+        </article>
+        <article class="panel-card history-card">
+          <div class="section-heading">
+            <div><p class="eyebrow">الإصدارات محفوظة</p><h2>سجل الإصدارات</h2></div>
+          </div>
+          <div id="versionHistory" class="version-list"><p class="muted">سيظهر السجل بعد أول نشر.</p></div>
+        </article>
+      </section>
+
+      <p class="legal-note">الأسعار لا تشمل الإيصالات الرسمية. لا يظهر للعملاء إلا الإصدار المنشور.</p>
+    </section>
+  </main>
+
+  <dialog id="publishDialog" class="confirm-dialog">
+    <form method="dialog">
+      <span class="dialog-mark" aria-hidden="true">!</span>
+      <h2>نشر إصدار جديد؟</h2>
+      <p id="publishDialogSummary">سيُعرض الإصدار المحدّث لجميع زوار بوابة العملاء.</p>
+      <div class="dialog-actions">
+        <button class="button button-light" value="cancel">مراجعة لاحقًا</button>
+        <button id="confirmPublishButton" class="button button-publish" value="confirm">تأكيد النشر</button>
+      </div>
+    </form>
+  </dialog>
+
+  <dialog id="previewDialog" class="preview-dialog">
+    <div class="dialog-head"><h2>معاينة الأسعار قبل النشر</h2><button id="closePreviewButton" class="icon-button" type="button" aria-label="إغلاق">×</button></div>
+    <p class="muted">هذه معاينة محلية للمسودة الحالية، وليست بيانات منشورة.</p>
+    <div class="table-wrap"><table class="data-table"><thead><tr><th>الوجهة</th><th>خفيف / 20 قدم</th><th>40 قدم</th><th>2 × 20 قدم</th></tr></thead><tbody id="previewRows"></tbody></table></div>
+    <p class="legal-note">الأسعار لا تشمل الإيصالات الرسمية. السعر التقديري يحتاج تأكيد المكتب.</p>
+  </dialog>
+
+  <script type="module">
+    document.addEventListener('click', async event => {
+      const button = event.target.closest('#logoutButton');
+      if (!button) return;
+      const { auth, signOut } = await import('./firebase-config.js');
+      await signOut(auth);
+      sessionStorage.clear();
+      location.href = 'index.html';
+    });
+  </script>
+</body>
+</html>

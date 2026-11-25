@@ -21,6 +21,7 @@ export const PAGE_REGISTRY = {
     "fleet":          { id: "fleet",          title: "إدارة الأسطول",       file: "fleet-management-system.html",    default: "view" },
     "inventory":      { id: "inventory",      title: "المخزون والأصول",     file: "inventory-assets-system.html",    default: "view" },
     "prices":         { id: "prices",         title: "أسعار الحاويات",      file: "prices.html",                     default: "view" },
+    "client_prices":  { id: "client_prices",  title: "أسعار العملاء",       file: "client-prices.html",              default: null },
     "daily":          { id: "daily",          title: "الشغل اليومي",        file: "daily.html",                      default: "view" },
     "drivers_roles":  { id: "drivers_roles",  title: "أدوار السواقين",      file: "drivers-roles-page.html",         default: "view" },
     "treasury":       { id: "treasury",       title: "الخزنة والتشغيل",     file: "treasury-system.html",            default: "view" },

@@ -275,6 +275,16 @@ export function protectLinks() {
 
 // التحقق من الوصول للصفحة
 function hasPageAccess(page, userRole) {
+    if (page === 'client-prices.html') {
+        if (userRole === 'admin') return true;
+        try {
+            const pages = JSON.parse(sessionStorage.getItem('userPages') || '{}');
+            return pages.client_prices === 'edit';
+        } catch (error) {
+            return false;
+        }
+    }
+
     const PROTECTED_ROUTES = {
         'admin-panel.html': ['admin'],
         'dashboard.html': ['admin', 'manager'],
