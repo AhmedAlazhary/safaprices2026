@@ -2,6 +2,7 @@ import {
   auth, db, onAuthStateChanged, signOut, doc, getDoc, getDocs,
   collection, query, orderBy, limit, serverTimestamp, runTransaction
 } from '../firebase-config.js';
+import { createPublicPriceRelease, validatePublicPriceRelease } from './public-price-schema.mjs';
 
 const ADMIN_EMAILS = new Set([
   'ahmed@safatrans.com', 'hesham@safatrans.com',
@@ -9,10 +10,14 @@ const ADMIN_EMAILS = new Set([
 ]);
 const MAX_DESTINATIONS = 150;
 const $ = (selector) => document.querySelector(selector);
+const escapeHtmlAttribute = (value) => String(value).replace(/[&<>"']/g, (character) => ({
+  '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;'
+}[character]));
 const state = {
-  user: null, rows: [], baselineRows: [], draftMeta: null,
+  user: null, permission: null, rows: [], baselineRows: [], draftMeta: null,
   activeRelease: null, versions: [], importRows: [], importSource: '',
   importIssues: [], importColumns: [], importHeaders: [],
+  coordinateRows: [], coordinateMatches: new Map(), sort: { field: 'name', direction: 1 },
   restoringFrom: null, busy: false
 };
 
@@ -29,12 +34,19 @@ function showMessage(message, tone = 'info') {
   showMessage.timer = window.setTimeout(() => { el.hidden = true; }, 6500);
 }
 
+function canEdit() { return state.permission === 'edit'; }
+
 function setBusy(value, message) {
   state.busy = value;
-  for (const id of ['addDestinationButton', 'saveDraftButton', 'previewButton', 'publishButton']) {
+  for (const id of ['addDestinationButton', 'saveDraftButton', 'publishButton', 'applyCoordinatesButton']) {
     const button = document.getElementById(id);
-    if (button) button.disabled = value;
+    if (button) button.disabled = value || !canEdit();
   }
+  for (const id of ['importLabel', 'coordinateImportLabel']) document.getElementById(id)?.classList.toggle('is-disabled', value || !canEdit());
+  const exportButton = document.getElementById('exportExcelButton');
+  if (exportButton) exportButton.disabled = value;
+  const previewButton = document.getElementById('previewButton');
+  if (previewButton) previewButton.disabled = value;
   if (message) showMessage(message, value ? 'info' : 'error');
 }
 
@@ -75,13 +87,15 @@ function readRolePermission(roleData) {
   return roleData?.pages?.client_prices || '';
 }
 
-async function checkEditor(user) {
+async function getPagePermission(user) {
   const email = String(user.email || '').trim().toLowerCase();
-  if (ADMIN_EMAILS.has(email)) return true;
+  if (ADMIN_EMAILS.has(email)) return 'edit';
   const roleSnapshot = await getDoc(doc(db, 'user_roles', user.uid));
-  if (!roleSnapshot.exists()) return false;
+  if (!roleSnapshot.exists()) return null;
   const roleData = roleSnapshot.data();
-  return roleData.role === 'admin' || readRolePermission(roleData) === 'edit';
+  if (roleData.role === 'admin') return 'edit';
+  const pagePermission = readRolePermission(roleData);
+  return pagePermission === 'view' || pagePermission === 'edit' ? pagePermission : null;
 }
 
 function makeRow(data = {}) {
@@ -174,33 +188,47 @@ function rowToPublic(row, version) {
 function renderRows() {
   const body = $('#destinationRows');
   const search = normalizeName($('#destinationSearch').value);
+  const coordinateFilter = $('#coordinateFilter').value;
   body.replaceChildren();
-  const visible = state.rows.filter((row) => !search || normalizeName(row.name).includes(search));
+  const visible = state.rows.filter((row) => {
+    const hasCoordinates = row.coordinatesVerified && Number.isFinite(Number(row.lat)) && Number.isFinite(Number(row.lng));
+    return (!search || normalizeName(row.name).includes(search)) &&
+      (coordinateFilter === 'all' || (coordinateFilter === 'mapped' ? hasCoordinates : !hasCoordinates));
+  }).sort((a, b) => {
+    const left = a[state.sort.field]; const right = b[state.sort.field];
+    const comparison = state.sort.field === 'name'
+      ? String(left || '').localeCompare(String(right || ''), 'ar-EG')
+      : (Number(left) || 0) - (Number(right) || 0);
+    return comparison * state.sort.direction;
+  });
   $('#emptyState').hidden = state.rows.length > 0;
   for (const row of visible) {
+    const safeId = escapeHtmlAttribute(row.destinationId);
     const tr = document.createElement('tr');
     const name = document.createElement('td');
-    name.innerHTML = `<input class="name-input" data-field="name" data-id="${row.destinationId}" aria-label="اسم الوجهة" maxlength="120">`;
-    name.querySelector('input').value = row.name;
+    name.innerHTML = `<input class="name-input" data-field="name" data-id="${safeId}" aria-label="اسم الوجهة" maxlength="120">`;
+      name.querySelector('input').value = row.name;
+      name.querySelector('input').disabled = !canEdit();
     tr.append(name);
     for (const [field, label] of [
       ['light8t20ft', 'سعر الخفيف 8 طن / 20 قدم'],
       ['container40ft', 'سعر حاوية 40 قدم'], ['two20ft', 'سعر حاويتين 20 قدم']
     ]) {
       const td = document.createElement('td');
-      td.innerHTML = `<input class="price-input" inputmode="decimal" data-field="${field}" data-id="${row.destinationId}" aria-label="${label}" placeholder="EGP">`;
+      td.innerHTML = `<input class="price-input" inputmode="decimal" data-field="${field}" data-id="${safeId}" aria-label="${label}" placeholder="EGP">`;
       td.querySelector('input').value = row[field];
+      td.querySelector('input').disabled = !canEdit();
       tr.append(td);
     }
     const geo = document.createElement('td');
     const verified = row.coordinatesVerified && Number.isFinite(Number(row.lat)) && Number.isFinite(Number(row.lng));
-    geo.innerHTML = `<details class="coordinate-details" data-id="${row.destinationId}">
+    geo.innerHTML = `<details class="coordinate-details" data-id="${safeId}">
       <summary class="map-status ${verified ? 'is-ready' : ''}">${verified ? 'معتمدة · تظهر بالخريطة' : 'غير محددة · تبقى بالحاسبة'}</summary>
       <div class="coordinate-fields">
-        <label>خط العرض <input inputmode="decimal" data-field="lat" data-id="${row.destinationId}" placeholder="lat"></label>
-        <label>خط الطول <input inputmode="decimal" data-field="lng" data-id="${row.destinationId}" placeholder="lng"></label>
-        <label class="source-field">مصدر التحقق <input data-field="coordinateSource" data-id="${row.destinationId}" placeholder="مصدر موثوق"></label>
-        <label class="verify-field"><input type="checkbox" data-field="coordinatesVerified" data-id="${row.destinationId}" ${row.coordinatesVerified ? 'checked' : ''}> أؤكد أن الإحداثيات موثوقة</label>
+        <label>خط العرض <input inputmode="decimal" data-field="lat" data-id="${safeId}" placeholder="lat" ${canEdit() ? '' : 'disabled'}></label>
+        <label>خط الطول <input inputmode="decimal" data-field="lng" data-id="${safeId}" placeholder="lng" ${canEdit() ? '' : 'disabled'}></label>
+        <label class="source-field">مصدر التحقق <input data-field="coordinateSource" data-id="${safeId}" placeholder="مصدر موثوق" ${canEdit() ? '' : 'disabled'}></label>
+        <label class="verify-field"><input type="checkbox" data-field="coordinatesVerified" data-id="${safeId}" ${row.coordinatesVerified ? 'checked' : ''} ${canEdit() ? '' : 'disabled'}> أؤكد أن الإحداثيات موثوقة</label>
       </div>
     </details>`;
     for (const [field, value] of [['lat', row.lat], ['lng', row.lng], ['coordinateSource', row.coordinateSource]]) {
@@ -208,26 +236,30 @@ function renderRows() {
     }
     tr.append(geo);
     const action = document.createElement('td');
-    action.innerHTML = `<button class="delete-row" data-delete="${row.destinationId}" type="button">حذف</button>`;
+    action.innerHTML = `<button class="delete-row" data-delete="${safeId}" type="button" ${canEdit() ? '' : 'disabled'}>حذف</button>`;
     tr.append(action);
     body.append(tr);
   }
-  $('#saveDraftButton').disabled = state.busy || !isDirty();
-  $('#publishButton').disabled = state.busy || !state.rows.length || isDirty();
+  $('#saveDraftButton').disabled = state.busy || !canEdit() || !isDirty();
+  $('#publishButton').disabled = state.busy || !canEdit() || !state.rows.length || isDirty();
   $('#draftStatus').textContent = isDirty() ? 'تغييرات غير محفوظة' : (state.draftMeta ? 'مسودة محفوظة' : 'مسودة فارغة');
+  if (state.draftMeta && !isDirty()) {
+    const who = state.draftMeta.updatedByLabel || state.draftMeta.updatedByEmail || state.draftMeta.updatedBy || '';
+    $('#draftStatus').title = `${formatDate(state.draftMeta.updatedAt)} · ${who}`;
+  }
 }
 
 function renderRelease() {
   const published = state.activeRelease;
   const pill = $('#draftStatus');
   if (!published) {
-    $('#publishedStatus').textContent = 'لا يوجد إصدار منشور بعد';
-    $('#releaseSummary').textContent = 'لا يوجد إصدار منشور. يمكنك مراجعة المسودة ثم نشرها.';
+    $('#publishedStatus').textContent = 'لم يُولّد ملف أسعار بعد';
+    $('#releaseSummary').textContent = 'لم يُولّد ملف JSON بعد. راجع المسودة ثم أنشئ إصدارًا للتنزيل.';
     pill.classList.remove('is-published');
     return;
   }
-  $('#publishedStatus').textContent = `الإصدار ${published.version} · ${formatDate(published.publishedAt)}`;
-  $('#releaseSummary').textContent = `الإصدار النشط ${published.version} · ${published.currency || 'EGP'} · ${formatDate(published.publishedAt)}.`;
+  $('#publishedStatus').textContent = `آخر JSON مولّد: ${published.version} · ${formatDate(published.publishedAt)}`;
+  $('#releaseSummary').textContent = `آخر إصدار JSON مولّد ${published.version} · ${published.currency || 'EGP'} · ${formatDate(published.publishedAt)}. راجع الملف المنزّل وأضفه إلى assets/data/client-prices.json لنشره.`;
   pill.classList.add('is-published');
 }
 
@@ -238,8 +270,12 @@ function renderHistory() {
   for (const version of state.versions) {
     const row = document.createElement('div'); row.className = 'version-item';
     const copy = document.createElement('div'); copy.className = 'version-title';
-    copy.innerHTML = `<strong>الإصدار ${Number(version.version) || '—'} ${state.activeRelease?.activeVersionId === version.id ? '· نشط' : ''}</strong><span>${formatDate(version.createdAt)} · ${version.destinationCount} وجهة</span>`;
-    const button = document.createElement('button'); button.type = 'button'; button.className = 'button button-outline';
+    const title = document.createElement('strong');
+    title.textContent = `الإصدار ${Number(version.version) || '—'} ${state.activeRelease?.activeVersionId === version.id ? '· آخر JSON مولّد' : ''}`;
+    const detail = document.createElement('span');
+    detail.textContent = `${formatDate(version.createdAt)} · ${version.destinationCount} وجهة · ${version.createdByLabel || version.createdBy || 'مستخدم'}`;
+    copy.append(title, detail);
+    const button = document.createElement('button'); button.type = 'button'; button.className = 'button button-outline'; button.disabled = !canEdit();
     button.dataset.restore = version.id; button.textContent = 'استعادة كمسودة';
     row.append(copy, button); box.append(row);
   }
@@ -255,7 +291,7 @@ async function loadData() {
   try {
     const [draftSnapshot, rowsSnapshot, controlSnapshot, historySnapshot] = await Promise.all([
       getDoc(draftRef), getDocs(rowsRef), getDoc(controlRef),
-      getDocs(query(collection(db, 'clientPriceVersionMeta'), orderBy('version', 'desc'), limit(30)))
+      getDocs(query(collection(db, 'clientPriceVersionMeta'), orderBy('version', 'desc')))
     ]);
     state.draftMeta = draftSnapshot.exists() ? draftSnapshot.data() : null;
     state.baselineDraftTimestamp = state.draftMeta?.updatedAt || null;
@@ -271,6 +307,7 @@ async function loadData() {
 }
 
 function addDestination(data) {
+  if (!canEdit()) return;
   state.rows.push(makeRow(data || { destinationId: slugId('وجهة جديدة'), name: '', light8t20ft: '', container40ft: '', two20ft: '' }));
   renderRows();
   const last = $('#destinationRows tr:last-child .name-input');
@@ -306,6 +343,7 @@ function makeChangeEvents(beforeRows, afterRows) {
 }
 
 async function saveDraft() {
+  if (!canEdit()) { showMessage('هذه الصلاحية للعرض فقط.', 'error'); return; }
   const errors = validateRows(state.rows);
   if (errors.length) { showMessage(errors.slice(0, 4).join(' '), 'error'); return; }
   if (!state.user) { showMessage('انتهت جلسة المستخدم. سجّل الدخول مرة أخرى.', 'error'); return; }
@@ -327,7 +365,8 @@ async function saveDraft() {
       const stamp = serverTimestamp();
       transaction.set(draftRef, {
         baseVersion: state.activeRelease?.version || 0,
-        destinationCount: state.rows.length, updatedAt: stamp, updatedBy: state.user.uid
+        destinationCount: state.rows.length, updatedAt: stamp, updatedBy: state.user.uid,
+        updatedByEmail: state.user.email || '', updatedByLabel: state.user.displayName || state.user.email || state.user.uid
       });
       for (const row of state.rows) {
         const data = rowToDraft(row, state.user.uid, stamp);
@@ -341,14 +380,15 @@ async function saveDraft() {
       }
       transaction.set(revisionMetaRef, {
         createdAt: stamp, createdBy: state.user.uid, destinationCount: state.rows.length,
-        source: state.importSource || 'manual', baseVersion: state.activeRelease?.version || 0
+        source: state.importSource || 'manual', baseVersion: state.activeRelease?.version || 0,
+        createdByEmail: state.user.email || '', createdByLabel: state.user.displayName || state.user.email || state.user.uid
       });
       if (!changes.length) changes.push({ action: 'draft_saved' });
       if (revisionIdForAudit) changes.push({ action: 'restored', sourceFile: revisionIdForAudit });
       if (state.importSource) changes.push({ action: 'import_applied', sourceFile: state.importSource, rowCount: state.rows.length });
       for (const change of changes) {
         const eventRef = doc(collection(db, 'clientPriceAudit'));
-        transaction.set(eventRef, { ...change, createdAt: stamp, createdBy: state.user.uid });
+        transaction.set(eventRef, { ...change, createdAt: stamp, createdBy: state.user.uid, createdByEmail: state.user.email || '' });
       }
     });
     state.baselineRows = cloneRows(state.rows);
@@ -361,6 +401,7 @@ async function saveDraft() {
 }
 
 async function publishRelease() {
+  if (!canEdit()) { showMessage('هذه الصلاحية للعرض فقط.', 'error'); return; }
   if (isDirty()) { showMessage('احفظ المسودة أولًا، ثم راجع الإصدار قبل النشر.', 'error'); return; }
   const errors = validateRows(state.rows);
   if (errors.length) { showMessage(errors.slice(0, 4).join(' '), 'error'); return; }
@@ -370,13 +411,27 @@ async function publishRelease() {
     const versionId = doc(collection(db, 'clientPriceVersionMeta')).id;
     const metaRef = doc(db, 'clientPriceVersionMeta', versionId);
     const draftDestinationsRef = collection(db, 'clientPriceDrafts', 'current', 'destinations');
-    await runTransaction(db, async (transaction) => {
+    const publicRelease = await runTransaction(db, async (transaction) => {
       const controlSnapshot = await transaction.get(controlRef);
       const draftSnapshot = await transaction.get(draftRef);
-      const version = (controlSnapshot.exists() ? controlSnapshot.data().version : 0) + 1;
-      if (draftSnapshot.exists() && state.baselineDraftTimestamp && !draftSnapshot.data().updatedAt.isEqual(state.baselineDraftTimestamp)) {
+      const currentVersion = controlSnapshot.exists() ? Number(controlSnapshot.data().version) : 0;
+      if (currentVersion !== Number(state.activeRelease?.version || 0)) {
+        throw new Error('نُشر إصدار أحدث بعد تحميل الصفحة. أعد تحميل البيانات وراجع المسودة قبل التوليد.');
+      }
+      const currentUpdatedAt = draftSnapshot.exists() ? draftSnapshot.data().updatedAt : null;
+      const baseline = state.baselineDraftTimestamp;
+      const unchanged = (!baseline && !currentUpdatedAt) || (baseline && currentUpdatedAt && baseline.isEqual(currentUpdatedAt));
+      if (!unchanged) {
         throw new Error('تغيرت المسودة أثناء المراجعة. أعد تحميل البيانات قبل النشر.');
       }
+      if (draftSnapshot.exists() && Number(draftSnapshot.data().baseVersion || 0) !== currentVersion) {
+        throw new Error('المسودة مبنية على إصدار أقدم من الإصدار الحالي. أعد تحميلها وراجع التغييرات.');
+      }
+      const version = currentVersion + 1;
+      const publishedAt = new Date().toISOString();
+      const release = createPublicPriceRelease(state.rows, { version, publishedAt });
+      const releaseErrors = validatePublicPriceRelease(release);
+      if (releaseErrors.length) throw new Error(`ملف JSON غير صالح: ${releaseErrors.slice(0, 4).join(' ')}`);
       const draftDocuments = await Promise.all(state.rows.map((row) => transaction.get(doc(draftDestinationsRef, row.destinationId))));
       for (let index = 0; index < draftDocuments.length; index++) {
         if (!draftDocuments[index].exists()) throw new Error('توجد وجهة لم تُحفظ في المسودة. احفظ المسودة ثم أعد المحاولة.');
@@ -397,10 +452,11 @@ async function publishRelease() {
         const destinationRef = doc(db, 'clientPriceVersions', versionId, 'destinations', row.destinationId);
         const publicDestination = rowToPublic(row, version);
         transaction.set(destinationRef, publicDestination);
-        transaction.set(doc(db, 'publicClientPriceVersions', versionId, 'destinations', row.destinationId), publicDestination);
       }
       transaction.set(metaRef, {
         version, createdAt: stamp, createdBy: state.user.uid,
+        createdByEmail: state.user.email || '',
+        createdByLabel: state.user.displayName || state.user.email || state.user.uid,
         destinationCount: state.rows.length,
         sourceDraftRevisionId: state.restoringFrom || 'current',
         ...(state.restoringFrom ? { restoredFrom: state.restoringFrom } : {})
@@ -409,19 +465,48 @@ async function publishRelease() {
         activeVersionId: versionId, version, currency: 'EGP', publishedAt: stamp
       });
       transaction.set(doc(collection(db, 'clientPriceAudit')), {
-        action: 'published', createdAt: stamp, createdBy: state.user.uid,
+        action: 'json_generated', createdAt: stamp, createdBy: state.user.uid,
+        createdByEmail: state.user.email || '',
         version, rowCount: state.rows.length
       });
+      return release;
     });
+    const jsonErrors = validatePublicPriceRelease(publicRelease);
+    if (jsonErrors.length) throw new Error(`رفض فحص JSON: ${jsonErrors.join(' ')}`);
+    downloadPublicJson(publicRelease);
     state.restoringFrom = null;
     await loadData();
-    showMessage('تم نشر الإصدار كاملًا. لم يتم إرسال أي طلب إلى المكتب.');
+    showMessage(`تم توليد ملف JSON للإصدار ${publicRelease.version} وتنزيله. أضفه للمستودع بعد المراجعة كي يظهر للعملاء.`);
   } catch (error) {
     showMessage(error.message || 'تعذر النشر. لم يتغير مؤشر الإصدار النشط.', 'error');
   } finally { setBusy(false); renderRows(); }
 }
 
+function downloadPublicJson(release) {
+  const blob = new Blob([`${JSON.stringify(release, null, 2)}\n`], { type: 'application/json;charset=utf-8' });
+  const url = URL.createObjectURL(blob);
+  const anchor = document.createElement('a');
+  anchor.href = url; anchor.download = `client-prices-v${String(release.version).padStart(4, '0')}.json`;
+  anchor.click();
+  window.setTimeout(() => URL.revokeObjectURL(url), 1000);
+}
+
+async function exportDraftExcel() {
+  if (!state.rows.length) { showMessage('لا توجد صفوف لتصديرها.', 'error'); return; }
+  try {
+    if (!window.XLSX) await loadScript('https://cdn.jsdelivr.net/npm/xlsx@0.18.5/dist/xlsx.full.min.js');
+    const rows = [
+      ['المكان', 'خفيف 8 طن / 20 قدم', '40 قدم', '2×20', 'destinationId', 'Latitude', 'Longitude', 'مصدر الإحداثيات', 'إحداثيات معتمدة'],
+      ...state.rows.map((row) => [row.name, row.light8t20ft, row.container40ft, row.two20ft, row.destinationId, row.lat || '', row.lng || '', row.coordinateSource || '', row.coordinatesVerified ? 'نعم' : 'لا'])
+    ];
+    const workbook = XLSX.utils.book_new();
+    XLSX.utils.book_append_sheet(workbook, XLSX.utils.aoa_to_sheet(rows), 'أسعار العملاء');
+    XLSX.writeFile(workbook, 'SAFATRANS-client-prices.xlsx');
+  } catch (error) { showMessage(error.message || 'تعذر تصدير ملف Excel.', 'error'); }
+}
+
 async function restoreVersion(versionId) {
+  if (!canEdit()) { showMessage('هذه الصلاحية للعرض فقط.', 'error'); return; }
   if (isDirty() && !window.confirm('لديك تغييرات غير محفوظة. هل تريد تجاهلها واستعادة الإصدار؟')) return;
   if (!window.confirm('سيُنسخ الإصدار إلى المسودة. لن يُنشر قبل أن تحفظه وتنشره يدويًا.')) return;
   setBusy(true);
@@ -476,6 +561,40 @@ function detectHeader(headers, type) {
   });
 }
 
+function findCustomerPriceTable(workbook) {
+  const candidates = [];
+  for (const sheetName of workbook.SheetNames) {
+    const matrix = XLSX.utils.sheet_to_json(workbook.Sheets[sheetName], { header: 1, defval: '', raw: true });
+    for (let headerRow = 0; headerRow < Math.min(matrix.length - 2, 40); headerRow++) {
+      const header = matrix[headerRow].map((cell) => String(cell ?? '').trim());
+      const categoryRow = (matrix[headerRow + 1] || []).map((cell) => String(cell ?? '').trim());
+      const nameIndex = header.findIndex((value) => /^(المكان|الوجهة|destination|place|location)$/i.test(value));
+      if (nameIndex < 0) continue;
+      const combined = header.map((value, index) => `${value} ${categoryRow[index] || ''}`.trim());
+      const lightIndex = combined.findIndex((value) => /خفيف/.test(value) && /20/.test(value) && !/2\s*[×x*]?\s*20/.test(value));
+      const fortyIndex = combined.findIndex((value) => /(^|\D)40(\D|$)/.test(value) && !/2\s*[×x*]?\s*20/.test(value));
+      const twoTwentyIndex = combined.findIndex((value) => /2\s*[×x*]?\s*20|2\s*حاوي|حاويتين/.test(value));
+      if ([lightIndex, fortyIndex, twoTwentyIndex].some((index) => index < 0) || new Set([nameIndex, lightIndex, fortyIndex, twoTwentyIndex]).size !== 4) continue;
+      const rows = [];
+      for (const cells of matrix.slice(headerRow + 2)) {
+        const name = String(cells[nameIndex] ?? '').trim();
+        if (!name || /ملحوظة|الإجمالي|المجموع/.test(name)) continue;
+        const prices = [lightIndex, fortyIndex, twoTwentyIndex].map((index) => cells[index] ?? '');
+        if (prices.some((value) => String(value).trim())) rows.push([name, ...prices]);
+      }
+      if (rows.length) candidates.push({ sheetName, rows });
+    }
+  }
+  if (!candidates.length) return null;
+  const signature = (rows) => JSON.stringify(rows.map((row) => [normalizeName(row[0]), ...row.slice(1).map((value) => parseLocalizedNumber(value))]));
+  const expected = signature(candidates[0].rows);
+  if (candidates.some((candidate) => signature(candidate.rows) !== expected)) {
+    throw new Error(`وجدت جداول أسعار مختلفة في الأوراق: ${candidates.map((item) => item.sheetName).join('، ')}. اختر جدولًا واحدًا وصدّره إلى ورقة واضحة قبل الاستيراد.`);
+  }
+  if (candidates.length > 1) state.importIssues.push(`تم التحقق من تطابق الجداول في الأوراق: ${candidates.map((item) => item.sheetName).join('، ')}.`);
+  return candidates[0].rows;
+}
+
 async function loadImportFile(file) {
   if (!file) return;
   setBusy(true);
@@ -487,10 +606,19 @@ async function loadImportFile(file) {
     if (['xlsx', 'xls', 'csv'].includes(extension)) {
       if (!window.XLSX) await loadScript('https://cdn.jsdelivr.net/npm/xlsx@0.18.5/dist/xlsx.full.min.js');
       const workbook = XLSX.read(await file.arrayBuffer(), { type: 'array', cellDates: false });
-      const sheet = workbook.Sheets[workbook.SheetNames[0]];
-      const matrix = XLSX.utils.sheet_to_json(sheet, { header: 1, defval: '' });
-      headers = (matrix[0] || []).map(String);
-      rawRows = matrix.slice(1).filter((row) => row.some((cell) => String(cell).trim() !== ''));
+      const publicTable = extension === 'xlsx' || extension === 'xls' ? findCustomerPriceTable(workbook) : null;
+      if (publicTable) {
+        headers = ['المكان', 'خفيف 8 طن / 20 قدم', '40 قدم', '2×20'];
+        rawRows = publicTable;
+      } else {
+        const sheet = workbook.Sheets[workbook.SheetNames[0]];
+        const matrix = XLSX.utils.sheet_to_json(sheet, { header: 1, defval: '' });
+        headers = (matrix[0] || []).map(String);
+        if (headers.some((header) => /سعر\s*السوق|قومسيون|عمولة|commission|market\s*price|customer\s*name|اسم\s*العميل/i.test(header))) {
+          throw new Error('يحتوي الجدول الأول على أعمدة داخلية (مثل سعر السوق أو القومسيون). لم يتم استيراده؛ استخدم ورقة أسعار العملاء العامة فقط.');
+        }
+        rawRows = matrix.slice(1).filter((row) => row.some((cell) => String(cell).trim() !== ''));
+      }
     } else if (extension === 'pdf') {
       ({ headers, rawRows } = await parsePdf(file));
     } else throw new Error('اختر ملف Excel أو PDF صالحًا.');
@@ -506,6 +634,113 @@ async function loadImportFile(file) {
     showMessage(error.message || 'تعذر قراءة الملف. لم تتغير المسودة أو الأسعار المنشورة.', 'error');
     $('#importPanel').hidden = true;
   } finally { setBusy(false); $('#importFile').value = ''; }
+}
+
+function validCoordinatePair(latValue, lngValue) {
+  const lat = parseLocalizedNumber(latValue); const lng = parseLocalizedNumber(lngValue);
+  return Number.isFinite(lat) && lat >= -90 && lat <= 90 && Number.isFinite(lng) && lng >= -180 && lng <= 180;
+}
+
+function readCoordinateWorkbook(workbook) {
+  for (const sheetName of workbook.SheetNames) {
+    const matrix = XLSX.utils.sheet_to_json(workbook.Sheets[sheetName], { header: 1, defval: '', raw: true });
+    const headerRow = matrix.findIndex((row) => row.some((cell) => /اسم المكان|المكان|place name/i.test(String(cell || '')))
+      && row.some((cell) => /latitude|خط العرض/i.test(String(cell || '')))
+      && row.some((cell) => /longitude|خط الطول/i.test(String(cell || ''))));
+    if (headerRow < 0) continue;
+    const headers = matrix[headerRow].map((cell) => String(cell || '').trim());
+    const nameIndex = headers.findIndex((cell) => /اسم المكان|المكان|place name/i.test(cell));
+    const latIndex = headers.findIndex((cell) => /latitude|خط العرض/i.test(cell));
+    const lngIndex = headers.findIndex((cell) => /longitude|خط الطول/i.test(cell));
+    const rows = matrix.slice(headerRow + 1).map((cells) => ({
+      name: String(cells[nameIndex] || '').trim(), lat: cells[latIndex], lng: cells[lngIndex]
+    })).filter((row) => row.name);
+    return { sheetName, rows };
+  }
+  throw new Error('لم أجد أعمدة اسم المكان وLatitude وLongitude في الملف. لم تُغيّر المسودة.');
+}
+
+async function loadCoordinateFile(file) {
+  if (!file) return;
+  if (!canEdit()) { showMessage('هذه الصلاحية للعرض فقط.', 'error'); return; }
+  setBusy(true);
+  try {
+    if (!window.XLSX) await loadScript('https://cdn.jsdelivr.net/npm/xlsx@0.18.5/dist/xlsx.full.min.js');
+    const workbook = XLSX.read(await file.arrayBuffer(), { type: 'array', cellDates: false });
+    const parsed = readCoordinateWorkbook(workbook);
+    state.coordinateRows = parsed.rows;
+    state.coordinateSourceFile = file.name;
+    state.coordinateMatches = new Map();
+    const byName = new Map();
+    for (const [index, source] of parsed.rows.entries()) {
+      const key = normalizeName(source.name);
+      if (!byName.has(key)) byName.set(key, []);
+      byName.get(key).push(index);
+    }
+    for (const destination of state.rows) {
+      const matches = byName.get(normalizeName(destination.name)) || [];
+      state.coordinateMatches.set(destination.destinationId, matches.length === 1 ? String(matches[0]) : '');
+    }
+    renderCoordinatePreview();
+  } catch (error) {
+    showMessage(error.message || 'تعذر قراءة ملف الإحداثيات. لم تتغير المسودة.', 'error');
+  } finally { setBusy(false); $('#coordinateImportFile').value = ''; }
+}
+
+function renderCoordinatePreview() {
+  const body = $('#coordinatePreviewBody'); body.replaceChildren();
+  let suggested = 0; let unresolved = 0;
+  for (const destination of state.rows) {
+    const tr = document.createElement('tr');
+    const nameCell = document.createElement('td'); nameCell.textContent = destination.name; tr.append(nameCell);
+    const matchCell = document.createElement('td');
+    const select = document.createElement('select'); select.dataset.destinationId = destination.destinationId;
+    select.add(new Option('لا توجد مطابقة مؤكدة', ''));
+    state.coordinateRows.forEach((source, index) => select.add(new Option(source.name, String(index))));
+    select.value = state.coordinateMatches.get(destination.destinationId) || '';
+    select.addEventListener('change', () => {
+      state.coordinateMatches.set(destination.destinationId, select.value);
+      renderCoordinatePreview();
+    });
+    matchCell.append(select); tr.append(matchCell);
+    const selected = select.value === '' ? null : state.coordinateRows[Number(select.value)];
+    const valid = selected && validCoordinatePair(selected.lat, selected.lng);
+    const lat = document.createElement('td'); lat.textContent = selected ? String(selected.lat ?? '—') : '—'; tr.append(lat);
+    const lng = document.createElement('td'); lng.textContent = selected ? String(selected.lng ?? '—') : '—'; tr.append(lng);
+    const status = document.createElement('td');
+    if (!selected) { status.textContent = 'تحتاج مطابقة يدوية'; unresolved++; }
+    else if (!valid) status.textContent = 'إحداثيات ناقصة أو خارج النطاق';
+    else { status.textContent = 'مطابقة مرشحة — راجعها قبل الاعتماد'; suggested++; }
+    tr.append(status); body.append(tr);
+  }
+  $('#coordinateImportSummary').textContent = `${state.rows.length} وجهة أسعار · ${suggested} مطابقة مرشحة بالاسم المعياري · ${unresolved} بلا مطابقة. راجع اسمَي المصدر والإحداثيات قبل اعتمادها؛ لم تُحفظ تغييرات.`;
+  $('#coordinateImportPanel').hidden = false;
+}
+
+function applyCoordinateMatches() {
+  if (!canEdit()) { showMessage('هذه الصلاحية للعرض فقط.', 'error'); return; }
+  const assignments = new Map();
+  for (const [destinationId, sourceIndex] of state.coordinateMatches) {
+    if (sourceIndex === '') continue;
+    if (assignments.has(sourceIndex)) {
+      showMessage('المكان نفسه اختير لأكثر من وجهة. راجع المطابقات قبل الاعتماد.', 'error'); return;
+    }
+    assignments.set(sourceIndex, destinationId);
+  }
+  let applied = 0; let invalid = 0;
+  for (const row of state.rows) {
+    const sourceIndex = state.coordinateMatches.get(row.destinationId);
+    if (!sourceIndex) continue;
+    const source = state.coordinateRows[Number(sourceIndex)];
+    if (!source || !validCoordinatePair(source.lat, source.lng)) { invalid++; continue; }
+    row.lat = parseLocalizedNumber(source.lat); row.lng = parseLocalizedNumber(source.lng);
+    row.coordinateSource = `${state.coordinateSourceFile} · ${source.name}`;
+    row.coordinatesVerified = true; applied++;
+  }
+  state.importSource = [state.importSource, state.coordinateSourceFile].filter(Boolean).join(' + ');
+  $('#coordinateImportPanel').hidden = true;
+  renderRows();
+  showMessage(`أضيفت ${applied} مطابقة إلى المسودة غير المحفوظة.${invalid ? ` تُركت ${invalid} مطابقة بإحداثيات غير صالحة دون تغيير.` : ''}`);
 }
 
 async function parsePdf(file) {
@@ -647,20 +882,29 @@ function drawImportPreview() {
   $('#mergeImportButton').disabled = !state.importRows.length || invalidCount > 0;
 }
 
-function applyImport(mode) {
+async function stableImportedId(name) {
+  const normalized = normalizeName(name);
+  if (!normalized) return crypto.randomUUID();
+  const digest = await crypto.subtle.digest('SHA-256', new TextEncoder().encode(`safatrans-client-destination:${normalized}`));
+  const hex = [...new Uint8Array(digest)].map((value) => value.toString(16).padStart(2, '0')).join('');
+  return `dest-${hex.slice(0, 32)}`;
+}
+
+async function applyImport(mode) {
+  if (!canEdit()) { showMessage('هذه الصلاحية للعرض فقط.', 'error'); return; }
   const invalid = state.importRows.filter((row) => classifyImportRow(row).kind === 'invalid');
   if (invalid.length) { showMessage('صحح الصفوف المحددة قبل اعتماد المعاينة.', 'error'); return; }
   if (mode === 'replace' && !window.confirm('سيستبدل هذا الإجراء جميع صفوف المسودة بالصفوف المعروضة. لن يغير الإصدار المنشور. متابعة؟')) return;
   const byName = new Map(state.rows.map((row) => [normalizeName(row.name), row]));
-  const imported = state.importRows.map((row) => {
+  const imported = await Promise.all(state.importRows.map(async (row) => {
     const existing = byName.get(normalizeName(row.name));
     return makeRow({
-      ...(existing || {}), name: row.name,
+      ...(existing || {}), destinationId: existing?.destinationId || await stableImportedId(row.name), name: row.name,
       light8t20ft: parsePositivePrice(row.light8t20ft),
       container40ft: parsePositivePrice(row.container40ft),
       two20ft: parsePositivePrice(row.two20ft)
     });
-  });
+  }));
   if (mode === 'replace') state.rows = imported;
   else {
     const merged = new Map(state.rows.map((row) => [normalizeName(row.name), row]));
@@ -670,26 +914,39 @@ function applyImport(mode) {
   state.importSource = state.importSource || 'import';
   $('#importPanel').hidden = true;
   renderRows();
-  showMessage('أضيفت النتائج إلى المسودة المحلية فقط. اضغط «حفظ المسودة» ثم راجعها قبل النشر.');
+  showMessage('أضيفت النتائج إلى المسودة الحالية فقط. راجعها ثم اضغط «حفظ المسودة».');
 }
 
 function bindEvents() {
   $('#addDestinationButton').addEventListener('click', () => addDestination());
   $('#emptyAddButton').addEventListener('click', () => addDestination());
   $('#destinationSearch').addEventListener('input', renderRows);
+  $('#coordinateFilter').addEventListener('change', renderRows);
+  document.querySelectorAll('[data-sort]').forEach((button) => button.addEventListener('click', () => {
+    const field = button.dataset.sort;
+    state.sort.direction = state.sort.field === field ? -state.sort.direction : 1;
+    state.sort.field = field;
+    renderRows();
+  }));
   $('#saveDraftButton').addEventListener('click', saveDraft);
   $('#previewButton').addEventListener('click', openPreview);
   $('#closePreviewButton').addEventListener('click', () => $('#previewDialog').close());
   $('#publishButton').addEventListener('click', () => {
-    $('#publishDialogSummary').textContent = `سيُنشر إصدار جديد يضم ${state.rows.length} وجهة بعملة EGP. السعر لا يشمل الإيصالات الرسمية.`;
+    if (!canEdit()) return;
+    $('#publishDialogSummary').textContent = `سيُحفظ إصدار داخلي ويُنزّل ملف JSON يضم ${state.rows.length} وجهة بعملة EGP. لن تتغير صفحة العملاء حتى تراجع الملف وتضيفه إلى المستودع وتنشره.`;
     $('#publishDialog').showModal();
   });
   $('#publishDialog').addEventListener('close', () => { if ($('#publishDialog').returnValue === 'confirm') publishRelease(); });
   $('#importFile').addEventListener('change', (event) => loadImportFile(event.target.files[0]));
+  $('#coordinateImportFile').addEventListener('change', (event) => loadCoordinateFile(event.target.files[0]));
+  $('#closeCoordinateImportButton').addEventListener('click', () => { $('#coordinateImportPanel').hidden = true; state.coordinateRows = []; state.coordinateMatches.clear(); });
+  $('#applyCoordinatesButton').addEventListener('click', applyCoordinateMatches);
+  $('#exportExcelButton').addEventListener('click', exportDraftExcel);
   $('#closeImportButton').addEventListener('click', () => { $('#importPanel').hidden = true; state.importRows = []; });
   $('#mergeImportButton').addEventListener('click', () => applyImport('merge'));
   $('#replaceImportButton').addEventListener('click', () => applyImport('replace'));
   $('#destinationRows').addEventListener('input', (event) => {
+    if (!canEdit()) return;
     const input = event.target.closest('[data-field][data-id]'); if (!input) return;
     const row = state.rows.find((item) => item.destinationId === input.dataset.id); if (!row) return;
     row[input.dataset.field] = input.value;
@@ -698,12 +955,14 @@ function bindEvents() {
     $('#draftStatus').textContent = isDirty() ? 'تغييرات غير محفوظة' : (state.draftMeta ? 'مسودة محفوظة' : 'مسودة فارغة');
   });
   $('#destinationRows').addEventListener('change', (event) => {
+    if (!canEdit()) return;
     const input = event.target.closest('[data-field][data-id]'); if (!input) return;
     const row = state.rows.find((item) => item.destinationId === input.dataset.id); if (!row) return;
     if (input.dataset.field === 'coordinatesVerified') row.coordinatesVerified = input.checked;
     renderRows();
   });
   $('#destinationRows').addEventListener('click', (event) => {
+    if (!canEdit()) return;
     const button = event.target.closest('[data-delete]'); if (!button) return;
     const row = state.rows.find((item) => item.destinationId === button.dataset.delete);
     if (!row || !window.confirm(`حذف «${row.name || 'الوجهة الجديدة'}» من المسودة؟ سيبقى الإصدار المنشور كما هو.`)) return;
@@ -724,9 +983,13 @@ function bindEvents() {
 async function startForUser(user) {
   state.user = user;
   try {
-    const allowed = await checkEditor(user);
-    if (!allowed) { $('#accessMessage').hidden = false; return; }
+    state.permission = await getPagePermission(user);
+    if (!state.permission) { $('#accessMessage').hidden = false; return; }
     $('#editorApp').hidden = false;
+    const canEditPage = canEdit();
+    $('#readOnlyNotice').hidden = canEditPage;
+    for (const id of ['addDestinationButton', 'saveDraftButton', 'publishButton']) document.getElementById(id).disabled = !canEditPage;
+    for (const id of ['importLabel', 'coordinateImportLabel']) document.getElementById(id).hidden = !canEditPage;
     await loadData();
   } catch (error) {
     $('#accessMessage').hidden = false;

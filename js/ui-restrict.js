@@ -279,7 +279,7 @@ function hasPageAccess(page, userRole) {
         if (userRole === 'admin') return true;
         try {
             const pages = JSON.parse(sessionStorage.getItem('userPages') || '{}');
-            return pages.client_prices === 'edit';
+            return pages.client_prices === 'view' || pages.client_prices === 'edit';
         } catch (error) {
             return false;
         }
@@ -303,7 +303,8 @@ function hasPageAccess(page, userRole) {
     const PUBLIC_ROUTES = [
         'index.html',
         'login.html',
-        'register.html'
+        'register.html',
+        'public-portal.html'
     ];
     
     if (PUBLIC_ROUTES.includes(page)) {
@@ -311,9 +312,7 @@ function hasPageAccess(page, userRole) {
     }
     
     const requiredRoles = PROTECTED_ROUTES[page];
-    if (!requiredRoles) {
-        return true;
-    }
+    if (!requiredRoles) return false;
     
     return requiredRoles.includes(userRole);
 }

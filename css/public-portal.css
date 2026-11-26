@@ -79,6 +79,7 @@ button:focus-visible, a:focus-visible, input:focus-visible, select:focus-visible
 
 .destinations-section { padding-block: 35px 108px; }
 .map-card { position: relative; overflow: hidden; min-height: 430px; border: 1px solid #dfe6e8; border-radius: 18px; background: linear-gradient(145deg,#edf4f2,#f7f8f6); box-shadow: var(--shadow); }
+.map-selection-status { position: absolute; z-index: 500; inset-inline-start: 16px; bottom: 52px; max-width: min(390px, calc(100% - 32px)); padding: 8px 12px; border: 1px solid rgba(16,43,71,.12); border-radius: 9px; color: var(--navy); background: rgba(255,255,255,.94); box-shadow: 0 4px 18px rgba(12,35,57,.1); font-size: .8rem; }
 .egypt-map { width: 100%; height: 480px; background: radial-gradient(ellipse at 52% 50%,rgba(22,141,131,.08),transparent 48%); }
 .leaflet-container { background: transparent; font: inherit; }
 .leaflet-control-zoom a { color: var(--navy) !important; border-color: #e0e7e9 !important; }
