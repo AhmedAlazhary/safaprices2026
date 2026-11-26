@@ -28,35 +28,46 @@
       <div>
         <p class="eyebrow">SAFATRANS · بوابة إدارة العملاء</p>
         <h1>أسعار واضحة، ونشر تحت سيطرتك</h1>
-        <p class="intro-copy">حرّر الأسعار في مسودة مستقلة، راجعها، ثم انشر إصدارًا كاملًا للعملاء عند اعتمادك.</p>
+        <p class="intro-copy">حرّر الأسعار في مسودة مستقلة، راجعها، ثم ولّد ملفًا عامًا لإضافته إلى الموقع بعد اعتماد التغيير.</p>
       </div>
       <div class="status-stack" aria-live="polite">
         <span class="status-label">حالة المسودة</span>
         <strong id="draftStatus" class="status-pill">جارٍ التحقق…</strong>
-        <span id="publishedStatus" class="published-meta">لا يوجد إصدار منشور بعد</span>
+        <span id="publishedStatus" class="published-meta">لم يُولّد ملف أسعار بعد</span>
       </div>
     </section>
 
     <section id="accessMessage" class="notice notice-error" hidden>
-      هذا الحساب لا يملك صلاحية <strong>edit</strong> لوحدة أسعار العملاء.
+      هذا الحساب لا يملك صلاحية عرض وحدة أسعار العملاء.
     </section>
+    <section id="readOnlyNotice" class="notice" hidden>صلاحية عرض فقط؛ لا يمكنك تغيير المسودة أو استيراد بيانات.</section>
     <section id="appMessage" class="notice" role="status" aria-live="polite" hidden></section>
 
     <section id="editorApp" hidden>
       <div class="toolbar-card">
         <div class="toolbar-copy">
           <h2>مسودة الأسعار</h2>
-          <p>العملة: الجنيه المصري (EGP). التعديلات لا تظهر للعملاء حتى تنشرها.</p>
+          <p>العملة: الجنيه المصري (EGP). التعديلات تبقى مسودة حتى اعتماد ملف الأسعار العام.</p>
         </div>
         <div class="toolbar-actions">
           <button id="addDestinationButton" class="button button-outline" type="button">＋ إضافة وجهة</button>
-          <label class="button button-outline file-button" for="importFile">استيراد Excel أو PDF</label>
+          <label id="importLabel" class="button button-outline file-button" for="importFile">استيراد Excel أو PDF</label>
           <input id="importFile" type="file" accept=".xlsx,.xls,.csv,.pdf" hidden>
+          <label id="coordinateImportLabel" class="button button-outline file-button" for="coordinateImportFile">استيراد ملف الخريطة</label>
+          <input id="coordinateImportFile" type="file" accept=".xlsx,.xls" hidden>
+          <button id="exportExcelButton" class="button button-outline" type="button">تصدير Excel</button>
           <button id="saveDraftButton" class="button button-primary" type="button">حفظ المسودة</button>
           <button id="previewButton" class="button button-light" type="button">معاينة البوابة</button>
-          <button id="publishButton" class="button button-publish" type="button">نشر للعملاء</button>
+          <button id="publishButton" class="button button-publish" type="button">توليد JSON للعملاء</button>
         </div>
       </div>
+
+      <section id="coordinateImportPanel" class="import-panel" hidden aria-labelledby="coordinateImportHeading">
+        <div class="section-heading"><div><p class="eyebrow">مصدر الإحداثيات</p><h2 id="coordinateImportHeading">مراجعة مطابقة الأماكن</h2></div><button id="closeCoordinateImportButton" class="icon-button" type="button" aria-label="إغلاق المعاينة">×</button></div>
+        <p id="coordinateImportSummary" class="muted"></p>
+        <div class="table-wrap import-table-wrap"><table class="data-table import-table"><thead><tr><th>المكان في الأسعار</th><th>المكان في ملف الخريطة</th><th>خط العرض</th><th>خط الطول</th><th>المراجعة</th></tr></thead><tbody id="coordinatePreviewBody"></tbody></table></div>
+        <div class="import-actions"><button id="applyCoordinatesButton" class="button button-primary" type="button">اعتماد المطابقات في المسودة</button></div>
+      </section>
 
       <section id="importPanel" class="import-panel" hidden aria-labelledby="importHeading">
         <div class="section-heading">
@@ -84,19 +95,19 @@
       <section class="table-card" aria-labelledby="destinationsHeading">
         <div class="section-heading table-heading">
           <div>
-            <p class="eyebrow">البيانات التي ستراجعها قبل النشر</p>
+            <p class="eyebrow">البيانات التي ستراجعها قبل توليد JSON</p>
             <h2 id="destinationsHeading">الوجهات والأسعار</h2>
           </div>
-          <label class="search-box"><span class="visually-hidden">بحث بالوجهة</span><input id="destinationSearch" type="search" placeholder="ابحث عن وجهة…"></label>
+          <div class="table-filters"><label class="search-box"><span class="visually-hidden">بحث بالمكان</span><input id="destinationSearch" type="search" placeholder="ابحث عن مكان…"></label><label class="search-box"><span class="visually-hidden">تصفية الإحداثيات</span><select id="coordinateFilter"><option value="all">كل الإحداثيات</option><option value="mapped">لها إحداثيات</option><option value="missing">بلا إحداثيات</option></select></label></div>
         </div>
         <div class="table-wrap">
           <table class="data-table">
             <thead>
               <tr>
-                <th>الوجهة</th>
-                <th>خفيف 8 طن / 20 قدم <small>EGP</small></th>
-                <th>حاوية 40 قدم <small>EGP</small></th>
-                <th>حاويتان 20 قدم <small>EGP</small></th>
+                <th><button class="sort-button" type="button" data-sort="name">المكان ↕</button></th>
+                <th><button class="sort-button" type="button" data-sort="light8t20ft">خفيف 8 طن / 20 قدم <small>EGP</small> ↕</button></th>
+                <th><button class="sort-button" type="button" data-sort="container40ft">حاوية 40 قدم <small>EGP</small> ↕</button></th>
+                <th><button class="sort-button" type="button" data-sort="two20ft">2 × 20 قدم <small>EGP</small> ↕</button></th>
                 <th>إحداثيات الخريطة</th>
                 <th><span class="visually-hidden">إجراءات</span></th>
               </tr>
@@ -117,29 +128,29 @@
           <div class="section-heading">
             <div><p class="eyebrow">مراجعة منفصلة</p><h2>الإصدار العام الحالي</h2></div>
           </div>
-          <p id="releaseSummary" class="muted">لا يوجد إصدار منشور. يمكنك مراجعة المسودة ثم نشرها.</p>
+            <p id="releaseSummary" class="muted">لم يُولّد ملف JSON بعد. يمكنك مراجعة المسودة ثم تنزيل ملفها العام.</p>
           <a class="text-link" href="public-portal.html" target="_blank" rel="noopener">فتح بوابة العملاء في تبويب جديد ↗</a>
         </article>
         <article class="panel-card history-card">
           <div class="section-heading">
             <div><p class="eyebrow">الإصدارات محفوظة</p><h2>سجل الإصدارات</h2></div>
           </div>
-          <div id="versionHistory" class="version-list"><p class="muted">سيظهر السجل بعد أول نشر.</p></div>
+          <div id="versionHistory" class="version-list"><p class="muted">سيظهر السجل بعد توليد أول ملف.</p></div>
         </article>
       </section>
 
-      <p class="legal-note">الأسعار لا تشمل الإيصالات الرسمية. لا يظهر للعملاء إلا الإصدار المنشور.</p>
+      <p class="legal-note">الأسعار لا تشمل الإيصالات الرسمية. ملف JSON الذي اعتمدته وأضفته إلى المستودع هو ما يظهر للعملاء.</p>
     </section>
   </main>
 
   <dialog id="publishDialog" class="confirm-dialog">
     <form method="dialog">
       <span class="dialog-mark" aria-hidden="true">!</span>
-      <h2>نشر إصدار جديد؟</h2>
-      <p id="publishDialogSummary">سيُعرض الإصدار المحدّث لجميع زوار بوابة العملاء.</p>
+      <h2>توليد ملف أسعار عام؟</h2>
+      <p id="publishDialogSummary">سيُحفظ إصدار داخلي ويُنزّل ملف JSON. لن تتغير صفحة العملاء حتى تراجع الملف وتضيفه إلى المستودع وتنشره.</p>
       <div class="dialog-actions">
         <button class="button button-light" value="cancel">مراجعة لاحقًا</button>
-        <button id="confirmPublishButton" class="button button-publish" value="confirm">تأكيد النشر</button>
+        <button id="confirmPublishButton" class="button button-publish" value="confirm">توليد وتنزيل JSON</button>
       </div>
     </form>
   </dialog>

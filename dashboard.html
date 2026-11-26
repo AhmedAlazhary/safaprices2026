@@ -490,7 +490,7 @@ onAuthStateChanged(auth, async user => {
       const roleData = roleDoc.data();
       sessionStorage.setItem("userRole", roleData.role || "viewer");
       sessionStorage.setItem("userPages", JSON.stringify(roleData.pages || {}));
-      if (roleData.pages?.client_prices === 'edit' || roleData.role === 'admin' || isOriginalAdminEmail(user.email)) {
+      if (['view', 'edit'].includes(roleData.pages?.client_prices) || roleData.role === 'admin' || isOriginalAdminEmail(user.email)) {
         document.getElementById('clientPricesCard').hidden = false;
       }
     } else {
