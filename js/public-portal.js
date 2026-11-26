@@ -11,6 +11,9 @@ const priceFields = {
 };
 const state = { destinations: [], selectedDestination: null, map: null, markers: [] };
 const money = new Intl.NumberFormat('ar-EG', { style: 'currency', currency: 'EGP', maximumFractionDigits: 0 });
+// Set only after the company confirms the WhatsApp number in international format.
+const WHATSAPP_NUMBER = '';
+const containerLabels = priceFields;
 
 function revealOnScroll() {
   const items = document.querySelectorAll('.reveal');
@@ -65,8 +68,26 @@ function updateEstimate() {
   const total = unitPrice === null ? null : unitPrice * quantity;
   $('#totalPrice').textContent = total === null ? '—' : money.format(total);
   $('#resultDetails').textContent = destination ? `${destination.name} · ${priceFields[field]} · العدد ${new Intl.NumberFormat('ar-EG').format(quantity)}` : 'اختر وجهة ونوع الحاوية';
-  $('#whatsAppButton').disabled = true;
-  $('#whatsAppButton').setAttribute('aria-disabled', 'true');
+  const whatsappEnabled = Boolean(WHATSAPP_NUMBER && destination && total !== null);
+  $('#whatsAppButton').disabled = !whatsappEnabled;
+  $('#whatsAppButton').setAttribute('aria-disabled', String(!whatsappEnabled));
+  $('#whatsAppStatus').textContent = WHATSAPP_NUMBER ? 'أرسل تفاصيل الطلب إلى المكتب عبر WhatsApp.' : 'رقم WhatsApp بانتظار الاعتماد.';
+}
+
+function sendWhatsAppRequest() {
+  const destination = state.selectedDestination;
+  if (!WHATSAPP_NUMBER || !destination) return;
+  const field = $('#containerSelect').value;
+  const quantity = Number($('#quantityInput').value);
+  const total = destination[field] * quantity;
+  const message = [
+    'طلب استفسار سعر من بوابة SAFATRANS',
+    `الوجهة: ${destination.name}`,
+    `نوع الحاوية: ${containerLabels[field]}`,
+    `العدد: ${quantity}`,
+    `الإجمالي التقديري: ${money.format(total)}`
+  ].join('\n');
+  window.open(`https://wa.me/${WHATSAPP_NUMBER}?text=${encodeURIComponent(message)}`, '_blank', 'noopener,noreferrer');
 }
 
 function destinationPopup(destination) {
@@ -100,32 +121,35 @@ async function initializeMap(destinations) {
 }
 
 async function loadPublishedPrices() {
+  let destinations = [];
   try {
     const active = await publicGetDoc(publicDoc(publicDb, 'clientPriceControl', 'current'));
     if (!active.exists() || !active.data().activeVersionId) {
       state.destinations = []; renderDestinationOptions();
       setPriceState('لا توجد أسعار منشورة حاليًا. تواصل مع المكتب لمعرفة التفاصيل.');
-      await initializeMap([]); return;
+    } else {
+      const versionId = active.data().activeVersionId;
+      const snapshot = await publicGetDocs(publicQuery(
+        publicCollection(publicDb, 'publicClientPriceVersions', versionId, 'destinations'),
+        publicOrderBy('name')
+      ));
+      destinations = snapshot.docs.map((item) => ({ destinationId: item.id, ...item.data() }))
+        .filter((item) => typeof item.name === 'string' && Object.keys(priceFields).every((key) => Number.isFinite(item[key])));
+      state.destinations = destinations;
+      renderDestinationOptions();
+      setPriceState(destinations.length ? `الأسعار المنشورة · الإصدار ${active.data().version}` : 'الإصدار المنشور لا يحتوي على وجهات صالحة.');
     }
-    const versionId = active.data().activeVersionId;
-    const snapshot = await publicGetDocs(publicQuery(
-      publicCollection(publicDb, 'clientPriceVersions', versionId, 'destinations'),
-      publicOrderBy('name')
-    ));
-    state.destinations = snapshot.docs.map((item) => ({ destinationId: item.id, ...item.data() }))
-      .filter((item) => typeof item.name === 'string' && Object.keys(priceFields).every((key) => Number.isFinite(item[key])));
-    renderDestinationOptions();
-    setPriceState(state.destinations.length ? `الأسعار المنشورة · الإصدار ${active.data().version}` : 'الإصدار المنشور لا يحتوي على وجهات صالحة.');
-    await initializeMap(state.destinations);
   } catch (error) {
     console.error('Public prices could not be loaded', error);
     state.destinations = []; renderDestinationOptions();
-    setPriceState('تعذر تحميل الأسعار الآن. يمكنك التواصل مع المكتب هاتفيًا.', true);
-    try { await initializeMap([]); } catch (mapError) { console.error('Map could not be loaded', mapError); $('#mapEmptyMessage').hidden = false; }
+    setPriceState(`تعذر تحميل الأسعار (${error.code || 'خطأ اتصال/صلاحية'}). يمكنك التواصل مع المكتب هاتفيًا.`, true);
   }
+  try { await initializeMap(destinations); }
+  catch (mapError) { console.error('Map could not be loaded', mapError); $('#mapEmptyMessage').hidden = false; }
 }
 
 bindNavigation(); revealOnScroll();
+$('#whatsAppButton').addEventListener('click', sendWhatsAppRequest);
 for (const id of ['destinationSelect', 'containerSelect', 'quantityInput']) $(`#${id}`).addEventListener('input', updateEstimate);
 $('#decreaseQuantity').addEventListener('click', () => { $('#quantityInput').stepDown(); updateEstimate(); });
 $('#increaseQuantity').addEventListener('click', () => { $('#quantityInput').stepUp(); updateEstimate(); });
