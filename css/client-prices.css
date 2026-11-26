@@ -57,6 +57,11 @@ button, .button { -webkit-tap-highlight-color: transparent; }
 .section-heading .eyebrow { margin-bottom: 3px; }
 .table-heading { align-items: end; }
 .search-box input { width: min(290px, 42vw); min-height: 42px; padding: 8px 13px; border: 1px solid var(--line); border-radius: 10px; background: #fbfcfd; }
+.table-filters { display: flex; align-items: center; gap: 10px; }
+.table-filters .search-box select { min-height: 42px; padding: 8px 12px; border: 1px solid var(--line); border-radius: 10px; color: var(--navy); background: #fbfcfd; }
+.sort-button { padding: 4px 0; border: 0; color: inherit; background: transparent; font: inherit; font-weight: 700; cursor: pointer; white-space: nowrap; }
+.sort-button:hover, .sort-button:focus-visible { color: var(--orange); }
+.is-disabled { opacity: .55; pointer-events: none; }
 .table-wrap { position: relative; overflow: auto; border: 1px solid var(--line); border-radius: 12px; }
 .data-table { width: 100%; min-width: 810px; border-collapse: separate; border-spacing: 0; text-align: right; }
 .data-table th { position: sticky; top: 0; z-index: 1; padding: 13px 14px; color: #617387; background: #f6f8fa; border-bottom: 1px solid var(--line); font-size: .78rem; white-space: nowrap; }
@@ -121,6 +126,8 @@ button, .button { -webkit-tap-highlight-color: transparent; }
   .bottom-grid { grid-template-columns: 1fr; }
 }
 @media (max-width: 700px) {
+  .table-filters { width: 100%; flex-wrap: wrap; }
+  .table-filters .search-box { flex: 1 1 180px; }
   .admin-header { align-items: flex-start; flex-direction: column; padding: 12px 16px; }
   .brand { width: 100%; justify-content: space-between; }
   .brand img { width: 142px; height: 48px; }

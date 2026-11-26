@@ -1,7 +1,6 @@
-import {
-  publicDb, publicDoc, publicGetDoc, publicGetDocs,
-  publicCollection, publicQuery, publicOrderBy
-} from './public-firebase.js';
+import { validatePublicPriceRelease } from './public-price-schema.mjs';
+import { WHATSAPP_CONTACTS } from './public-portal-config.mjs';
+import { calculateQuote, createWhatsAppQuoteUrl } from './public-price-calculator.mjs';
 
 const $ = (selector) => document.querySelector(selector);
 const priceFields = {
@@ -9,11 +8,14 @@ const priceFields = {
   container40ft: 'حاوية 40 قدم',
   two20ft: '2 حاوية 20 قدم'
 };
-const state = { destinations: [], selectedDestination: null, map: null, markers: [] };
+const state = { destinations: [], selectedDestination: null, map: null, markers: [], markerById: new Map() };
 const money = new Intl.NumberFormat('ar-EG', { style: 'currency', currency: 'EGP', maximumFractionDigits: 0 });
-// Set only after the company confirms the WhatsApp number in international format.
-const WHATSAPP_NUMBER = '';
 const containerLabels = priceFields;
+
+$('#primaryWhatsAppLink').href = `https://wa.me/${WHATSAPP_CONTACTS.primary.number}`;
+$('#primaryWhatsAppNumber').textContent = WHATSAPP_CONTACTS.primary.display;
+$('#backupWhatsAppLink').href = `https://wa.me/${WHATSAPP_CONTACTS.backup.number}`;
+$('#backupWhatsAppNumber').textContent = WHATSAPP_CONTACTS.backup.display;
 
 function revealOnScroll() {
   const items = document.querySelectorAll('.reveal');
@@ -64,30 +66,52 @@ function updateEstimate() {
   const quantity = Math.max(1, Math.min(99, Math.trunc(Number($('#quantityInput').value) || 1)));
   $('#quantityInput').value = String(quantity);
   state.selectedDestination = destination;
-  const unitPrice = destination && Number.isFinite(destination[field]) ? destination[field] : null;
-  const total = unitPrice === null ? null : unitPrice * quantity;
+  const quote = calculateQuote(destination, field, quantity);
+  const total = quote?.total ?? null;
   $('#totalPrice').textContent = total === null ? '—' : money.format(total);
   $('#resultDetails').textContent = destination ? `${destination.name} · ${priceFields[field]} · العدد ${new Intl.NumberFormat('ar-EG').format(quantity)}` : 'اختر وجهة ونوع الحاوية';
-  const whatsappEnabled = Boolean(WHATSAPP_NUMBER && destination && total !== null);
+  const whatsappEnabled = Boolean(destination && total !== null);
   $('#whatsAppButton').disabled = !whatsappEnabled;
   $('#whatsAppButton').setAttribute('aria-disabled', String(!whatsappEnabled));
-  $('#whatsAppStatus').textContent = WHATSAPP_NUMBER ? 'أرسل تفاصيل الطلب إلى المكتب عبر WhatsApp.' : 'رقم WhatsApp بانتظار الاعتماد.';
+  $('#whatsAppStatus').textContent = whatsappEnabled
+    ? `ستُفتح رسالة جاهزة إلى ${WHATSAPP_CONTACTS.primary.display}. لن تُرسل تلقائيًا.`
+    : 'اختر وجهة منشورة لحساب السعر وتجهيز الرسالة.';
+  showDestinationOnMap(destination);
 }
 
 function sendWhatsAppRequest() {
   const destination = state.selectedDestination;
-  if (!WHATSAPP_NUMBER || !destination) return;
+  if (!destination) return;
   const field = $('#containerSelect').value;
   const quantity = Number($('#quantityInput').value);
-  const total = destination[field] * quantity;
-  const message = [
-    'طلب استفسار سعر من بوابة SAFATRANS',
-    `الوجهة: ${destination.name}`,
-    `نوع الحاوية: ${containerLabels[field]}`,
-    `العدد: ${quantity}`,
-    `الإجمالي التقديري: ${money.format(total)}`
-  ].join('\n');
-  window.open(`https://wa.me/${WHATSAPP_NUMBER}?text=${encodeURIComponent(message)}`, '_blank', 'noopener,noreferrer');
+  const quote = calculateQuote(destination, field, quantity);
+  if (!quote) return;
+  const url = createWhatsAppQuoteUrl({
+    number: WHATSAPP_CONTACTS.primary.number, destinationName: destination.name,
+    containerLabel: containerLabels[field], quantity: quote.quantity, total: quote.total
+  });
+  window.open(url, '_blank', 'noopener,noreferrer');
+}
+
+function selectDestination(destination, { scrollToCalculator = false } = {}) {
+  $('#destinationSelect').value = destination.destinationId;
+  updateEstimate();
+  if (scrollToCalculator) $('#calculator').scrollIntoView({ behavior: 'smooth', block: 'start' });
+}
+
+function showDestinationOnMap(destination) {
+  if (!destination) {
+    $('#mapSelectionStatus').textContent = 'اختر وجهة من الحاسبة أو علامة على الخريطة.';
+    return;
+  }
+  const marker = state.markerById.get(destination.destinationId);
+  if (!marker || !Number.isFinite(destination.lat) || !Number.isFinite(destination.lng)) {
+    $('#mapSelectionStatus').textContent = `${destination.name}: لا توجد إحداثيات معتمدة لعرضها على الخريطة.`;
+    return;
+  }
+  $('#mapSelectionStatus').textContent = `موقع ${destination.name} ظاهر على الخريطة.`;
+  state.map.setView([destination.lat, destination.lng], Math.max(state.map.getZoom(), 8));
+  marker.openPopup();
 }
 
 function destinationPopup(destination) {
@@ -95,8 +119,7 @@ function destinationPopup(destination) {
   const title = document.createElement('strong'); title.textContent = destination.name;
   const action = document.createElement('button'); action.type = 'button'; action.textContent = 'احسب السعر';
   action.addEventListener('click', () => {
-    $('#destinationSelect').value = destination.destinationId; updateEstimate();
-    $('#calculator').scrollIntoView({ behavior: 'smooth', block: 'start' });
+    selectDestination(destination, { scrollToCalculator: true });
   });
   content.append(title, action); return content;
 }
@@ -112,40 +135,43 @@ async function initializeMap(destinations) {
   for (const destination of destinations) {
     if (!Number.isFinite(destination.lat) || !Number.isFinite(destination.lng)) continue;
     const marker = L.marker([destination.lat, destination.lng]).bindPopup(destinationPopup(destination)).addTo(map);
-    marker.on('click', () => {
-      $('#destinationSelect').value = destination.destinationId; updateEstimate();
-    });
+    marker.on('click', () => selectDestination(destination));
     state.markers.push(marker);
+    state.markerById.set(destination.destinationId, marker);
   }
   $('#mapEmptyMessage').hidden = state.markers.length > 0;
+  showDestinationOnMap(state.selectedDestination);
 }
 
 async function loadPublishedPrices() {
   let destinations = [];
   try {
-    const active = await publicGetDoc(publicDoc(publicDb, 'clientPriceControl', 'current'));
-    if (!active.exists() || !active.data().activeVersionId) {
+    const response = await fetch('assets/data/client-prices.json', { cache: 'no-store' });
+    if (!response.ok) throw new Error(`HTTP ${response.status}`);
+    const release = await response.json();
+    const errors = validatePublicPriceRelease(release, { allowEmptyBootstrap: true });
+    if (errors.length) throw new Error(errors.join(' '));
+    if (release.version === 0) {
       state.destinations = []; renderDestinationOptions();
-      setPriceState('لا توجد أسعار منشورة حاليًا. تواصل مع المكتب لمعرفة التفاصيل.');
+      setPriceState('لا يوجد ملف أسعار منشور بعد. تواصل مع المكتب لمعرفة التفاصيل.');
     } else {
-      const versionId = active.data().activeVersionId;
-      const snapshot = await publicGetDocs(publicQuery(
-        publicCollection(publicDb, 'publicClientPriceVersions', versionId, 'destinations'),
-        publicOrderBy('name')
-      ));
-      destinations = snapshot.docs.map((item) => ({ destinationId: item.id, ...item.data() }))
-        .filter((item) => typeof item.name === 'string' && Object.keys(priceFields).every((key) => Number.isFinite(item[key])));
+      destinations = release.destinations.slice().sort((a, b) => a.name.localeCompare(b.name, 'ar-EG'));
       state.destinations = destinations;
       renderDestinationOptions();
-      setPriceState(destinations.length ? `الأسعار المنشورة · الإصدار ${active.data().version}` : 'الإصدار المنشور لا يحتوي على وجهات صالحة.');
+      setPriceState(`الأسعار المنشورة · الإصدار ${release.version} · ${new Intl.DateTimeFormat('ar-EG', { dateStyle: 'medium' }).format(new Date(release.publishedAt))}`);
     }
   } catch (error) {
     console.error('Public prices could not be loaded', error);
     state.destinations = []; renderDestinationOptions();
-    setPriceState(`تعذر تحميل الأسعار (${error.code || 'خطأ اتصال/صلاحية'}). يمكنك التواصل مع المكتب هاتفيًا.`, true);
+    setPriceState(`تعذر تحميل ملف الأسعار: ${error.message || 'خطأ غير معروف'}. يمكنك التواصل مع المكتب هاتفيًا.`, true);
   }
   try { await initializeMap(destinations); }
-  catch (mapError) { console.error('Map could not be loaded', mapError); $('#mapEmptyMessage').hidden = false; }
+  catch (mapError) {
+    console.error('Map could not be loaded', mapError);
+    $('#mapEmptyMessage').textContent = 'تعذر تحميل الخريطة الآن. يمكنك متابعة اختيار الوجهة وحساب السعر من القائمة.';
+    $('#mapEmptyMessage').hidden = false;
+    $('#mapSelectionStatus').textContent = 'الخريطة غير متاحة حاليًا.';
+  }
 }
 
 bindNavigation(); revealOnScroll();

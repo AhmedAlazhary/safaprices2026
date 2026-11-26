@@ -52,6 +52,12 @@ service cloud.firestore {
       );
     }
 
+    function canViewClientPrices() {
+      return canManageClientPrices() || (isAuthenticated() &&
+        exists(/databases/$(database)/documents/user_roles/$(request.auth.uid)) &&
+        get(/databases/$(database)/documents/user_roles/$(request.auth.uid)).data.get('pages', {}).get('client_prices', '') == 'view');
+    }
+
     function hasValidCoordinates(data) {
       return (
         !data.keys().hasAny(['lat', 'lng']) &&
@@ -113,23 +119,19 @@ service cloud.firestore {
         );
     }
 
-    function isActiveClientPriceVersion(versionId) {
-      return exists(/databases/$(database)/documents/clientPriceControl/current) &&
-        get(/databases/$(database)/documents/clientPriceControl/current).data.activeVersionId == versionId;
-    }
-
     function validClientPriceAudit(data) {
-      return data.keys().hasAll(['action', 'createdAt', 'createdBy']) &&
+      return data.keys().hasAll(['action', 'createdAt', 'createdBy', 'createdByEmail']) &&
         data.keys().hasOnly([
-          'action', 'createdAt', 'createdBy', 'destinationId',
+          'action', 'createdAt', 'createdBy', 'createdByEmail', 'destinationId',
           'before', 'after', 'version', 'sourceFile', 'rowCount'
         ]) &&
         data.action in [
           'draft_saved', 'destination_added', 'destination_updated',
-          'destination_deleted', 'import_applied', 'published', 'restored'
+          'destination_deleted', 'import_applied', 'published', 'json_generated', 'restored'
         ] &&
         data.createdAt == request.time &&
-        data.createdBy == request.auth.uid;
+        data.createdBy == request.auth.uid &&
+        data.createdByEmail == request.auth.token.get('email', '');
     }
 
     // User roles collection - Admin only
@@ -314,20 +316,25 @@ service cloud.firestore {
 
     // Client prices: editor-only drafts, history, and immutable audit entries.
     match /clientPriceDrafts/{draftId} {
-      allow read: canManageClientPrices();
+      allow read: canViewClientPrices();
       allow create, update: canManageClientPrices() &&
         request.resource.data.keys().hasOnly([
-          'baseVersion', 'destinationCount', 'updatedAt', 'updatedBy'
+          'baseVersion', 'destinationCount', 'updatedAt', 'updatedBy', 'updatedByEmail', 'updatedByLabel'
         ]) &&
         request.resource.data.destinationCount is int &&
         request.resource.data.destinationCount >= 0 &&
         request.resource.data.destinationCount <= 150 &&
+        request.resource.data.baseVersion is int &&
+        request.resource.data.baseVersion >= 0 &&
         request.resource.data.updatedAt == request.time &&
-        request.resource.data.updatedBy == request.auth.uid;
+        request.resource.data.updatedBy == request.auth.uid &&
+        request.resource.data.updatedByEmail == request.auth.token.get('email', '') &&
+        request.resource.data.updatedByLabel is string &&
+        request.resource.data.updatedByLabel.size() <= 160;
       allow delete: false;
 
       match /destinations/{destinationId} {
-        allow read: canManageClientPrices();
+        allow read: canViewClientPrices();
         allow create, update: canManageClientPrices() &&
           validClientPriceDraft(request.resource.data, destinationId);
         allow delete: canManageClientPrices();
@@ -335,20 +342,23 @@ service cloud.firestore {
     }
 
     match /clientPriceDraftRevisions/{revisionId} {
-      allow read: canManageClientPrices();
+      allow read: canViewClientPrices();
       allow create: canManageClientPrices() &&
         request.resource.data.keys().hasOnly([
-          'createdAt', 'createdBy', 'destinationCount', 'source', 'baseVersion'
+          'createdAt', 'createdBy', 'destinationCount', 'source', 'baseVersion', 'createdByEmail', 'createdByLabel'
         ]) &&
         request.resource.data.createdAt == request.time &&
         request.resource.data.createdBy == request.auth.uid &&
+        request.resource.data.createdByEmail == request.auth.token.get('email', '') &&
+        request.resource.data.createdByLabel is string &&
+        request.resource.data.createdByLabel.size() <= 160 &&
         request.resource.data.destinationCount is int &&
         request.resource.data.destinationCount >= 0 &&
         request.resource.data.destinationCount <= 150;
       allow update, delete: false;
 
       match /destinations/{destinationId} {
-        allow read: canManageClientPrices();
+        allow read: canViewClientPrices();
         allow create: canManageClientPrices() &&
           validClientPriceDraft(request.resource.data, destinationId);
         allow update, delete: false;
@@ -356,15 +366,18 @@ service cloud.firestore {
     }
 
     match /clientPriceVersionMeta/{versionId} {
-      allow read: canManageClientPrices();
+      allow read: canViewClientPrices();
       allow create: canManageClientPrices() &&
         request.resource.data.keys().hasOnly([
           'version', 'createdAt', 'createdBy', 'destinationCount',
-          'sourceDraftRevisionId', 'restoredFrom'
+          'sourceDraftRevisionId', 'restoredFrom', 'createdByEmail', 'createdByLabel'
         ]) &&
         request.resource.data.version is int && request.resource.data.version > 0 &&
         request.resource.data.createdAt == request.time &&
         request.resource.data.createdBy == request.auth.uid &&
+        request.resource.data.createdByEmail == request.auth.token.get('email', '') &&
+        request.resource.data.createdByLabel is string &&
+        request.resource.data.createdByLabel.size() <= 160 &&
         request.resource.data.destinationCount is int &&
         request.resource.data.destinationCount > 0 &&
         request.resource.data.destinationCount <= 450;
@@ -372,27 +385,22 @@ service cloud.firestore {
     }
 
     match /clientPriceVersions/{versionId}/destinations/{destinationId} {
-      // Historical/admin copy remains private; visitors use the sanitized public copy below.
-      allow get, list: canManageClientPrices();
-      allow create: canManageClientPrices() &&
-        validPublicClientPrice(request.resource.data, destinationId);
-      allow update, delete: false;
-    }
-
-    match /publicClientPriceVersions/{versionId}/destinations/{destinationId} {
-      allow get, list: isActiveClientPriceVersion(versionId);
+      // All Firestore price history is private; customers read the static JSON file.
+      allow get, list: canViewClientPrices();
       allow create: canManageClientPrices() &&
         validPublicClientPrice(request.resource.data, destinationId);
       allow update, delete: false;
     }
 
     match /clientPriceControl/{controlId} {
-      allow get: controlId == 'current';
+      allow get: canViewClientPrices() && controlId == 'current';
       allow list: false;
       allow create: controlId == 'current' && canManageClientPrices() &&
         request.resource.data.keys().hasOnly([
           'activeVersionId', 'version', 'currency', 'publishedAt'
         ]) &&
+        request.resource.data.keys().hasAll(['activeVersionId', 'version', 'currency', 'publishedAt']) &&
+        request.resource.data.activeVersionId is string && request.resource.data.activeVersionId.size() > 0 &&
         request.resource.data.version == 1 &&
         request.resource.data.currency == 'EGP' &&
         request.resource.data.publishedAt == request.time &&
@@ -401,6 +409,8 @@ service cloud.firestore {
         request.resource.data.keys().hasOnly([
           'activeVersionId', 'version', 'currency', 'publishedAt'
         ]) &&
+        request.resource.data.keys().hasAll(['activeVersionId', 'version', 'currency', 'publishedAt']) &&
+        request.resource.data.activeVersionId is string && request.resource.data.activeVersionId.size() > 0 &&
         request.resource.data.version == resource.data.version + 1 &&
         request.resource.data.currency == 'EGP' &&
         request.resource.data.publishedAt == request.time &&
@@ -409,7 +419,7 @@ service cloud.firestore {
     }
 
     match /clientPriceAudit/{eventId} {
-      allow read: canManageClientPrices();
+      allow read: canViewClientPrices();
       allow create: canManageClientPrices() && validClientPriceAudit(request.resource.data);
       allow update, delete: false;
     }

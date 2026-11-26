@@ -91,7 +91,14 @@ function showBadge(pageId, perm, email) {
 // يقرأ بيانات المستخدم من قاعدة البيانات ويطبّق الصلاحية على الصفحة الحالية.
 async function enforceForUser(uid, email) {
     const pageId = getCurrentPageId();
-    if (!pageId) return;
+    if (!pageId) {
+        const file = window.location.pathname.split('/').pop() || 'index.html';
+        if (!['index.html', 'login.html', 'register.html', 'public-portal.html'].includes(file)) {
+            console.warn(`[صلاحيات] مسار غير مسجل: ${file}`);
+            window.location.replace('dashboard.html');
+        }
+        return;
+    }
 
     let data = null;
     try {
@@ -128,7 +135,14 @@ async function enforceForUser(uid, email) {
 
 (function run() {
     const pageId = getCurrentPageId();
-    if (!pageId) return; // صفحة غير مسجلة (مثل index.html)
+    if (!pageId) {
+        const file = window.location.pathname.split('/').pop() || 'index.html';
+        if (!['index.html', 'login.html', 'register.html', 'public-portal.html'].includes(file)) {
+            console.warn(`[صلاحيات] منع مسار غير مسجل: ${file}`);
+            window.location.replace('dashboard.html');
+        }
+        return;
+    }
 
     // 1) فحص فوري من بيانات الجلسة (تُحفظ عند تسجيل الدخول) لمنع وميض الصفحة.
     const email = String(sessionStorage.getItem('userEmail') || '').trim().toLowerCase();
