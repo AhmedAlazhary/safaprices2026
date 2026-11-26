@@ -372,7 +372,15 @@ service cloud.firestore {
     }
 
     match /clientPriceVersions/{versionId}/destinations/{destinationId} {
-      allow get, list: canManageClientPrices() || isActiveClientPriceVersion(versionId);
+      // Historical/admin copy remains private; visitors use the sanitized public copy below.
+      allow get, list: canManageClientPrices();
+      allow create: canManageClientPrices() &&
+        validPublicClientPrice(request.resource.data, destinationId);
+      allow update, delete: false;
+    }
+
+    match /publicClientPriceVersions/{versionId}/destinations/{destinationId} {
+      allow get, list: isActiveClientPriceVersion(versionId);
       allow create: canManageClientPrices() &&
         validPublicClientPrice(request.resource.data, destinationId);
       allow update, delete: false;

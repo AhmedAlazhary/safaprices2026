@@ -395,7 +395,9 @@ async function publishRelease() {
       const stamp = serverTimestamp();
       for (const row of state.rows) {
         const destinationRef = doc(db, 'clientPriceVersions', versionId, 'destinations', row.destinationId);
-        transaction.set(destinationRef, rowToPublic(row, version));
+        const publicDestination = rowToPublic(row, version);
+        transaction.set(destinationRef, publicDestination);
+        transaction.set(doc(db, 'publicClientPriceVersions', versionId, 'destinations', row.destinationId), publicDestination);
       }
       transaction.set(metaRef, {
         version, createdAt: stamp, createdBy: state.user.uid,
